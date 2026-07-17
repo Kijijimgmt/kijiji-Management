@@ -74,19 +74,30 @@ Do not put the Resend API key in `script.js`.
 
 ## How Resend Should Connect To This Site
 
-The static website should submit leads to Supabase.
-
-Then automated emails should be sent server-side:
+The static website submits leads through a server-side Vercel endpoint. The endpoint saves the lead to Supabase and sends internal notifications with Resend:
 
 ```text
-Website form -> Supabase table -> Supabase Edge Function -> Resend
+Website form -> Vercel /api/strategy-session-lead -> Supabase + Resend
 ```
 
 Use cases:
 
-- Send internal notification to `hello@yourdomain.com`.
+- Send internal notification to `joe@kijijimgmt.com`, `erik@kijijimgmt.com`, and `max@kijijimgmt.com`.
 - Send confirmation to the lead.
 - Later, send follow-up sequences or hand off to CRM.
+
+Set these Vercel environment variables:
+
+```text
+RESEND_API_KEY=your_resend_key
+LEAD_NOTIFICATION_FROM=Kijiji Management <leads@notify.kijijimgmt.com>
+LEAD_NOTIFICATION_RECIPIENTS=joe@kijijimgmt.com,erik@kijijimgmt.com,max@kijijimgmt.com
+SUPABASE_URL=https://vaqgriohhcccvvxgkhgh.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+SUPABASE_LEADS_TABLE=strategy_session_leads
+```
+
+Only `RESEND_API_KEY` is secret. Keep it out of GitHub and frontend files.
 
 ## Why Not Send Resend Emails Directly From The Browser?
 
@@ -96,10 +107,10 @@ Use a server-side function instead.
 
 ## DNS Checklist
 
-- GoDaddy domain points to GoDaddy hosting.
+- GoDaddy domain points to Vercel hosting.
 - Microsoft 365 MX record stays active for inboxes.
 - Microsoft 365 SPF/DKIM/DMARC are configured.
-- Resend uses a subdomain such as `send.yourdomain.com`.
+- Resend uses `notify.kijijimgmt.com`.
 - Resend SPF/DKIM records are verified.
 - No duplicate SPF TXT records exist on the same hostname.
 

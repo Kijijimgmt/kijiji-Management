@@ -14,6 +14,7 @@ const supabaseConfig = {
   url: "https://vaqgriohhcccvvxgkhgh.supabase.co",
   anonKey: "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn",
   table: "strategy_session_leads",
+  notificationEndpoint: "/api/strategy-session-lead",
   ...(window.KIJIJI_SUPABASE || {}),
 };
 
@@ -77,6 +78,44 @@ const configureTrackingFields = () => {
   if (leadForm.elements.page_url) {
     leadForm.elements.page_url.value = window.location.href;
   }
+};
+
+const submitLeadToSupabase = async (payload) => {
+  const endpoint = `${supabaseConfig.url.replace(/\/$/, "")}/rest/v1/${supabaseConfig.table}`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      apikey: supabaseConfig.anonKey,
+      Authorization: `Bearer ${supabaseConfig.anonKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Supabase insert failed with status ${response.status}`);
+  }
+};
+
+const submitLead = async (payload) => {
+  if (supabaseConfig.notificationEndpoint) {
+    const response = await fetch(supabaseConfig.notificationEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      return;
+    }
+
+    console.warn(`Notification endpoint failed with status ${response.status}. Falling back to direct Supabase insert.`);
+  }
+
+  await submitLeadToSupabase(payload);
 };
 
 document.querySelectorAll('a[href^="#"]').forEach((link) => {
@@ -220,21 +259,7 @@ if (leadForm) {
       submitButton.textContent = "Submitting...";
       setStatus("Submitting your request...");
 
-      const endpoint = `${supabaseConfig.url.replace(/\/$/, "")}/rest/v1/${supabaseConfig.table}`;
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          apikey: supabaseConfig.anonKey,
-          Authorization: `Bearer ${supabaseConfig.anonKey}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Supabase insert failed with status ${response.status}`);
-      }
+      await submitLead(payload);
 
       leadForm.reset();
       configureTrackingFields();
