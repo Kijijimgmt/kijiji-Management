@@ -46,3 +46,7 @@ with check (
 -- run these after creating the table:
 grant insert on public.strategy_session_leads to anon;
 grant all on public.strategy_session_leads to service_role;
+
+-- Ask PostgREST to refresh its schema cache so the table is available through
+-- the Supabase REST API immediately after running this script.
+notify pgrst, 'reload schema';

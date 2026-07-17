@@ -11,8 +11,8 @@ const leadForm = document.querySelector("#strategy-session-form");
 // Add the project URL and public anon/publishable key after the Supabase table
 // and insert-only RLS policy are created. Never place a service_role key here.
 const supabaseConfig = {
-  url: "",
-  anonKey: "",
+  url: "https://vaqgriohhcccvvxgkhgh.supabase.co",
+  anonKey: "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn",
   table: "strategy_session_leads",
   ...(window.KIJIJI_SUPABASE || {}),
 };
