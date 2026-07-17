@@ -1391,9 +1391,11 @@ body.cursor-active .cursor-ring {
   }
 
   .site-header {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
     width: min(100% - 28px, 1260px);
     min-height: var(--header-height);
-    gap: 12px;
+    gap: 16px;
     padding: 12px 0;
   }
 
@@ -1412,6 +1414,11 @@ body.cursor-active .cursor-ring {
 
   .brand-logo {
     width: clamp(92px, 28vw, 112px);
+  }
+
+  .menu-toggle {
+    justify-self: end;
+    margin-right: 2px;
   }
 
   .nav-cta {
