@@ -25,6 +25,7 @@
 }
 
 html {
+  overflow-x: hidden;
   scroll-behavior: smooth;
 }
 
@@ -1381,21 +1382,24 @@ body.cursor-active .cursor-ring {
 
 @media (max-width: 700px) {
   :root {
-    --header-height: 76px;
+    --header-height: 74px;
   }
 
   .section-shell,
   .site-footer {
-    width: min(100% - 28px, var(--max));
+    width: min(100% - 32px, var(--max));
   }
 
   .site-header {
-    width: min(100% - 22px, 1260px);
-    gap: 10px;
+    width: min(100% - 28px, 1260px);
+    min-height: var(--header-height);
+    gap: 12px;
+    padding: 12px 0;
   }
 
   .site-header::before {
-    inset: 10px -6px;
+    inset: 8px -2px;
+    border-radius: 34px;
   }
 
   .brand-copy span:first-child {
@@ -1407,7 +1411,7 @@ body.cursor-active .cursor-ring {
   }
 
   .brand-logo {
-    width: 104px;
+    width: clamp(92px, 28vw, 112px);
   }
 
   .nav-cta {
@@ -1415,18 +1419,73 @@ body.cursor-active .cursor-ring {
   }
 
   h1 {
-    font-size: clamp(3.15rem, 17vw, 5.2rem);
+    margin-bottom: 20px;
+    font-size: clamp(3.15rem, 15.5vw, 4.45rem);
+    line-height: 0.82;
+  }
+
+  .hero {
+    min-height: auto;
+    padding: 82px 0 36px;
+  }
+
+  .hero-copy {
+    display: grid;
+    align-content: start;
+  }
+
+  .hero .eyebrow {
+    max-width: 21rem;
+    margin-bottom: 24px;
+    font-size: clamp(0.86rem, 3.45vw, 1rem);
+    line-height: 1.28;
+  }
+
+  .hero-title {
+    max-width: 21.5rem;
+  }
+
+  .title-line-final {
+    align-items: flex-end;
+    gap: 12px;
   }
 
   .title-arrow {
-    width: 56px;
-    height: 56px;
+    width: clamp(48px, 13vw, 56px);
+    height: clamp(48px, 13vw, 56px);
     border-width: 2px;
-    font-size: 1.9rem;
+    font-size: 1.55rem;
+    transform: translateY(-0.08em);
+  }
+
+  .hero-subhead {
+    max-width: 22.5rem;
+    margin-bottom: 20px;
+    font-size: clamp(1.08rem, 5vw, 1.38rem);
+    line-height: 1.34;
+  }
+
+  .hero-support {
+    max-width: 22rem;
+    margin-bottom: 30px;
+    font-size: clamp(0.98rem, 4.35vw, 1.14rem);
+    line-height: 1.55;
+  }
+
+  .hero-actions {
+    gap: 12px;
+  }
+
+  .button {
+    min-height: 58px;
+    padding: 17px 20px;
+    font-size: clamp(0.95rem, 4vw, 1.08rem);
+    line-height: 1.15;
+    text-align: center;
   }
 
   .hero-grid {
-    gap: 38px;
+    gap: 34px;
   }
 
   .photo-collage {
@@ -1504,6 +1563,19 @@ body.cursor-active .cursor-ring {
   .section-band {
     padding-top: 74px;
     padding-bottom: 74px;
+  }
+
+  .strategy-stamp {
+    width: 100%;
+    max-width: 22rem;
+    margin-bottom: 38px;
+    font-size: clamp(2.65rem, 10vw, 3.15rem);
+    line-height: 0.9;
+    text-align: left;
+  }
+
+  .strategy-stamp span:last-child {
+    justify-self: start;
   }
 
   .village,
