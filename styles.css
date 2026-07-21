@@ -826,6 +826,10 @@ h3 {
   object-position: 50% 42%;
 }
 
+.problem-photo img {
+  object-position: 50% 28%;
+}
+
 .wide-photo figcaption,
 .service-image figcaption {
   position: absolute;
