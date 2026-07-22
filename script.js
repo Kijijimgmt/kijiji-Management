@@ -8,9 +8,6 @@ const cursorRing = document.querySelector(".cursor-ring");
 const finePointer = window.matchMedia("(pointer: fine)").matches;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const leadForm = document.querySelector("#strategy-session-form");
-const cinemaSection = document.querySelector(".cinema");
-const cinemaImages = document.querySelectorAll("[data-cinema-image]");
-const cinemaSteps = document.querySelectorAll("[data-cinema-step]");
 // Add the project URL and public anon/publishable key after the Supabase table
 // and insert-only RLS policy are created. Never place a service_role key here.
 const supabaseConfig = {
@@ -182,33 +179,12 @@ window.addEventListener(
 );
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-let activeCinemaIndex = 0;
 let ticking = false;
-
-const setActiveCinemaIndex = (index) => {
-  if (index === activeCinemaIndex || !cinemaImages.length) {
-    return;
-  }
-
-  activeCinemaIndex = index;
-  cinemaImages.forEach((image) => image.classList.toggle("is-active", Number(image.dataset.cinemaImage) === index));
-  cinemaSteps.forEach((step) => step.classList.toggle("is-active", Number(step.dataset.cinemaStep) === index));
-};
 
 const updateScrollEffects = () => {
   const scrollable = document.documentElement.scrollHeight - window.innerHeight;
   const pageProgress = scrollable > 0 ? window.scrollY / scrollable : 0;
   root.style.setProperty("--page-progress", clamp(pageProgress, 0, 1).toFixed(4));
-
-  if (cinemaSection && cinemaImages.length && !reduceMotion) {
-    const rect = cinemaSection.getBoundingClientRect();
-    const distance = cinemaSection.offsetHeight - window.innerHeight;
-    const progress = distance > 0 ? clamp(-rect.top / distance, 0, 1) : 0;
-    const index = clamp(Math.floor(progress * cinemaImages.length), 0, cinemaImages.length - 1);
-
-    root.style.setProperty("--cinema-progress", progress.toFixed(4));
-    setActiveCinemaIndex(index);
-  }
 
   ticking = false;
 };
