@@ -8,6 +8,9 @@ const cursorRing = document.querySelector(".cursor-ring");
 const finePointer = window.matchMedia("(pointer: fine)").matches;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const leadForm = document.querySelector("#strategy-session-form");
+const scrollScenes = reduceMotion
+  ? []
+  : Array.from(document.querySelectorAll(".hero, .cinema, .partner, .system, .outcome, .invitation"));
 // Add the project URL and public anon/publishable key after the Supabase table
 // and insert-only RLS policy are created. Never place a service_role key here.
 const supabaseConfig = {
@@ -185,6 +188,21 @@ const updateScrollEffects = () => {
   const scrollable = document.documentElement.scrollHeight - window.innerHeight;
   const pageProgress = scrollable > 0 ? window.scrollY / scrollable : 0;
   root.style.setProperty("--page-progress", clamp(pageProgress, 0, 1).toFixed(4));
+
+  scrollScenes.forEach((scene) => {
+    const rect = scene.getBoundingClientRect();
+    const progress = clamp((window.innerHeight - rect.top) / (window.innerHeight + rect.height), 0, 1);
+    const depth = progress - 0.5;
+
+    scene.style.setProperty("--scene-progress", progress.toFixed(4));
+    scene.style.setProperty("--scene-depth", depth.toFixed(4));
+    scene.style.setProperty("--scene-y", `${(depth * -56).toFixed(2)}px`);
+    scene.style.setProperty("--scene-y-soft", `${(depth * -22).toFixed(2)}px`);
+    scene.style.setProperty("--scene-y-reverse", `${(depth * 16).toFixed(2)}px`);
+    scene.style.setProperty("--scene-x", `${(depth * 76).toFixed(2)}px`);
+    scene.style.setProperty("--scene-x-soft", `${(depth * 34).toFixed(2)}px`);
+    scene.style.setProperty("--scene-x-reverse", `${(depth * -53).toFixed(2)}px`);
+  });
 
   ticking = false;
 };
