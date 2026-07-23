@@ -419,8 +419,8 @@ section[id] {
 }
 
 .hero-scene-three img {
-  object-position: 76% 48%;
-  filter: saturate(0.68) contrast(1.16) brightness(0.9);
+  object-position: 74% 42%;
+  filter: sepia(0.18) saturate(0.82) contrast(1.2) brightness(0.82);
 }
 
 .hero-scene-four {
@@ -428,8 +428,8 @@ section[id] {
 }
 
 .hero-scene-four img {
-  object-position: 50% 30%;
-  filter: saturate(0.46) contrast(1.14) brightness(0.88);
+  object-position: 54% 38%;
+  filter: sepia(0.28) saturate(0.58) contrast(1.18) brightness(0.76);
 }
 
 @keyframes heroScene {
@@ -873,7 +873,8 @@ section[id] {
 }
 
 .partner-photo:nth-child(2) img {
-  object-position: 50% 34%;
+  object-position: 48% 42%;
+  filter: sepia(0.15) saturate(0.86) contrast(1.18) brightness(0.9);
 }
 
 .partner-photo:nth-child(3) img {
@@ -882,12 +883,13 @@ section[id] {
 }
 
 .partner-photo:nth-child(4) img {
-  object-position: 50% 30%;
-  filter: saturate(0.42) contrast(1.1) brightness(0.9);
+  object-position: 52% 44%;
+  filter: sepia(0.22) saturate(0.5) contrast(1.14) brightness(0.82);
 }
 
 .partner-photo:nth-child(5) img {
-  object-position: 68% 45%;
+  object-position: 54% 38%;
+  filter: sepia(0.2) saturate(0.52) contrast(1.16) brightness(0.86);
 }
 
 .partner-photo figcaption {
@@ -1011,8 +1013,8 @@ section[id] {
   inset: 0;
   height: 100%;
   object-fit: cover;
-  object-position: 84% 46%;
-  filter: saturate(0.8) contrast(1.08) brightness(0.98);
+  object-position: 46% 44%;
+  filter: sepia(0.2) saturate(0.82) contrast(1.22) brightness(0.8);
 }
 
 .system-copy {
