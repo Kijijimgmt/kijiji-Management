@@ -280,14 +280,14 @@ section[id] {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(6, 5, 4, 0.94) 0%, rgba(6, 5, 4, 0.74) 46%, rgba(6, 5, 4, 0.28) 100%),
+    linear-gradient(90deg, rgba(6, 5, 4, 0.96) 0%, rgba(6, 5, 4, 0.78) 46%, rgba(6, 5, 4, 0.3) 100%),
     linear-gradient(180deg, rgba(6, 5, 4, 0.28) 0%, rgba(6, 5, 4, 0.9) 100%);
 }
 
 .hero-media img {
   height: 100%;
   object-fit: cover;
-  object-position: 62% 42%;
+  object-position: 67% 44%;
   filter: saturate(0.8) contrast(1.12);
 }
 
@@ -638,10 +638,12 @@ section[id] {
 }
 
 .partner-portrait img {
+  position: absolute;
+  inset: 0;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 40%;
-  filter: saturate(0.78) contrast(1.12);
+  object-position: 50% 38%;
+  filter: saturate(0.84) contrast(1.1);
 }
 
 .partner-portrait figcaption {
@@ -726,14 +728,17 @@ section[id] {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, transparent 42%, rgba(6, 5, 4, 0.78)),
-    linear-gradient(120deg, rgba(201, 116, 42, 0.18), transparent 56%);
+    linear-gradient(180deg, rgba(6, 5, 4, 0.08), rgba(6, 5, 4, 0.72)),
+    linear-gradient(120deg, rgba(201, 116, 42, 0.16), transparent 58%);
 }
 
 .system-visual img {
+  position: absolute;
+  inset: 0;
   height: 100%;
   object-fit: cover;
-  filter: saturate(0.74) contrast(1.12);
+  object-position: 84% 46%;
+  filter: saturate(0.8) contrast(1.08) brightness(0.98);
 }
 
 .system-copy {
@@ -1241,6 +1246,15 @@ body.cursor-active .cursor-ring {
   .hero-lower {
     gap: 24px;
     margin-top: 34px;
+  }
+
+  .section-head {
+    gap: 24px;
+    margin-bottom: 34px;
+  }
+
+  .section-head .eyebrow {
+    margin-bottom: -6px;
   }
 
   .hero-lower p {
