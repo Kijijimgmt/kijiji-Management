@@ -679,11 +679,12 @@ section[id] {
   z-index: 2;
   border-radius: 50%;
   background:
-    conic-gradient(from -90deg, rgba(255, 178, 94, 0.9) calc(var(--scene-progress, 0) * 360deg), transparent 0),
+    conic-gradient(from -90deg, rgba(255, 178, 94, 0.94) calc(var(--map-progress, 0) * 360deg), transparent 0),
     radial-gradient(circle, transparent 62%, rgba(255, 178, 94, 0.14) 63%, transparent 64%);
-  opacity: 0.76;
+  opacity: calc(0.68 + (var(--map-glow, 0) * 0.22));
   mix-blend-mode: screen;
   mask-image: radial-gradient(circle, transparent 59%, #000 60%, #000 62%, transparent 63%);
+  filter: drop-shadow(0 0 calc(14px + (var(--map-glow, 0) * 28px)) rgba(255, 178, 94, 0.42));
 }
 
 .map-core {
@@ -698,8 +699,27 @@ section[id] {
   background: rgba(6, 5, 4, 0.74);
   text-align: center;
   box-shadow:
-    0 0 70px rgba(201, 116, 42, 0.2),
-    inset 0 0 40px rgba(255, 178, 94, 0.06);
+    0 0 calc(70px + (var(--map-glow, 0) * 50px)) rgba(201, 116, 42, calc(0.2 + (var(--map-glow, 0) * 0.24))),
+    inset 0 0 calc(40px + (var(--map-glow, 0) * 28px)) rgba(255, 178, 94, calc(0.06 + (var(--map-glow, 0) * 0.1)));
+  transition:
+    border-color 260ms ease,
+    background 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.map-core::before {
+  content: "";
+  position: absolute;
+  inset: -22%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 178, 94, 0.34), transparent 64%);
+  opacity: var(--map-glow, 0);
+  transform: scale(calc(0.82 + (var(--map-glow, 0) * 0.2)));
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+  pointer-events: none;
 }
 
 .map-core span,
@@ -717,6 +737,32 @@ section[id] {
   font-family: var(--serif);
   font-size: clamp(2.5rem, 5vw, 4.7rem);
   line-height: 0.86;
+  text-shadow:
+    0 0 calc(var(--map-glow, 0) * 18px) rgba(255, 248, 237, 0.72),
+    0 0 calc(var(--map-glow, 0) * 44px) rgba(255, 178, 94, 0.55);
+  transition:
+    color 260ms ease,
+    text-shadow 260ms ease,
+    transform 260ms ease;
+}
+
+.cinema.is-map-complete .map-core {
+  border-color: rgba(255, 178, 94, 0.72);
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255, 178, 94, 0.14), transparent 58%),
+    rgba(6, 5, 4, 0.78);
+}
+
+.cinema.is-map-complete .map-core strong {
+  color: #fff8ed;
+  transform: scale(1.035);
+}
+
+.cinema.is-map-complete .map-node-four {
+  border-color: rgba(255, 178, 94, 0.82);
+  box-shadow:
+    0 0 26px rgba(255, 178, 94, 0.24),
+    inset 0 1px 0 rgba(255, 178, 94, 0.22);
 }
 
 .map-ring {

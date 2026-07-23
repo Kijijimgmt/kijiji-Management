@@ -324,8 +324,13 @@ const updateScrollEffects = () => {
     scene.style.setProperty("--scene-x-reverse", `${(depth * -53).toFixed(2)}px`);
 
     if (scene.matches(".cinema")) {
+      const mapProgress = clamp((progress - 0.16) / 0.4, 0, 1);
+      const mapGlow = clamp((mapProgress - 0.78) / 0.22, 0, 1);
       const stepIndex = clamp(Math.floor(clamp((progress - 0.16) / 0.64, 0, 0.999) * cinemaSteps.length), 0, cinemaSteps.length - 1);
 
+      scene.style.setProperty("--map-progress", mapProgress.toFixed(4));
+      scene.style.setProperty("--map-glow", mapGlow.toFixed(4));
+      scene.classList.toggle("is-map-complete", mapProgress > 0.985);
       cinemaSteps.forEach((step, index) => step.classList.toggle("is-active", index === stepIndex));
       mapNodes.forEach((node, index) => node.classList.toggle("is-active", index === stepIndex));
       updateScrollFilm(progress);
