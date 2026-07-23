@@ -51,6 +51,19 @@
     <div class="cursor-dot" aria-hidden="true"></div>
     <div class="cursor-ring" aria-hidden="true"></div>
     <div class="scroll-progress" aria-hidden="true"></div>
+    <div class="story-thread" aria-hidden="true">
+      <div class="story-thread-line">
+        <span></span>
+      </div>
+      <ol>
+        <li data-thread-node="0">Vision</li>
+        <li data-thread-node="1">Structure</li>
+        <li data-thread-node="2">Partner</li>
+        <li data-thread-node="3">System</li>
+        <li data-thread-node="4">Outcome</li>
+        <li data-thread-node="5">Book</li>
+      </ol>
+    </div>
 
     <header class="site-header" data-reveal>
       <a class="brand" href="#top" aria-label="Kijiji Management Group home">
@@ -73,12 +86,21 @@
     </header>
 
     <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
+      <section class="hero" aria-labelledby="hero-title" data-scene="Vision">
         <div class="hero-media" aria-hidden="true">
           <img src="assets/kijiji-creative-hero.jpg" alt="" fetchpriority="high" />
-          <video autoplay muted loop playsinline preload="metadata" poster="assets/kijiji-creative-hero.jpg">
+          <video class="hero-scene hero-scene-one" autoplay muted loop playsinline preload="metadata" poster="assets/kijiji-creative-hero.jpg">
             <source src="assets/kijiji-creative-assembly-hero.mp4" type="video/mp4" />
           </video>
+          <figure class="hero-scene hero-scene-two">
+            <img src="assets/athlete-momentum.jpg" alt="" />
+          </figure>
+          <figure class="hero-scene hero-scene-three">
+            <img src="assets/kijiji-hero-higgsfield.jpg" alt="" />
+          </figure>
+          <figure class="hero-scene hero-scene-four">
+            <img src="assets/creator-studio.jpg" alt="" />
+          </figure>
         </div>
         <div class="hero-shell">
           <p class="eyebrow hero-stagger">Management for visionaries. Infrastructure for what's next.</p>
@@ -100,7 +122,7 @@
         </div>
       </section>
 
-      <section class="cinema" id="structure" aria-labelledby="cinema-title">
+      <section class="cinema" id="structure" aria-labelledby="cinema-title" data-scene="Structure">
         <div class="structure-grid">
           <div class="cinema-copy">
             <p class="eyebrow">The structure</p>
@@ -123,6 +145,7 @@
             <div class="map-node map-node-two">Partners</div>
             <div class="map-node map-node-three">Operations</div>
             <div class="map-node map-node-four">Expansion</div>
+            <div class="map-thread" aria-hidden="true"></div>
           </div>
 
           <div class="cinema-steps">
@@ -150,7 +173,7 @@
         </div>
       </section>
 
-      <section class="partner section-shell" id="partner">
+      <section class="partner section-shell" id="partner" data-scene="Partner">
         <div class="section-head partner-head" data-reveal>
           <p class="eyebrow">The partner</p>
           <h2>Built for people whose influence has outgrown improvisation.</h2>
@@ -241,7 +264,7 @@
         </div>
       </section>
 
-      <section class="system section-shell" id="system" aria-labelledby="system-title">
+      <section class="system section-shell" id="system" aria-labelledby="system-title" data-scene="System">
         <div class="system-visual" data-reveal>
           <img
             src="assets/kijiji-hero-higgsfield.jpg"
@@ -277,7 +300,7 @@
         </div>
       </section>
 
-      <section class="outcome">
+      <section class="outcome" data-scene="Outcome">
         <div class="outcome-shell">
           <p class="eyebrow" data-reveal>The outcome</p>
           <div class="outcome-lines" aria-label="Kijiji transformation">
@@ -288,7 +311,7 @@
         </div>
       </section>
 
-      <section class="invitation section-shell" id="book" data-reveal>
+      <section class="invitation section-shell" id="book" data-reveal data-scene="Book">
         <div class="invitation-copy">
           <p class="eyebrow">The invitation</p>
           <h2>Build what's next with the right village around you.</h2>

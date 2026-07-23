@@ -11,6 +11,13 @@ const leadForm = document.querySelector("#strategy-session-form");
 const scrollScenes = reduceMotion
   ? []
   : Array.from(document.querySelectorAll(".hero, .cinema, .partner, .system, .outcome, .invitation"));
+const storyScenes = reduceMotion ? [] : Array.from(document.querySelectorAll("[data-scene]"));
+const threadNodes = Array.from(document.querySelectorAll("[data-thread-node]"));
+const cinemaSteps = Array.from(document.querySelectorAll(".cinema-step"));
+const mapNodes = Array.from(document.querySelectorAll(".map-node"));
+const partnerPhotos = Array.from(document.querySelectorAll(".partner-photo"));
+const partnerArticles = Array.from(document.querySelectorAll(".partner-list article"));
+const systemRows = Array.from(document.querySelectorAll(".system-list div"));
 // Add the project URL and public anon/publishable key after the Supabase table
 // and insert-only RLS policy are created. Never place a service_role key here.
 const supabaseConfig = {
@@ -188,6 +195,7 @@ const updateScrollEffects = () => {
   const scrollable = document.documentElement.scrollHeight - window.innerHeight;
   const pageProgress = scrollable > 0 ? window.scrollY / scrollable : 0;
   root.style.setProperty("--page-progress", clamp(pageProgress, 0, 1).toFixed(4));
+  let activeSceneIndex = 0;
 
   scrollScenes.forEach((scene) => {
     const rect = scene.getBoundingClientRect();
@@ -202,6 +210,45 @@ const updateScrollEffects = () => {
     scene.style.setProperty("--scene-x", `${(depth * 76).toFixed(2)}px`);
     scene.style.setProperty("--scene-x-soft", `${(depth * 34).toFixed(2)}px`);
     scene.style.setProperty("--scene-x-reverse", `${(depth * -53).toFixed(2)}px`);
+
+    if (scene.matches(".cinema")) {
+      const stepIndex = clamp(Math.floor(clamp((progress - 0.16) / 0.64, 0, 0.999) * cinemaSteps.length), 0, cinemaSteps.length - 1);
+
+      cinemaSteps.forEach((step, index) => step.classList.toggle("is-active", index === stepIndex));
+      mapNodes.forEach((node, index) => node.classList.toggle("is-active", index === stepIndex));
+    }
+
+    if (scene.matches(".partner")) {
+      const partnerIndex = clamp(Math.floor(clamp((progress - 0.08) / 0.78, 0, 0.999) * partnerPhotos.length), 0, partnerPhotos.length - 1);
+
+      partnerPhotos.forEach((photo, index) => photo.classList.toggle("is-active", index === partnerIndex));
+      partnerArticles.forEach((article, index) => article.classList.toggle("is-active", index === partnerIndex));
+    }
+
+    if (scene.matches(".system")) {
+      const systemIndex = clamp(Math.floor(clamp((progress - 0.12) / 0.72, 0, 0.999) * systemRows.length), 0, systemRows.length - 1);
+
+      systemRows.forEach((row, index) => row.classList.toggle("is-active", index === systemIndex));
+    }
+  });
+
+  storyScenes.forEach((scene, index) => {
+    const rect = scene.getBoundingClientRect();
+    const crossesReadingLine = rect.top <= window.innerHeight * 0.56 && rect.bottom >= window.innerHeight * 0.32;
+
+    if (crossesReadingLine) {
+      activeSceneIndex = index;
+    }
+  });
+
+  storyScenes.forEach((scene, index) => {
+    scene.classList.toggle("is-active-scene", index === activeSceneIndex);
+    scene.classList.toggle("is-past-scene", index < activeSceneIndex);
+  });
+
+  threadNodes.forEach((node, index) => {
+    node.classList.toggle("is-active", index === activeSceneIndex);
+    node.classList.toggle("is-past", index < activeSceneIndex);
   });
 
   ticking = false;
