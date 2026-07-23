@@ -18,6 +18,9 @@ const mapNodes = Array.from(document.querySelectorAll(".map-node"));
 const partnerPhotos = Array.from(document.querySelectorAll(".partner-photo"));
 const partnerArticles = Array.from(document.querySelectorAll(".partner-list article"));
 const systemRows = Array.from(document.querySelectorAll(".system-list div"));
+const scrollFilmCanvas = document.querySelector(".scroll-film-canvas");
+const scrollFilmContext = scrollFilmCanvas?.getContext("2d");
+const canScrubScrollFilm = Boolean(scrollFilmCanvas && scrollFilmContext && !reduceMotion);
 // Add the project URL and public anon/publishable key after the Supabase table
 // and insert-only RLS policy are created. Never place a service_role key here.
 const supabaseConfig = {
@@ -190,6 +193,115 @@ window.addEventListener(
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 let ticking = false;
+const scrollFilmState = {
+  count: Number(scrollFilmCanvas?.dataset.frameCount || 0),
+  prefix: scrollFilmCanvas?.dataset.framePrefix || "",
+  targetProgress: 0,
+  currentProgress: 0,
+  lastFrame: -1,
+  raf: 0,
+  images: [],
+  promises: [],
+};
+
+const getScrollFilmFrameSrc = (index) => `${scrollFilmState.prefix}${String(index + 1).padStart(4, "0")}.jpg`;
+
+const loadScrollFilmFrame = (index) => {
+  if (!canScrubScrollFilm || index < 0 || index >= scrollFilmState.count) {
+    return Promise.resolve(null);
+  }
+
+  if (scrollFilmState.promises[index]) {
+    return scrollFilmState.promises[index];
+  }
+
+  scrollFilmState.promises[index] = new Promise((resolve) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = getScrollFilmFrameSrc(index);
+    scrollFilmState.images[index] = image;
+  });
+
+  return scrollFilmState.promises[index];
+};
+
+const drawScrollFilmFrame = (index) => {
+  if (!canScrubScrollFilm || index === scrollFilmState.lastFrame) {
+    return;
+  }
+
+  const image = scrollFilmState.images[index];
+
+  if (!image?.complete || !image.naturalWidth) {
+    loadScrollFilmFrame(index).then((loadedImage) => {
+      if (loadedImage && index === Math.round(scrollFilmState.currentProgress * (scrollFilmState.count - 1))) {
+        drawScrollFilmFrame(index);
+      }
+    });
+    return;
+  }
+
+  scrollFilmContext.clearRect(0, 0, scrollFilmCanvas.width, scrollFilmCanvas.height);
+  scrollFilmContext.drawImage(image, 0, 0, scrollFilmCanvas.width, scrollFilmCanvas.height);
+  scrollFilmCanvas.classList.add("is-ready");
+  scrollFilmState.lastFrame = index;
+};
+
+const requestScrollFilmFrame = () => {
+  if (scrollFilmState.raf || !canScrubScrollFilm) {
+    return;
+  }
+
+  scrollFilmState.raf = requestAnimationFrame(() => {
+    scrollFilmState.raf = 0;
+    const distance = scrollFilmState.targetProgress - scrollFilmState.currentProgress;
+    scrollFilmState.currentProgress += distance * 0.16;
+
+    if (Math.abs(distance) < 0.002) {
+      scrollFilmState.currentProgress = scrollFilmState.targetProgress;
+    }
+
+    const frameIndex = clamp(Math.round(scrollFilmState.currentProgress * (scrollFilmState.count - 1)), 0, scrollFilmState.count - 1);
+    drawScrollFilmFrame(frameIndex);
+
+    loadScrollFilmFrame(frameIndex + 1);
+    loadScrollFilmFrame(frameIndex - 1);
+
+    if (Math.abs(scrollFilmState.targetProgress - scrollFilmState.currentProgress) > 0.001) {
+      requestScrollFilmFrame();
+    }
+  });
+};
+
+const updateScrollFilm = (sceneProgress) => {
+  if (!canScrubScrollFilm) {
+    return;
+  }
+
+  scrollFilmState.targetProgress = clamp((sceneProgress - 0.08) / 0.84, 0, 1);
+  scrollFilmCanvas.style.setProperty("--film-progress", scrollFilmState.targetProgress.toFixed(4));
+  requestScrollFilmFrame();
+};
+
+const preloadScrollFilmFrames = (index = 0) => {
+  if (!canScrubScrollFilm || index >= scrollFilmState.count) {
+    return;
+  }
+
+  const schedule = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 80));
+
+  schedule(() => {
+    loadScrollFilmFrame(index);
+    preloadScrollFilmFrames(index + 1);
+  });
+};
+
+if (canScrubScrollFilm) {
+  loadScrollFilmFrame(0).then(() => drawScrollFilmFrame(0));
+  preloadScrollFilmFrames(1);
+}
 
 const updateScrollEffects = () => {
   const scrollable = document.documentElement.scrollHeight - window.innerHeight;
@@ -216,6 +328,7 @@ const updateScrollEffects = () => {
 
       cinemaSteps.forEach((step, index) => step.classList.toggle("is-active", index === stepIndex));
       mapNodes.forEach((node, index) => node.classList.toggle("is-active", index === stepIndex));
+      updateScrollFilm(progress);
     }
 
     if (scene.matches(".partner")) {

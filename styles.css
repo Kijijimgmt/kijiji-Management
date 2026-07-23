@@ -585,29 +585,98 @@ section[id] {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
-    linear-gradient(145deg, rgba(255, 248, 237, 0.1), rgba(255, 248, 237, 0.025)),
-    radial-gradient(circle at 50% 50%, rgba(201, 116, 42, 0.2), transparent 18rem),
     #0b0806;
   box-shadow: var(--shadow);
   transform: translate3d(0, var(--scene-y-soft), 0);
   will-change: transform;
+  isolation: isolate;
 }
 
 .structure-map::before {
   content: "";
   position: absolute;
   inset: 13%;
+  z-index: 2;
   border: 1px solid rgba(237, 227, 208, 0.08);
   border-radius: 50%;
   background:
     linear-gradient(90deg, transparent 49%, rgba(237, 227, 208, 0.14) 50%, transparent 51%),
     linear-gradient(transparent 49%, rgba(237, 227, 208, 0.14) 50%, transparent 51%);
   opacity: 0.75;
+  pointer-events: none;
+}
+
+.structure-map::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(201, 116, 42, 0.22), transparent 18rem),
+    linear-gradient(180deg, rgba(6, 5, 4, 0.16), rgba(6, 5, 4, 0.72)),
+    linear-gradient(90deg, rgba(6, 5, 4, 0.82), rgba(6, 5, 4, 0.1), rgba(6, 5, 4, 0.82));
+  pointer-events: none;
+}
+
+.scroll-film-fallback,
+.scroll-film-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.scroll-film-fallback {
+  z-index: 0;
+  object-fit: cover;
+  opacity: 0.72;
+  filter: sepia(0.18) saturate(0.8) contrast(1.15) brightness(0.75);
+}
+
+.scroll-film-canvas {
+  z-index: 0;
+  opacity: 0;
+  filter: sepia(0.18) saturate(0.82) contrast(1.18) brightness(0.76);
+  transition: opacity 320ms ease;
+}
+
+.scroll-film-canvas.is-ready {
+  opacity: 0.82;
+}
+
+.scroll-film-label {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  z-index: 4;
+  display: grid;
+  gap: 5px;
+  max-width: 180px;
+  padding: 14px 16px;
+  border: 1px solid rgba(237, 227, 208, 0.13);
+  border-radius: 8px;
+  background: rgba(6, 5, 4, 0.58);
+  backdrop-filter: blur(14px);
+}
+
+.scroll-film-label span {
+  color: var(--orange-hot);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.scroll-film-label strong {
+  color: var(--champagne);
+  font-size: 0.88rem;
+  line-height: 1.2;
 }
 
 .map-thread {
   position: absolute;
   inset: 13%;
+  z-index: 2;
   border-radius: 50%;
   background:
     conic-gradient(from -90deg, rgba(255, 178, 94, 0.9) calc(var(--scene-progress, 0) * 360deg), transparent 0),
@@ -619,7 +688,7 @@ section[id] {
 
 .map-core {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: grid;
   place-items: center;
   width: min(52%, 290px);
@@ -652,6 +721,7 @@ section[id] {
 
 .map-ring {
   position: absolute;
+  z-index: 2;
   border: 1px solid rgba(237, 227, 208, 0.12);
   border-radius: 50%;
   transform: rotate(calc(var(--page-progress, 0) * 180deg));
@@ -672,7 +742,7 @@ section[id] {
 
 .map-node {
   position: absolute;
-  z-index: 3;
+  z-index: 4;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1619,6 +1689,10 @@ body.cursor-active .cursor-ring {
 
   .map-core {
     width: min(46%, 190px);
+  }
+
+  .scroll-film-label {
+    display: none;
   }
 
   .map-core strong {
