@@ -145,6 +145,9 @@ section[id] {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   transform: translateY(-50%);
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
   pointer-events: none;
 }
 
@@ -211,6 +214,11 @@ section[id] {
   border-color: var(--orange-hot);
   background: var(--orange-hot);
   box-shadow: 0 0 18px rgba(255, 178, 94, 0.72);
+}
+
+.story-thread.is-suppressed {
+  opacity: 0;
+  transform: translate(18px, -50%);
 }
 
 .site-header {
@@ -825,13 +833,13 @@ section[id] {
 }
 
 .map-node-two {
-  right: 8%;
+  right: 12%;
   top: 48%;
   transform: translateY(-50%);
 }
 
 .map-node-three {
-  left: 8%;
+  left: 12%;
   top: 48%;
   transform: translateY(-50%);
 }

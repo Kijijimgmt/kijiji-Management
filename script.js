@@ -3,6 +3,7 @@ const body = document.body;
 const header = document.querySelector(".site-header");
 const menuToggle = document.querySelector(".menu-toggle");
 const primaryNav = document.querySelector(".primary-nav");
+const storyThread = document.querySelector(".story-thread");
 const cursorDot = document.querySelector(".cursor-dot");
 const cursorRing = document.querySelector(".cursor-ring");
 const finePointer = window.matchMedia("(pointer: fine)").matches;
@@ -368,6 +369,8 @@ const updateScrollEffects = () => {
     node.classList.toggle("is-active", index === activeSceneIndex);
     node.classList.toggle("is-past", index < activeSceneIndex);
   });
+
+  storyThread?.classList.toggle("is-suppressed", storyScenes[activeSceneIndex]?.matches(".cinema"));
 
   ticking = false;
 };
