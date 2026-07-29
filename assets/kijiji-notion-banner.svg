@@ -1,0 +1,26 @@
+<svg width="1500" height="600" viewBox="0 0 1500 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="600" fill="#060504"/>
+  <rect x="1" y="1" width="1498" height="598" stroke="#1B120D" stroke-width="2"/>
+  <path d="M0 78H1500" stroke="#B45A21" stroke-opacity="0.34"/>
+  <path d="M0 522H1500" stroke="#B45A21" stroke-opacity="0.22"/>
+  <circle cx="750" cy="300" r="232" stroke="#B45A21" stroke-opacity="0.16"/>
+  <circle cx="750" cy="300" r="168" stroke="#FFB25E" stroke-opacity="0.08"/>
+  <path d="M226 300H1274" stroke="#FFB25E" stroke-opacity="0.07"/>
+  <path d="M750 70V530" stroke="#FFB25E" stroke-opacity="0.06"/>
+  <g opacity="0.72" filter="url(#softGlow)">
+    <ellipse cx="750" cy="300" rx="355" ry="128" fill="#C9742A" fill-opacity="0.18"/>
+  </g>
+  <image
+    href="https://www.kijijimgmt.com/assets/kijiji-management-logo-white.png"
+    x="505"
+    y="176"
+    width="490"
+    height="327"
+    preserveAspectRatio="xMidYMid meet"
+  />
+  <defs>
+    <filter id="softGlow" x="310" y="92" width="880" height="416" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="42"/>
+    </filter>
+  </defs>
+</svg>
