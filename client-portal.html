@@ -41,138 +41,156 @@
           </div>
           <div class="topbar-actions">
             <span class="source-badge" data-source-badge data-state="loading">Syncing Notion</span>
-            <button class="button button-secondary" type="button" data-export-csv>Export CSV</button>
+            <button class="button button-secondary" type="button" data-export-csv data-requires-access>Export CSV</button>
             <button class="button button-secondary" type="button" data-logout-portal>Log Out</button>
-            <button class="button button-primary" type="button" data-open-client-form>Add Client</button>
+            <button class="button button-primary" type="button" data-open-client-form data-requires-access>Add Client</button>
           </div>
         </header>
 
-        <section class="overview-grid" id="overview" aria-label="Client portfolio overview">
-          <article class="metric-panel">
-            <span>Total Clients</span>
-            <strong data-metric-total>0</strong>
-            <em>Tracked roster</em>
-          </article>
-          <article class="metric-panel">
-            <span>Active</span>
-            <strong data-metric-active>0</strong>
-            <em>In motion</em>
-          </article>
-          <article class="metric-panel">
-            <span>Avg Progress</span>
-            <strong data-metric-progress>0%</strong>
-            <em>Across roster</em>
-          </article>
-          <article class="metric-panel">
-            <span>Next 7 Days</span>
-            <strong data-metric-due>0</strong>
-            <em>Priority actions</em>
-          </article>
-        </section>
-
-        <section class="workband" aria-label="Portfolio focus">
-          <div>
-            <p class="eyebrow">Portfolio pulse</p>
-            <h2>Visible talent, visible next moves.</h2>
-          </div>
-          <div class="pulse-strip" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-        </section>
-
-        <section class="portal-section" id="clients" aria-labelledby="clients-title">
-          <div class="section-header">
+        <section class="access-panel" data-access-panel aria-labelledby="access-title">
+          <form class="access-form" data-access-form>
             <div>
-              <p class="eyebrow">Client roster</p>
-              <h2 id="clients-title">Accounts, ownership, and progress</h2>
+              <p class="eyebrow">Secure Team Access</p>
+              <h2 id="access-title">Unlock the Kijiji dashboard</h2>
+              <p>Enter the team passcode to sync the shared Notion client roster.</p>
             </div>
-            <div class="filters" aria-label="Client filters">
-              <label>
-                <span>Search</span>
-                <input data-search-clients type="search" placeholder="Name, owner, status" />
-              </label>
-              <label>
-                <span>Status</span>
-                <select data-status-filter>
-                  <option value="all">All status</option>
-                  <option>Prospect</option>
-                  <option>Active</option>
-                  <option>Onboarding</option>
-                  <option>Paused</option>
-                  <option>Archived</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <div class="client-table-wrap">
-            <table class="client-table">
-              <thead>
-                <tr>
-                  <th>Client</th>
-                  <th>Status</th>
-                  <th>Owner</th>
-                  <th>Next Action</th>
-                  <th>Contact</th>
-                  <th>Progress</th>
-                </tr>
-              </thead>
-              <tbody data-client-rows></tbody>
-            </table>
-          </div>
+            <label>
+              <span>Team passcode</span>
+              <input data-access-code name="portalCode" type="password" autocomplete="current-password" required />
+            </label>
+            <button class="button button-primary" type="submit" data-access-submit>Unlock Dashboard</button>
+            <p class="access-message" data-access-message role="status" aria-live="polite"></p>
+          </form>
         </section>
 
-        <section class="detail-grid" aria-label="Client detail and actions">
-          <article class="detail-panel" data-client-detail>
-            <div class="empty-state">
-              <p class="eyebrow">Client detail</p>
-              <h2>Select a client</h2>
-              <p>Roster details appear here when an account is selected.</p>
-            </div>
-          </article>
+        <div class="dashboard-content" data-dashboard-content hidden>
+          <section class="overview-grid" id="overview" aria-label="Client portfolio overview">
+            <article class="metric-panel">
+              <span>Total Clients</span>
+              <strong data-metric-total>0</strong>
+              <em>Tracked roster</em>
+            </article>
+            <article class="metric-panel">
+              <span>Active</span>
+              <strong data-metric-active>0</strong>
+              <em>In motion</em>
+            </article>
+            <article class="metric-panel">
+              <span>Avg Progress</span>
+              <strong data-metric-progress>0%</strong>
+              <em>Across roster</em>
+            </article>
+            <article class="metric-panel">
+              <span>Next 7 Days</span>
+              <strong data-metric-due>0</strong>
+              <em>Priority actions</em>
+            </article>
+          </section>
 
-          <aside class="action-panel" id="actions" aria-labelledby="actions-title">
-            <div class="section-header compact">
+          <section class="workband" aria-label="Portfolio focus">
+            <div>
+              <p class="eyebrow">Portfolio pulse</p>
+              <h2>Visible talent, visible next moves.</h2>
+            </div>
+            <div class="pulse-strip" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </section>
+
+          <section class="portal-section" id="clients" aria-labelledby="clients-title">
+            <div class="section-header">
               <div>
-                <p class="eyebrow">Priority queue</p>
-                <h2 id="actions-title">Next actions</h2>
+                <p class="eyebrow">Client roster</p>
+                <h2 id="clients-title">Accounts, ownership, and progress</h2>
+              </div>
+              <div class="filters" aria-label="Client filters">
+                <label>
+                  <span>Search</span>
+                  <input data-search-clients type="search" placeholder="Name, owner, status" />
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select data-status-filter>
+                    <option value="all">All status</option>
+                    <option>Prospect</option>
+                    <option>Active</option>
+                    <option>Onboarding</option>
+                    <option>Paused</option>
+                    <option>Archived</option>
+                  </select>
+                </label>
               </div>
             </div>
-            <div class="action-list" data-action-list></div>
-          </aside>
-        </section>
 
-        <section class="portal-section" id="team" aria-labelledby="team-title">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Team ownership</p>
-              <h2 id="team-title">Workload by partner</h2>
+            <div class="client-table-wrap">
+              <table class="client-table">
+                <thead>
+                  <tr>
+                    <th>Client</th>
+                    <th>Status</th>
+                    <th>Owner</th>
+                    <th>Next Action</th>
+                    <th>Contact</th>
+                    <th>Progress</th>
+                  </tr>
+                </thead>
+                <tbody data-client-rows></tbody>
+              </table>
             </div>
-            <button class="button button-secondary" type="button" data-refresh-roster>Refresh Notion</button>
-          </div>
-          <div class="owner-grid" data-owner-grid></div>
-        </section>
+          </section>
 
-        <section class="portal-section guidance-section" id="guidance" aria-labelledby="guidance-title">
-          <div class="section-header">
-            <div>
-              <p class="eyebrow">Operating hygiene</p>
-              <h2 id="guidance-title">Keep the roster useful, not overloaded.</h2>
+          <section class="detail-grid" aria-label="Client detail and actions">
+            <article class="detail-panel" data-client-detail>
+              <div class="empty-state">
+                <p class="eyebrow">Client detail</p>
+                <h2>Select a client</h2>
+                <p>Roster details appear here when an account is selected.</p>
+              </div>
+            </article>
+
+            <aside class="action-panel" id="actions" aria-labelledby="actions-title">
+              <div class="section-header compact">
+                <div>
+                  <p class="eyebrow">Priority queue</p>
+                  <h2 id="actions-title">Next actions</h2>
+                </div>
+              </div>
+              <div class="action-list" data-action-list></div>
+            </aside>
+          </section>
+
+          <section class="portal-section" id="team" aria-labelledby="team-title">
+            <div class="section-header">
+              <div>
+                <p class="eyebrow">Team ownership</p>
+                <h2 id="team-title">Workload by partner</h2>
+              </div>
+              <button class="button button-secondary" type="button" data-refresh-roster>Refresh Notion</button>
             </div>
-          </div>
-          <div class="guidance-grid">
-            <article>
-              <h3>Track</h3>
-              <p>Client name and type, assigned owner, lifecycle stage, next move and date, key contacts, offer or scope, project progress, approvals, and high-level notes.</p>
-            </article>
-            <article>
-              <h3>Do Not Store</h3>
-              <p>Passwords, bank or payment-card data, government IDs, private health or legal information, or unnecessarily sensitive personal details.</p>
-            </article>
-          </div>
-        </section>
+            <div class="owner-grid" data-owner-grid></div>
+          </section>
+
+          <section class="portal-section guidance-section" id="guidance" aria-labelledby="guidance-title">
+            <div class="section-header">
+              <div>
+                <p class="eyebrow">Operating hygiene</p>
+                <h2 id="guidance-title">Keep the roster useful, not overloaded.</h2>
+              </div>
+            </div>
+            <div class="guidance-grid">
+              <article>
+                <h3>Track</h3>
+                <p>Client name and type, assigned owner, lifecycle stage, next move and date, key contacts, offer or scope, project progress, approvals, and high-level notes.</p>
+              </article>
+              <article>
+                <h3>Do Not Store</h3>
+                <p>Passwords, bank or payment-card data, government IDs, private health or legal information, or unnecessarily sensitive personal details.</p>
+              </article>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
 

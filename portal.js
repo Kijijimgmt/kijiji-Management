@@ -22,13 +22,19 @@ const progressMetric = document.querySelector("[data-metric-progress]");
 const dueMetric = document.querySelector("[data-metric-due]");
 const sourceBadge = document.querySelector("[data-source-badge]");
 const logoutButton = document.querySelector("[data-logout-portal]");
+const accessPanel = document.querySelector("[data-access-panel]");
+const accessForm = document.querySelector("[data-access-form]");
+const accessInput = document.querySelector("[data-access-code]");
+const accessSubmit = document.querySelector("[data-access-submit]");
+const accessMessage = document.querySelector("[data-access-message]");
+const dashboardContent = document.querySelector("[data-dashboard-content]");
+const accessRequiredControls = document.querySelectorAll("[data-requires-access]");
 
 let clients = [];
 let selectedClientId = "";
 let isLoading = true;
 let portalError = "";
 let portalAccessCode = sessionStorage.getItem(accessStorageKey) || "";
-let isSignedOut = false;
 
 const escapeHtml = (value) =>
   String(value || "")
@@ -116,40 +122,44 @@ const setSourceBadge = (state, text) => {
   sourceBadge.textContent = text;
 };
 
-const setSignedOutState = () => {
-  setSourceBadge("signed-out", "Signed out");
-  totalMetric.textContent = "0";
-  activeMetric.textContent = "0";
-  progressMetric.textContent = "0%";
-  dueMetric.textContent = "0";
-  rowsTarget.innerHTML = `
-    <tr>
-      <td colspan="6">
-        <div class="empty-state">
-          <p class="eyebrow">Signed out</p>
-          <h2>Your portal session has ended</h2>
-          <p>Sync Notion again to enter the team access code and reload the shared roster.</p>
-        </div>
-      </td>
-    </tr>
-  `;
-  detailTarget.innerHTML = `
-    <div class="empty-state">
-      <p class="eyebrow">Access cleared</p>
-      <h2>No client selected</h2>
-      <p>The saved access code was removed from this browser session.</p>
-    </div>
-  `;
-  actionListTarget.innerHTML = `
-    <article class="action-item">
-      <header>
-        <strong>Ready to return?</strong>
-        <span class="date-chip">Secure</span>
-      </header>
-      <p>Use Refresh Notion to start a fresh access-code check.</p>
-    </article>
-  `;
-  ownerGridTarget.innerHTML = "";
+const setAccessMessage = (message = "", state = "") => {
+  if (!accessMessage) {
+    return;
+  }
+
+  accessMessage.textContent = message;
+  accessMessage.dataset.state = state;
+};
+
+const setAccessBusy = (isBusy) => {
+  if (accessSubmit) {
+    accessSubmit.disabled = isBusy;
+    accessSubmit.textContent = isBusy ? "Unlocking..." : "Unlock Dashboard";
+  }
+
+  if (accessInput) {
+    accessInput.disabled = isBusy;
+  }
+};
+
+const setProtectedAccess = (isAvailable) => {
+  accessRequiredControls.forEach((control) => {
+    control.disabled = !isAvailable;
+  });
+};
+
+const showAccessPanel = (message = "", state = "") => {
+  accessPanel.hidden = false;
+  dashboardContent.hidden = true;
+  setProtectedAccess(false);
+  setAccessBusy(false);
+  setAccessMessage(message, state);
+};
+
+const showDashboard = () => {
+  accessPanel.hidden = true;
+  dashboardContent.hidden = false;
+  setProtectedAccess(true);
 };
 
 const setLoadingState = () => {
@@ -182,18 +192,6 @@ const getRequestHeaders = () => ({
   "Content-Type": "application/json",
   "X-Portal-Access-Code": portalAccessCode,
 });
-
-const requestPortalAccessCode = () => {
-  const accessCode = window.prompt("Enter the Kijiji team portal access code:");
-
-  if (!accessCode) {
-    return false;
-  }
-
-  portalAccessCode = accessCode.trim();
-  sessionStorage.setItem(accessStorageKey, portalAccessCode);
-  return true;
-};
 
 const setErrorState = () => {
   setSourceBadge("error", "Notion setup needed");
@@ -229,6 +227,26 @@ const setErrorState = () => {
     </article>
   `;
   ownerGridTarget.innerHTML = "";
+};
+
+const getPortalErrorMessage = (response, data) => {
+  if (response.status === 401) {
+    return "That passcode did not unlock the dashboard. Check it and try again.";
+  }
+
+  if (data?.error === "notion_not_configured") {
+    return "The passcode worked, but Notion is not configured in Vercel yet.";
+  }
+
+  if (data?.error === "portal_access_not_configured") {
+    return "The portal passcode is not configured in Vercel yet.";
+  }
+
+  if (response.status >= 500) {
+    return "The passcode was accepted, but the shared roster could not load. Check the Notion token and database sharing.";
+  }
+
+  return data?.message || "The dashboard could not load. Try again or check the portal configuration.";
 };
 
 const renderMetrics = () => {
@@ -427,11 +445,6 @@ const renderPortal = () => {
     return;
   }
 
-  if (isSignedOut) {
-    setSignedOutState();
-    return;
-  }
-
   if (portalError) {
     setErrorState();
     return;
@@ -444,38 +457,86 @@ const renderPortal = () => {
   renderOwners();
 };
 
-const loadClients = async () => {
+const loadClients = async ({ code = portalAccessCode, fromUnlock = false } = {}) => {
+  const candidateCode = String(code || "").trim();
+  let shouldShowAccessAfterFailure = false;
+
+  if (!candidateCode) {
+    portalAccessCode = "";
+    sessionStorage.removeItem(accessStorageKey);
+    setSourceBadge("locked", "Locked");
+    showAccessPanel("Enter the team passcode to unlock the dashboard.", "info");
+    return false;
+  }
+
   isLoading = true;
   portalError = "";
-  isSignedOut = false;
-  setSourceBadge("loading", "Syncing Notion");
-  renderPortal();
+  setSourceBadge("loading", fromUnlock ? "Unlocking" : "Syncing Notion");
+
+  if (fromUnlock) {
+    showAccessPanel("Checking passcode and syncing Notion...", "info");
+    setAccessBusy(true);
+  } else {
+    showDashboard();
+    renderPortal();
+  }
 
   try {
     const response = await fetch(apiEndpoint, {
-      headers: getRequestHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Portal-Access-Code": candidateCode,
+      },
     });
     const data = await response.json();
 
-    if (response.status === 401 && requestPortalAccessCode()) {
-      await loadClients();
-      return;
-    }
-
     if (!response.ok) {
-      throw new Error(data.message || "Unable to load the shared Notion roster.");
+      const error = new Error(getPortalErrorMessage(response, data));
+      error.statusCode = response.status;
+      error.apiError = data?.error;
+      throw error;
     }
 
+    portalAccessCode = candidateCode;
+    sessionStorage.setItem(accessStorageKey, portalAccessCode);
     clients = Array.isArray(data.clients) ? data.clients : [];
     selectedClientId = selectedClientId || clients[0]?.id || "";
     setSourceBadge("ready", "Synced with Notion");
+    setAccessMessage("");
+    showDashboard();
+    isLoading = false;
+    renderPortal();
+    return true;
   } catch (error) {
     clients = [];
     selectedClientId = "";
-    portalError = error.message;
+    portalAccessCode = error.statusCode === 401 ? "" : candidateCode;
+    portalError = fromUnlock ? "" : error.message;
+
+    if (error.statusCode === 401) {
+      sessionStorage.removeItem(accessStorageKey);
+    } else if (candidateCode) {
+      sessionStorage.setItem(accessStorageKey, candidateCode);
+    }
+
+    if (fromUnlock) {
+      setSourceBadge("error", "Access failed");
+      showAccessPanel(error.message, "error");
+    } else if (error.statusCode === 401) {
+      portalError = "";
+      shouldShowAccessAfterFailure = true;
+      setSourceBadge("locked", "Locked");
+      showAccessPanel("Your saved passcode no longer works. Enter it again to unlock the dashboard.", "error");
+    }
+
+    return false;
   } finally {
     isLoading = false;
-    renderPortal();
+    setAccessBusy(false);
+
+    if (!fromUnlock && !shouldShowAccessAfterFailure) {
+      renderPortal();
+    }
   }
 };
 
@@ -519,8 +580,9 @@ const logoutPortal = () => {
   selectedClientId = "";
   portalError = "";
   isLoading = false;
-  isSignedOut = true;
-  renderPortal();
+  setSourceBadge("signed-out", "Signed out");
+  showAccessPanel("You have been signed out. Enter the team passcode to unlock the dashboard again.", "info");
+  accessInput?.focus();
 };
 
 const saveClient = async (payload) => {
@@ -531,8 +593,9 @@ const saveClient = async (payload) => {
   });
   const data = await response.json();
 
-  if (response.status === 401 && requestPortalAccessCode()) {
-    return saveClient(payload);
+  if (response.status === 401) {
+    logoutPortal();
+    throw new Error("Your portal session expired or the passcode no longer works. Unlock the dashboard again.");
   }
 
   if (!response.ok) {
@@ -576,6 +639,25 @@ const handleFormSubmit = async (event) => {
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "Save Client";
+  }
+};
+
+const handleAccessSubmit = async (event) => {
+  event.preventDefault();
+
+  const code = accessInput.value.trim();
+
+  if (!code) {
+    setAccessMessage("Enter the team passcode to unlock the dashboard.", "error");
+    accessInput.focus();
+    return;
+  }
+
+  const didUnlock = await loadClients({ code, fromUnlock: true });
+
+  if (!didUnlock) {
+    accessInput.focus();
+    accessInput.select();
   }
 };
 
@@ -672,8 +754,15 @@ document.querySelectorAll("[data-close-client-form]").forEach((button) => {
 document.querySelector("[data-export-csv]").addEventListener("click", exportCsv);
 document.querySelector("[data-refresh-roster]").addEventListener("click", loadClients);
 logoutButton?.addEventListener("click", logoutPortal);
+accessForm.addEventListener("submit", handleAccessSubmit);
 clientForm.addEventListener("submit", handleFormSubmit);
 searchInput.addEventListener("input", renderRows);
 statusFilter.addEventListener("change", renderRows);
 
-loadClients();
+if (portalAccessCode) {
+  loadClients();
+} else {
+  isLoading = false;
+  setSourceBadge("locked", "Locked");
+  showAccessPanel("Enter the team passcode to unlock the dashboard.", "info");
+}
