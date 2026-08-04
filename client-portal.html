@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#060504" />
+    <title>Kijiji Team Portal | Client Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="assets/kijiji-logo.png" />
+    <link rel="stylesheet" href="portal.css" />
+  </head>
+  <body>
+    <div class="portal-shell">
+      <aside class="portal-sidebar" aria-label="Team portal navigation">
+        <a class="portal-brand" href="client-portal.html" aria-label="Kijiji team portal home">
+          <img src="assets/kijiji-logo.png" alt="Kijiji Management" />
+        </a>
+        <nav class="portal-nav">
+          <a class="is-active" href="#overview">Overview</a>
+          <a href="#clients">Clients</a>
+          <a href="#actions">Actions</a>
+          <a href="#team">Team</a>
+        </nav>
+        <div class="sidebar-note">
+          <span>Operating OS</span>
+          <strong>Client management</strong>
+        </div>
+      </aside>
+
+      <main class="portal-main">
+        <header class="portal-topbar">
+          <div>
+            <p class="eyebrow">Kijiji Team Portal</p>
+            <h1>Client command board</h1>
+          </div>
+          <div class="topbar-actions">
+            <span class="source-badge" data-source-badge data-state="loading">Syncing Notion</span>
+            <button class="button button-secondary" type="button" data-export-csv>Export CSV</button>
+            <button class="button button-primary" type="button" data-open-client-form>Add Client</button>
+          </div>
+        </header>
+
+        <section class="overview-grid" id="overview" aria-label="Client portfolio overview">
+          <article class="metric-panel">
+            <span>Total Clients</span>
+            <strong data-metric-total>0</strong>
+            <em>Tracked roster</em>
+          </article>
+          <article class="metric-panel">
+            <span>Active</span>
+            <strong data-metric-active>0</strong>
+            <em>In motion</em>
+          </article>
+          <article class="metric-panel">
+            <span>Avg Progress</span>
+            <strong data-metric-progress>0%</strong>
+            <em>Across roster</em>
+          </article>
+          <article class="metric-panel">
+            <span>Next 7 Days</span>
+            <strong data-metric-due>0</strong>
+            <em>Priority actions</em>
+          </article>
+        </section>
+
+        <section class="workband" aria-label="Portfolio focus">
+          <div>
+            <p class="eyebrow">Portfolio pulse</p>
+            <h2>Visible talent, visible next moves.</h2>
+          </div>
+          <div class="pulse-strip" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </section>
+
+        <section class="portal-section" id="clients" aria-labelledby="clients-title">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Client roster</p>
+              <h2 id="clients-title">Accounts, ownership, and progress</h2>
+            </div>
+            <div class="filters" aria-label="Client filters">
+              <label>
+                <span>Search</span>
+                <input data-search-clients type="search" placeholder="Name, owner, status" />
+              </label>
+              <label>
+                <span>Status</span>
+                <select data-status-filter>
+                  <option value="all">All status</option>
+                  <option>Prospect</option>
+                  <option>Active</option>
+                  <option>Onboarding</option>
+                  <option>Paused</option>
+                  <option>Archived</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="client-table-wrap">
+            <table class="client-table">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Status</th>
+                  <th>Owner</th>
+                  <th>Next Action</th>
+                  <th>Contact</th>
+                  <th>Progress</th>
+                </tr>
+              </thead>
+              <tbody data-client-rows></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="detail-grid" aria-label="Client detail and actions">
+          <article class="detail-panel" data-client-detail>
+            <div class="empty-state">
+              <p class="eyebrow">Client detail</p>
+              <h2>Select a client</h2>
+              <p>Roster details appear here when an account is selected.</p>
+            </div>
+          </article>
+
+          <aside class="action-panel" id="actions" aria-labelledby="actions-title">
+            <div class="section-header compact">
+              <div>
+                <p class="eyebrow">Priority queue</p>
+                <h2 id="actions-title">Next actions</h2>
+              </div>
+            </div>
+            <div class="action-list" data-action-list></div>
+          </aside>
+        </section>
+
+        <section class="portal-section" id="team" aria-labelledby="team-title">
+          <div class="section-header">
+            <div>
+              <p class="eyebrow">Team ownership</p>
+              <h2 id="team-title">Workload by partner</h2>
+            </div>
+            <button class="button button-secondary" type="button" data-refresh-roster>Refresh Notion</button>
+          </div>
+          <div class="owner-grid" data-owner-grid></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="client-dialog" data-client-dialog>
+      <form method="dialog" class="client-form" data-client-form>
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">Roster record</p>
+            <h2 data-form-title>Add client</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-client-form aria-label="Close form">x</button>
+        </div>
+
+        <input type="hidden" name="id" />
+
+        <div class="form-grid">
+          <label>
+            <span>Client name</span>
+            <input name="name" required />
+          </label>
+          <label>
+            <span>Category</span>
+            <input name="category" placeholder="Artist, founder, designer" required />
+          </label>
+          <label>
+            <span>Status</span>
+            <select name="status" required>
+              <option>Prospect</option>
+              <option>Active</option>
+              <option>Onboarding</option>
+              <option>Paused</option>
+              <option>Archived</option>
+            </select>
+          </label>
+          <label>
+            <span>Assigned owner</span>
+            <input name="owner" placeholder="Max, Joe, Erik" />
+          </label>
+          <label>
+            <span>Current offer</span>
+            <input name="stage" required />
+          </label>
+          <label>
+            <span>Last touch</span>
+            <input name="lastTouch" type="date" />
+          </label>
+          <label class="wide">
+            <span>Next move</span>
+            <input name="nextAction" required />
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" />
+          </label>
+          <label>
+            <span>Phone</span>
+            <input name="phone" type="tel" />
+          </label>
+          <label>
+            <span>Lead source</span>
+            <select name="leadSource">
+              <option value="">Select one</option>
+              <option>Website</option>
+              <option>Referral</option>
+              <option>Relationship</option>
+              <option>Event</option>
+              <option>Outbound</option>
+            </select>
+          </label>
+          <label class="wide">
+            <span>Progress</span>
+            <input name="progress" type="range" min="0" max="100" step="5" />
+          </label>
+          <label class="wide">
+            <span>Notes</span>
+            <textarea name="notes" rows="4"></textarea>
+          </label>
+        </div>
+
+        <div class="dialog-actions">
+          <button class="button button-secondary" type="button" data-close-client-form>Cancel</button>
+          <button class="button button-primary" type="submit">Save Client</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="portal.js"></script>
+  </body>
+</html>
