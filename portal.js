@@ -21,12 +21,14 @@ const activeMetric = document.querySelector("[data-metric-active]");
 const progressMetric = document.querySelector("[data-metric-progress]");
 const dueMetric = document.querySelector("[data-metric-due]");
 const sourceBadge = document.querySelector("[data-source-badge]");
+const logoutButton = document.querySelector("[data-logout-portal]");
 
 let clients = [];
 let selectedClientId = "";
 let isLoading = true;
 let portalError = "";
 let portalAccessCode = sessionStorage.getItem(accessStorageKey) || "";
+let isSignedOut = false;
 
 const escapeHtml = (value) =>
   String(value || "")
@@ -112,6 +114,42 @@ const setSourceBadge = (state, text) => {
 
   sourceBadge.dataset.state = state;
   sourceBadge.textContent = text;
+};
+
+const setSignedOutState = () => {
+  setSourceBadge("signed-out", "Signed out");
+  totalMetric.textContent = "0";
+  activeMetric.textContent = "0";
+  progressMetric.textContent = "0%";
+  dueMetric.textContent = "0";
+  rowsTarget.innerHTML = `
+    <tr>
+      <td colspan="6">
+        <div class="empty-state">
+          <p class="eyebrow">Signed out</p>
+          <h2>Your portal session has ended</h2>
+          <p>Sync Notion again to enter the team access code and reload the shared roster.</p>
+        </div>
+      </td>
+    </tr>
+  `;
+  detailTarget.innerHTML = `
+    <div class="empty-state">
+      <p class="eyebrow">Access cleared</p>
+      <h2>No client selected</h2>
+      <p>The saved access code was removed from this browser session.</p>
+    </div>
+  `;
+  actionListTarget.innerHTML = `
+    <article class="action-item">
+      <header>
+        <strong>Ready to return?</strong>
+        <span class="date-chip">Secure</span>
+      </header>
+      <p>Use Refresh Notion to start a fresh access-code check.</p>
+    </article>
+  `;
+  ownerGridTarget.innerHTML = "";
 };
 
 const setLoadingState = () => {
@@ -389,6 +427,11 @@ const renderPortal = () => {
     return;
   }
 
+  if (isSignedOut) {
+    setSignedOutState();
+    return;
+  }
+
   if (portalError) {
     setErrorState();
     return;
@@ -404,6 +447,7 @@ const renderPortal = () => {
 const loadClients = async () => {
   isLoading = true;
   portalError = "";
+  isSignedOut = false;
   setSourceBadge("loading", "Syncing Notion");
   renderPortal();
 
@@ -466,6 +510,17 @@ const openClientForm = (client = null) => {
 
 const closeClientForm = () => {
   clientDialog.close();
+};
+
+const logoutPortal = () => {
+  sessionStorage.removeItem(accessStorageKey);
+  portalAccessCode = "";
+  clients = [];
+  selectedClientId = "";
+  portalError = "";
+  isLoading = false;
+  isSignedOut = true;
+  renderPortal();
 };
 
 const saveClient = async (payload) => {
@@ -616,6 +671,7 @@ document.querySelectorAll("[data-close-client-form]").forEach((button) => {
 });
 document.querySelector("[data-export-csv]").addEventListener("click", exportCsv);
 document.querySelector("[data-refresh-roster]").addEventListener("click", loadClients);
+logoutButton?.addEventListener("click", logoutPortal);
 clientForm.addEventListener("submit", handleFormSubmit);
 searchInput.addEventListener("input", renderRows);
 statusFilter.addEventListener("change", renderRows);

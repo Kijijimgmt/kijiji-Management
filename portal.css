@@ -236,6 +236,11 @@ h2 {
   color: #ffb4a8;
 }
 
+.source-badge[data-state="signed-out"] {
+  border-color: rgba(237, 227, 208, 0.32);
+  color: rgba(237, 227, 208, 0.78);
+}
+
 .button {
   display: inline-flex;
   min-height: 44px;
@@ -691,6 +696,38 @@ textarea {
   color: var(--muted);
 }
 
+.guidance-section {
+  margin-top: 24px;
+}
+
+.guidance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.guidance-grid article {
+  min-height: 180px;
+  padding: 24px;
+  border-right: 1px solid var(--line);
+}
+
+.guidance-grid article:last-child {
+  border-right: 0;
+}
+
+.guidance-grid h3 {
+  margin: 0 0 14px;
+  color: var(--white);
+  font-size: 1.15rem;
+}
+
+.guidance-grid p {
+  max-width: 56ch;
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
 .client-dialog {
   width: min(760px, calc(100% - 28px));
   border: 1px solid var(--line-strong);
@@ -818,8 +855,18 @@ textarea {
   .detail-meta,
   .contact-grid,
   .owner-grid,
+  .guidance-grid,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .guidance-grid article {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .guidance-grid article:last-child {
+    border-bottom: 0;
   }
 
   .metric-panel,
