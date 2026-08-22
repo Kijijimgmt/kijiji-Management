@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#060504" />
-    <title>Kijiji Team Portal | Client Management</title>
+    <title>Kijiji Team Portal | Operating Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,11 +25,13 @@
           <a class="is-active" href="#overview">Overview</a>
           <a href="#clients">Clients</a>
           <a href="#actions">Actions</a>
-          <a href="#team">Team</a>
+          <a href="#opportunities">Opportunities</a>
+          <a href="#calendar">Calendar</a>
+          <a href="#guidance">Guidance</a>
         </nav>
         <div class="sidebar-note">
           <span>Operating OS</span>
-          <strong>Client management</strong>
+          <strong>Shared Notion command center</strong>
         </div>
       </aside>
 
@@ -37,13 +39,14 @@
         <header class="portal-topbar">
           <div>
             <p class="eyebrow">Kijiji Team Portal</p>
-            <h1>Client command board</h1>
+            <h1>Operating command center</h1>
           </div>
           <div class="topbar-actions">
             <span class="source-badge" data-source-badge data-state="loading">Syncing Notion</span>
-            <button class="button button-secondary" type="button" data-export-csv data-requires-access>Export CSV</button>
+            <button class="button button-secondary" type="button" data-refresh-dashboard data-requires-access>Refresh</button>
             <button class="button button-secondary" type="button" data-logout-portal>Log Out</button>
-            <button class="button button-primary" type="button" data-open-client-form data-requires-access>Add Client</button>
+            <button class="button button-secondary" type="button" data-open-client-form data-requires-access>Add Client</button>
+            <button class="button button-primary" type="button" data-open-action-form data-requires-access>Add Action</button>
           </div>
         </header>
 
@@ -52,7 +55,7 @@
             <div>
               <p class="eyebrow">Secure Team Access</p>
               <h2 id="access-title">Unlock the Kijiji dashboard</h2>
-              <p>Enter the team passcode to sync the shared Notion client roster.</p>
+              <p>Enter the team passcode to sync the shared Notion operating system.</p>
             </div>
             <label>
               <span>Team passcode</span>
@@ -64,51 +67,71 @@
         </section>
 
         <div class="dashboard-content" data-dashboard-content hidden>
-          <section class="overview-grid" id="overview" aria-label="Client portfolio overview">
+          <section class="overview-grid" id="overview" aria-label="Operating overview">
             <article class="metric-panel">
-              <span>Total Clients</span>
-              <strong data-metric-total>0</strong>
+              <span>Clients</span>
+              <strong data-metric-clients>0</strong>
               <em>Tracked roster</em>
             </article>
             <article class="metric-panel">
-              <span>Active</span>
-              <strong data-metric-active>0</strong>
-              <em>In motion</em>
+              <span>Due Today</span>
+              <strong data-metric-today>0</strong>
+              <em>Actions</em>
             </article>
             <article class="metric-panel">
-              <span>Avg Progress</span>
-              <strong data-metric-progress>0%</strong>
-              <em>Across roster</em>
+              <span>Overdue</span>
+              <strong data-metric-overdue>0</strong>
+              <em>Needs attention</em>
             </article>
             <article class="metric-panel">
-              <span>Next 7 Days</span>
-              <strong data-metric-due>0</strong>
-              <em>Priority actions</em>
+              <span>Blockers</span>
+              <strong data-metric-blockers>0</strong>
+              <em>Visible friction</em>
             </article>
           </section>
 
-          <section class="workband" aria-label="Portfolio focus">
-            <div>
-              <p class="eyebrow">Portfolio pulse</p>
-              <h2>Visible talent, visible next moves.</h2>
-            </div>
-            <div class="pulse-strip" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
+          <section class="command-grid" aria-label="Today and priorities">
+            <article class="command-panel">
+              <div class="section-header compact">
+                <div>
+                  <p class="eyebrow">Today / Overdue</p>
+                  <h2>Move these first</h2>
+                </div>
+              </div>
+              <div class="stack-list" data-today-list></div>
+            </article>
+
+            <article class="command-panel">
+              <div class="section-header compact">
+                <div>
+                  <p class="eyebrow">Urgent / High</p>
+                  <h2>Priority radar</h2>
+                </div>
+              </div>
+              <div class="stack-list" data-priority-list></div>
+            </article>
+
+            <article class="command-panel">
+              <div class="section-header compact">
+                <div>
+                  <p class="eyebrow">Blockers</p>
+                  <h2>Unblock the work</h2>
+                </div>
+              </div>
+              <div class="stack-list" data-blocker-list></div>
+            </article>
           </section>
 
           <section class="portal-section" id="clients" aria-labelledby="clients-title">
             <div class="section-header">
               <div>
-                <p class="eyebrow">Client roster</p>
-                <h2 id="clients-title">Accounts, ownership, and progress</h2>
+                <p class="eyebrow">Clients</p>
+                <h2 id="clients-title">Roster, next moves, and focus</h2>
               </div>
               <div class="filters" aria-label="Client filters">
                 <label>
                   <span>Search</span>
-                  <input data-search-clients type="search" placeholder="Name, owner, status" />
+                  <input data-search-clients type="search" placeholder="Name, owner, focus" />
                 </label>
                 <label>
                   <span>Status</span>
@@ -131,8 +154,8 @@
                     <th>Client</th>
                     <th>Status</th>
                     <th>Owner</th>
-                    <th>Next Action</th>
-                    <th>Contact</th>
+                    <th>Focus</th>
+                    <th>Next Move</th>
                     <th>Progress</th>
                   </tr>
                 </thead>
@@ -141,33 +164,53 @@
             </div>
           </section>
 
-          <section class="detail-grid" aria-label="Client detail and actions">
+          <section class="detail-grid" aria-label="Client detail and operating context">
             <article class="detail-panel" data-client-detail>
               <div class="empty-state">
                 <p class="eyebrow">Client detail</p>
                 <h2>Select a client</h2>
-                <p>Roster details appear here when an account is selected.</p>
+                <p>Related actions, opportunities, events, next move, and focus level appear here.</p>
               </div>
             </article>
 
             <aside class="action-panel" id="actions" aria-labelledby="actions-title">
               <div class="section-header compact">
                 <div>
-                  <p class="eyebrow">Priority queue</p>
-                  <h2 id="actions-title">Next actions</h2>
+                  <p class="eyebrow">Actions</p>
+                  <h2 id="actions-title">Team action queue</h2>
                 </div>
+                <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add</button>
               </div>
               <div class="action-list" data-action-list></div>
             </aside>
           </section>
 
+          <section class="portal-section" id="opportunities" aria-labelledby="opportunities-title">
+            <div class="section-header">
+              <div>
+                <p class="eyebrow">Opportunities</p>
+                <h2 id="opportunities-title">Pipeline by stage</h2>
+              </div>
+            </div>
+            <div class="pipeline-grid" data-pipeline-grid></div>
+          </section>
+
+          <section class="portal-section" id="calendar" aria-labelledby="calendar-title">
+            <div class="section-header">
+              <div>
+                <p class="eyebrow">Calendar</p>
+                <h2 id="calendar-title">Upcoming events and releases</h2>
+              </div>
+            </div>
+            <div class="calendar-list" data-calendar-list></div>
+          </section>
+
           <section class="portal-section" id="team" aria-labelledby="team-title">
             <div class="section-header">
               <div>
-                <p class="eyebrow">Team ownership</p>
-                <h2 id="team-title">Workload by partner</h2>
+                <p class="eyebrow">Team Load</p>
+                <h2 id="team-title">Ownership by partner</h2>
               </div>
-              <button class="button button-secondary" type="button" data-refresh-roster>Refresh Notion</button>
             </div>
             <div class="owner-grid" data-owner-grid></div>
           </section>
@@ -175,18 +218,22 @@
           <section class="portal-section guidance-section" id="guidance" aria-labelledby="guidance-title">
             <div class="section-header">
               <div>
-                <p class="eyebrow">Operating hygiene</p>
-                <h2 id="guidance-title">Keep the roster useful, not overloaded.</h2>
+                <p class="eyebrow">Team / Operating Guidance</p>
+                <h2 id="guidance-title">Keep the system clean and useful.</h2>
               </div>
             </div>
             <div class="guidance-grid">
               <article>
                 <h3>Track</h3>
-                <p>Client name and type, assigned owner, lifecycle stage, next move and date, key contacts, offer or scope, project progress, approvals, and high-level notes.</p>
+                <p>Client name/type, owner, lifecycle stage, next move/date, key contacts, offer or scope, project progress, approvals, blockers, and high-level notes.</p>
               </article>
               <article>
                 <h3>Do Not Store</h3>
-                <p>Passwords, bank or payment-card data, government IDs, private health or legal information, or unnecessarily sensitive personal details.</p>
+                <p>Passwords, bank or payment-card data, government IDs, private health/legal information, or unnecessarily sensitive personal details.</p>
+              </article>
+              <article>
+                <h3>Decision Rhythm</h3>
+                <p>Use actions for accountable movement, opportunities for pipeline, events for launches, and the client roster for the current operating truth.</p>
               </article>
             </div>
           </section>
@@ -198,7 +245,7 @@
       <form method="dialog" class="client-form" data-client-form>
         <div class="dialog-head">
           <div>
-            <p class="eyebrow">Roster record</p>
+            <p class="eyebrow">Client record</p>
             <h2 data-form-title>Add client</h2>
           </div>
           <button class="icon-button" type="button" data-close-client-form aria-label="Close form">x</button>
@@ -227,15 +274,24 @@
           </label>
           <label>
             <span>Assigned owner</span>
-            <input name="owner" placeholder="Max, Joe, Erik" />
+            <input name="owner" placeholder="Maxwell, Joe, Erik" />
           </label>
           <label>
-            <span>Current offer</span>
-            <input name="stage" required />
+            <span>Focus level</span>
+            <select name="focusLevel">
+              <option>Normal</option>
+              <option>High</option>
+              <option>Urgent</option>
+              <option>Watch</option>
+            </select>
           </label>
           <label>
             <span>Last touch</span>
             <input name="lastTouch" type="date" />
+          </label>
+          <label class="wide">
+            <span>Current offer / scope</span>
+            <input name="stage" required />
           </label>
           <label class="wide">
             <span>Next move</span>
@@ -273,6 +329,77 @@
         <div class="dialog-actions">
           <button class="button button-secondary" type="button" data-close-client-form>Cancel</button>
           <button class="button button-primary" type="submit">Save Client</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="client-dialog" data-action-dialog>
+      <form method="dialog" class="client-form" data-action-form>
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">Team action</p>
+            <h2 data-action-form-title>Add action</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-action-form aria-label="Close form">x</button>
+        </div>
+
+        <input type="hidden" name="id" />
+
+        <div class="form-grid">
+          <label class="wide">
+            <span>Action</span>
+            <input name="title" required />
+          </label>
+          <label>
+            <span>Status</span>
+            <select name="status">
+              <option>Open</option>
+              <option>In Progress</option>
+              <option>Waiting</option>
+              <option>Complete</option>
+            </select>
+          </label>
+          <label>
+            <span>Owner</span>
+            <select name="owner">
+              <option>Unassigned</option>
+              <option>Maxwell</option>
+              <option>Joe</option>
+              <option>Erik</option>
+            </select>
+          </label>
+          <label>
+            <span>Priority</span>
+            <select name="priority">
+              <option>Normal</option>
+              <option>High</option>
+              <option>Urgent</option>
+              <option>Low</option>
+            </select>
+          </label>
+          <label>
+            <span>Due date</span>
+            <input name="dueDate" type="date" />
+          </label>
+          <label>
+            <span>Client</span>
+            <select name="clientId" data-action-client-select>
+              <option value="">No client relation</option>
+            </select>
+          </label>
+          <label class="toggle-label">
+            <input name="blocker" type="checkbox" />
+            <span>Visible blocker</span>
+          </label>
+          <label class="wide">
+            <span>Notes</span>
+            <textarea name="notes" rows="4"></textarea>
+          </label>
+        </div>
+
+        <div class="dialog-actions">
+          <button class="button button-secondary" type="button" data-close-action-form>Cancel</button>
+          <button class="button button-primary" type="submit">Save Action</button>
         </div>
       </form>
     </dialog>

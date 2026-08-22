@@ -341,6 +341,23 @@ h2 {
   background: rgba(255, 248, 237, 0.035);
 }
 
+.command-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 24px 0;
+}
+
+.command-panel {
+  min-height: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 90% 10%, rgba(201, 116, 42, 0.12), transparent 16rem),
+    rgba(255, 248, 237, 0.045);
+  overflow: hidden;
+}
+
 .metric-panel {
   min-height: 150px;
   padding: 22px;
@@ -575,6 +592,37 @@ textarea {
   color: #ffb4a8;
 }
 
+.focus-pill {
+  display: inline-flex;
+  min-width: 74px;
+  justify-content: center;
+  border: 1px solid rgba(237, 227, 208, 0.16);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: rgba(237, 227, 208, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.focus-pill[data-focus="High"],
+.focus-pill[data-focus="Urgent"] {
+  border-color: rgba(255, 178, 94, 0.52);
+  color: var(--orange-hot);
+}
+
+.focus-pill[data-focus="Watch"] {
+  border-color: rgba(230, 92, 69, 0.52);
+  color: #ffb4a8;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .progress-track {
   position: relative;
   width: 130px;
@@ -684,10 +732,17 @@ textarea {
   gap: 12px;
 }
 
+.stack-list {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
 .action-item {
   display: grid;
   gap: 10px;
   padding: 16px;
+  cursor: pointer;
 }
 
 .action-item header {
@@ -707,6 +762,23 @@ textarea {
   line-height: 1.45;
 }
 
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.item-meta span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: rgba(237, 227, 208, 0.72);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .date-chip {
   white-space: nowrap;
   border-radius: 999px;
@@ -717,6 +789,163 @@ textarea {
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.date-chip[data-tone="danger"] {
+  background: rgba(230, 92, 69, 0.14);
+  color: #ffb4a8;
+}
+
+.mini-empty {
+  display: grid;
+  min-height: 170px;
+  align-content: center;
+  padding: 18px;
+  text-align: center;
+}
+
+.mini-empty strong {
+  color: var(--white);
+  font-size: 1.05rem;
+}
+
+.mini-empty p {
+  max-width: 36ch;
+  margin: 8px auto 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.relation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.relation-grid article {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: rgba(6, 5, 4, 0.34);
+}
+
+.relation-grid h3 {
+  margin: 0 0 12px;
+  color: var(--white);
+  font-size: 1rem;
+}
+
+.related-list {
+  display: grid;
+  gap: 8px;
+}
+
+.related-list a,
+.related-list button,
+.compact-card,
+.calendar-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  background: rgba(255, 248, 237, 0.04);
+  color: inherit;
+  text-align: left;
+}
+
+.related-list a:hover,
+.related-list button:hover,
+.compact-card:hover,
+.calendar-item:hover {
+  border-color: rgba(255, 178, 94, 0.42);
+}
+
+.related-list strong,
+.compact-card span,
+.calendar-item strong {
+  color: var(--white);
+  font-size: 0.92rem;
+}
+
+.related-list span,
+.compact-card em,
+.calendar-item em {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
+.pipeline-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 0;
+  overflow-x: auto;
+}
+
+.pipeline-column {
+  min-height: 250px;
+  border-right: 1px solid var(--line);
+  padding: 20px;
+}
+
+.pipeline-column:last-child {
+  border-right: 0;
+}
+
+.pipeline-column h3 {
+  margin: 0 0 10px;
+  color: var(--white);
+}
+
+.pipeline-column > strong {
+  display: block;
+  color: var(--orange-hot);
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.pipeline-column .stack-list {
+  padding: 18px 0 0;
+}
+
+.calendar-list {
+  display: grid;
+}
+
+.calendar-item {
+  grid-template-columns: 110px minmax(0, 1fr) minmax(160px, 0.5fr);
+  align-items: center;
+  border-width: 0 0 1px;
+  border-radius: 0;
+  padding: 18px 24px;
+  background: transparent;
+}
+
+.calendar-item span {
+  color: var(--orange-hot);
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.toggle-label {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  background: rgba(6, 5, 4, 0.72);
+}
+
+.toggle-label input {
+  width: auto;
+  min-height: 0;
 }
 
 .owner-grid {
@@ -760,7 +989,7 @@ textarea {
 
 .guidance-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .guidance-grid article {
@@ -881,7 +1110,14 @@ textarea {
 
   .detail-grid,
   .workband,
-  .access-form {
+  .access-form,
+  .command-grid,
+  .relation-grid,
+  .guidance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-item {
     grid-template-columns: 1fr;
   }
 }
@@ -914,7 +1150,6 @@ textarea {
   .detail-meta,
   .contact-grid,
   .owner-grid,
-  .guidance-grid,
   .form-grid {
     grid-template-columns: 1fr;
   }

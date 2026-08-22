@@ -1,6 +1,6 @@
 # Kijiji Team Portal Notion Setup
 
-The team portal at `client-portal.html` uses the shared Notion database named **Kijiji Client Roster** as its source of truth.
+The team portal at `client-portal.html` uses the shared Notion **Kijiji Management operating system** as its source of truth.
 
 ## Required Vercel Environment Variables
 
@@ -8,23 +8,33 @@ Add these in Vercel > Project > Settings > Environment Variables:
 
 ```text
 NOTION_TOKEN=secret_your_notion_integration_token
-NOTION_CLIENT_ROSTER_DATABASE_ID=8579c368e9ae495e82af886ba21db26a
+NOTION_CLIENT_ROSTER_DATA_SOURCE_ID=03c5f70c-fb49-4d09-9de8-7fb8a45a04c7
+NOTION_ACTIONS_DATA_SOURCE_ID=662c1c0d-d255-4fe9-8260-5dc4f293b051
+NOTION_OPPORTUNITIES_DATA_SOURCE_ID=8548a9d4-1ffe-4787-90fc-3eb0a0085531
+NOTION_EVENTS_DATA_SOURCE_ID=4bf7373c-c744-4fe3-854e-ff0470954497
 PORTAL_ACCESS_CODE=choose-a-private-team-code
 ```
 
-`NOTION_CLIENT_ROSTER_DATABASE_ID` is optional while the current roster database stays the same, because the API has the current ID as a fallback. Set it anyway so future migrations are easier.
+The data source IDs are optional while the current Notion operating system stays the same, because the API has the current IDs as fallbacks. Set them anyway so future migrations are easier.
 
 ## Required Notion Step
 
-In Notion, open **Kijiji Client Roster**, click **Share**, and invite/connect the Notion integration tied to `NOTION_TOKEN`.
+In Notion, open each shared data source, click **Share**, and invite/connect the Notion integration tied to `NOTION_TOKEN`.
 
-Without that share step, the portal API will not be allowed to read or update the roster.
+Required shared data sources:
+
+- Client Roster: `collection://03c5f70c-fb49-4d09-9de8-7fb8a45a04c7`
+- Actions: `collection://662c1c0d-d255-4fe9-8260-5dc4f293b051`
+- Opportunities & Deals: `collection://8548a9d4-1ffe-4787-90fc-3eb0a0085531`
+- Events & Releases: `collection://4bf7373c-c744-4fe3-854e-ff0470954497`
+
+Without that share step, the portal API will not be allowed to read or update the dashboard data. If the live portal unlocks but says Notion setup is needed, this share step is the first thing to check.
 
 ## Team Access Code
 
 The portal API requires `PORTAL_ACCESS_CODE`. Share that private code only with Kijiji team members who should be able to view and manage client records.
 
-When someone opens the portal, the browser asks for the code once and keeps it for that browser session.
+When someone opens the portal, the browser shows an unlock form and keeps the passcode only in that browser session.
 
 The portal includes a **Log Out** button. It clears the browser's saved access-code session and removes loaded roster data from the page.
 
@@ -48,18 +58,10 @@ After the provider is chosen, enforce the allowlist in `api/notion-clients.js` u
 
 ## What The Portal Can Manage
 
-- Client
-- Type
-- Status
-- Contact Email
-- Contact Phone
-- Lead Source
-- Last Touch
-- Current Offer
-- Next Move
-- Progress
-- Primary Owner
-- Notes
+- Clients: name/type, status, focus level, owner, contact, lead source, scope, next move, progress, last touch, and internal notes.
+- Actions: action, status, owner, priority, due date, related client, blocker, and notes.
+- Opportunities & Deals: read-only pipeline visibility by stage.
+- Events & Releases: read-only upcoming calendar visibility.
 
 ## Organization Guidance
 

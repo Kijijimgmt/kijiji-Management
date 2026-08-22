@@ -1,40 +1,54 @@
 const apiEndpoint = "/api/notion-clients";
 const accessStorageKey = "kijiji-portal-access-code";
 const today = new Date();
-const isoDate = (offsetDays) => {
-  const date = new Date(today);
-  date.setDate(date.getDate() + offsetDays);
-  return date.toISOString().slice(0, 10);
+const todayISO = today.toISOString().slice(0, 10);
+
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => document.querySelectorAll(selector);
+
+const els = {
+  rows: $("[data-client-rows]"),
+  detail: $("[data-client-detail]"),
+  actionList: $("[data-action-list]"),
+  ownerGrid: $("[data-owner-grid]"),
+  todayList: $("[data-today-list]"),
+  priorityList: $("[data-priority-list]"),
+  blockerList: $("[data-blocker-list]"),
+  pipelineGrid: $("[data-pipeline-grid]"),
+  calendarList: $("[data-calendar-list]"),
+  search: $("[data-search-clients]"),
+  statusFilter: $("[data-status-filter]"),
+  clientDialog: $("[data-client-dialog]"),
+  clientForm: $("[data-client-form]"),
+  clientFormTitle: $("[data-form-title]"),
+  actionDialog: $("[data-action-dialog]"),
+  actionForm: $("[data-action-form]"),
+  actionFormTitle: $("[data-action-form-title]"),
+  actionClientSelect: $("[data-action-client-select]"),
+  clientsMetric: $("[data-metric-clients]"),
+  todayMetric: $("[data-metric-today]"),
+  overdueMetric: $("[data-metric-overdue]"),
+  blockersMetric: $("[data-metric-blockers]"),
+  sourceBadge: $("[data-source-badge]"),
+  logout: $("[data-logout-portal]"),
+  accessPanel: $("[data-access-panel]"),
+  accessForm: $("[data-access-form]"),
+  accessInput: $("[data-access-code]"),
+  accessSubmit: $("[data-access-submit]"),
+  accessMessage: $("[data-access-message]"),
+  dashboard: $("[data-dashboard-content]"),
 };
 
-const rowsTarget = document.querySelector("[data-client-rows]");
-const detailTarget = document.querySelector("[data-client-detail]");
-const actionListTarget = document.querySelector("[data-action-list]");
-const ownerGridTarget = document.querySelector("[data-owner-grid]");
-const searchInput = document.querySelector("[data-search-clients]");
-const statusFilter = document.querySelector("[data-status-filter]");
-const clientDialog = document.querySelector("[data-client-dialog]");
-const clientForm = document.querySelector("[data-client-form]");
-const formTitle = document.querySelector("[data-form-title]");
-const totalMetric = document.querySelector("[data-metric-total]");
-const activeMetric = document.querySelector("[data-metric-active]");
-const progressMetric = document.querySelector("[data-metric-progress]");
-const dueMetric = document.querySelector("[data-metric-due]");
-const sourceBadge = document.querySelector("[data-source-badge]");
-const logoutButton = document.querySelector("[data-logout-portal]");
-const accessPanel = document.querySelector("[data-access-panel]");
-const accessForm = document.querySelector("[data-access-form]");
-const accessInput = document.querySelector("[data-access-code]");
-const accessSubmit = document.querySelector("[data-access-submit]");
-const accessMessage = document.querySelector("[data-access-message]");
-const dashboardContent = document.querySelector("[data-dashboard-content]");
-const accessRequiredControls = document.querySelectorAll("[data-requires-access]");
-
-let clients = [];
-let selectedClientId = "";
-let isLoading = true;
-let portalError = "";
-let portalAccessCode = sessionStorage.getItem(accessStorageKey) || "";
+let state = {
+  clients: [],
+  actions: [],
+  opportunities: [],
+  events: [],
+  selectedClientId: "",
+  isLoading: true,
+  portalError: "",
+  portalAccessCode: sessionStorage.getItem(accessStorageKey) || "",
+};
 
 const escapeHtml = (value) =>
   String(value || "")
@@ -50,7 +64,6 @@ const formatDate = (value) => {
   }
 
   const date = new Date(`${value}T12:00:00`);
-
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -67,10 +80,12 @@ const getDaysUntil = (value) => {
   }
 
   const dueDate = new Date(`${value}T00:00:00`);
-  const start = new Date(today.toISOString().slice(0, 10));
-  const difference = dueDate.getTime() - start.getTime();
-  return Math.ceil(difference / 86400000);
+  const start = new Date(`${todayISO}T00:00:00`);
+  return Math.ceil((dueDate.getTime() - start.getTime()) / 86400000);
 };
+
+const isComplete = (item) => ["complete", "done", "closed"].includes(String(item.status || "").toLowerCase());
+const isUrgent = (item) => ["urgent", "high"].includes(String(item.priority || item.focusLevel || "").toLowerCase());
 
 const getProgressEstimate = (client) => {
   if (Number.isFinite(Number(client.progress)) && Number(client.progress) > 0) {
@@ -88,146 +103,60 @@ const getProgressEstimate = (client) => {
   return byStatus[client.status] || 25;
 };
 
-const getFilteredClients = () => {
-  const query = String(searchInput?.value || "").trim().toLowerCase();
-  const status = statusFilter?.value || "all";
+const getClient = (clientId) => state.clients.find((client) => client.id === clientId);
 
-  return clients.filter((client) => {
-    const searchable = [
-      client.name,
-      client.category,
-      client.type?.join(" "),
-      client.status,
-      client.owner,
-      client.stage,
-      client.nextAction,
-      client.email,
-      client.phone,
-    ]
-      .join(" ")
-      .toLowerCase();
-    const matchesQuery = !query || searchable.includes(query);
-    const matchesStatus = status === "all" || client.status === status;
-
-    return matchesQuery && matchesStatus;
-  });
+const getClientName = (item) => {
+  const related = item.clientIds?.map(getClient).find(Boolean);
+  return related?.name || item.clientName || "No client linked";
 };
 
-const setSourceBadge = (state, text) => {
-  if (!sourceBadge) {
+const getRelated = (collection, clientId) =>
+  collection.filter((item) => item.clientIds?.includes(clientId) || item.clientName === getClient(clientId)?.name);
+
+const setSourceBadge = (mode, text) => {
+  if (!els.sourceBadge) {
     return;
   }
 
-  sourceBadge.dataset.state = state;
-  sourceBadge.textContent = text;
+  els.sourceBadge.dataset.state = mode;
+  els.sourceBadge.textContent = text;
 };
 
-const setAccessMessage = (message = "", state = "") => {
-  if (!accessMessage) {
-    return;
-  }
-
-  accessMessage.textContent = message;
-  accessMessage.dataset.state = state;
+const setAccessMessage = (message = "", mode = "") => {
+  els.accessMessage.textContent = message;
+  els.accessMessage.dataset.state = mode;
 };
 
 const setAccessBusy = (isBusy) => {
-  if (accessSubmit) {
-    accessSubmit.disabled = isBusy;
-    accessSubmit.textContent = isBusy ? "Unlocking..." : "Unlock Dashboard";
-  }
-
-  if (accessInput) {
-    accessInput.disabled = isBusy;
-  }
+  els.accessSubmit.disabled = isBusy;
+  els.accessSubmit.textContent = isBusy ? "Unlocking..." : "Unlock Dashboard";
+  els.accessInput.disabled = isBusy;
 };
 
 const setProtectedAccess = (isAvailable) => {
-  accessRequiredControls.forEach((control) => {
+  $$("[data-requires-access]").forEach((control) => {
     control.disabled = !isAvailable;
   });
 };
 
-const showAccessPanel = (message = "", state = "") => {
-  accessPanel.hidden = false;
-  dashboardContent.hidden = true;
+const showAccessPanel = (message = "", mode = "") => {
+  els.accessPanel.hidden = false;
+  els.dashboard.hidden = true;
   setProtectedAccess(false);
   setAccessBusy(false);
-  setAccessMessage(message, state);
+  setAccessMessage(message, mode);
 };
 
 const showDashboard = () => {
-  accessPanel.hidden = true;
-  dashboardContent.hidden = false;
+  els.accessPanel.hidden = true;
+  els.dashboard.hidden = false;
   setProtectedAccess(true);
-};
-
-const setLoadingState = () => {
-  totalMetric.textContent = "-";
-  activeMetric.textContent = "-";
-  progressMetric.textContent = "-";
-  dueMetric.textContent = "-";
-  rowsTarget.innerHTML = `
-    <tr>
-      <td colspan="6">
-        <div class="empty-state">
-          <p class="eyebrow">Loading Notion</p>
-          <h2>Syncing the shared roster</h2>
-        </div>
-      </td>
-    </tr>
-  `;
-  detailTarget.innerHTML = `
-    <div class="empty-state">
-      <p class="eyebrow">Client detail</p>
-      <h2>Loading</h2>
-      <p>Roster details will appear here after Notion responds.</p>
-    </div>
-  `;
-  actionListTarget.innerHTML = "";
-  ownerGridTarget.innerHTML = "";
 };
 
 const getRequestHeaders = () => ({
   "Content-Type": "application/json",
-  "X-Portal-Access-Code": portalAccessCode,
+  "X-Portal-Access-Code": state.portalAccessCode,
 });
-
-const setErrorState = () => {
-  setSourceBadge("error", "Notion setup needed");
-  totalMetric.textContent = "0";
-  activeMetric.textContent = "0";
-  progressMetric.textContent = "0%";
-  dueMetric.textContent = "0";
-  rowsTarget.innerHTML = `
-    <tr>
-      <td colspan="6">
-        <div class="empty-state">
-          <p class="eyebrow">Shared data unavailable</p>
-          <h2>Connect Notion to use the team portal</h2>
-          <p>${escapeHtml(portalError || "The portal could not reach the shared Kijiji Client Roster.")}</p>
-        </div>
-      </td>
-    </tr>
-  `;
-  detailTarget.innerHTML = `
-    <div class="empty-state">
-      <p class="eyebrow">Source of truth</p>
-      <h2>Notion Client Roster</h2>
-      <p>Add a Vercel environment variable named NOTION_TOKEN and share the Kijiji Client Roster database with that Notion integration.</p>
-    </div>
-  `;
-  actionListTarget.innerHTML = `
-    <article class="action-item">
-      <header>
-        <strong>Required setup</strong>
-        <span class="date-chip">Notion</span>
-      </header>
-      <p>Set NOTION_TOKEN in Vercel and redeploy. Optional: set NOTION_CLIENT_ROSTER_DATABASE_ID if the roster database changes.</p>
-    </article>
-  `;
-  ownerGridTarget.innerHTML = "";
-};
 
 const getPortalErrorMessage = (response, data) => {
   if (response.status === 401) {
@@ -238,42 +167,127 @@ const getPortalErrorMessage = (response, data) => {
     return "The passcode worked, but Notion is not configured in Vercel yet.";
   }
 
+  if (data?.error === "notion_access_missing") {
+    return data.message || "Share all four Kijiji Notion data sources with the integration, then redeploy if needed.";
+  }
+
   if (data?.error === "portal_access_not_configured") {
     return "The portal passcode is not configured in Vercel yet.";
   }
 
   if (response.status >= 500) {
-    return "The passcode was accepted, but the shared roster could not load. Check the Notion token and database sharing.";
+    return "The passcode was accepted, but the Notion operating system could not load. Check the Notion token and database sharing.";
   }
 
   return data?.message || "The dashboard could not load. Try again or check the portal configuration.";
 };
 
-const renderMetrics = () => {
-  const activeClients = clients.filter((client) => client.status === "Active");
-  const avgProgress = clients.length
-    ? Math.round(clients.reduce((sum, client) => sum + getProgressEstimate(client), 0) / clients.length)
-    : 0;
-  const dueSoon = clients.filter((client) => {
-    const days = getDaysUntil(client.lastTouch || client.dueDate);
-    return days >= 0 && days <= 7;
-  });
+const getFilteredClients = () => {
+  const query = String(els.search?.value || "").trim().toLowerCase();
+  const status = els.statusFilter?.value || "all";
 
-  totalMetric.textContent = String(clients.length);
-  activeMetric.textContent = String(activeClients.length);
-  progressMetric.textContent = `${avgProgress}%`;
-  dueMetric.textContent = String(dueSoon.length);
+  return state.clients.filter((client) => {
+    const searchable = [
+      client.name,
+      client.category,
+      client.type?.join(" "),
+      client.status,
+      client.owner,
+      client.stage,
+      client.nextAction,
+      client.focusLevel,
+      client.email,
+      client.phone,
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return (!query || searchable.includes(query)) && (status === "all" || client.status === status);
+  });
+};
+
+const getOpenActions = () => state.actions.filter((action) => !isComplete(action));
+const getDueActions = () => getOpenActions().filter((action) => getDaysUntil(action.dueDate) <= 0);
+const getBlockers = () => getOpenActions().filter((action) => action.blocker);
+
+const renderMetrics = () => {
+  els.clientsMetric.textContent = String(state.clients.length);
+  els.todayMetric.textContent = String(getOpenActions().filter((action) => action.dueDate === todayISO).length);
+  els.overdueMetric.textContent = String(getOpenActions().filter((action) => getDaysUntil(action.dueDate) < 0).length);
+  els.blockersMetric.textContent = String(getBlockers().length);
+};
+
+const renderEmptyList = (target, title, text) => {
+  target.innerHTML = `
+    <div class="mini-empty">
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(text)}</p>
+    </div>
+  `;
+};
+
+const actionCard = (action) => `
+  <article class="action-item" data-action-id="${escapeHtml(action.id)}" tabindex="0">
+    <header>
+      <strong>${escapeHtml(action.title)}</strong>
+      <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
+    </header>
+    <p>${escapeHtml(action.notes || getClientName(action))}</p>
+    <div class="item-meta">
+      <span>${escapeHtml(action.owner || "Unassigned")}</span>
+      <span>${escapeHtml(action.priority || "Normal")}</span>
+      ${action.blocker ? "<span>Blocker</span>" : ""}
+    </div>
+  </article>
+`;
+
+const renderFocusLists = () => {
+  const due = getDueActions().sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate)).slice(0, 5);
+  const priority = getOpenActions().filter(isUrgent).slice(0, 5);
+  const blockers = getBlockers().slice(0, 5);
+
+  if (due.length) {
+    els.todayList.innerHTML = due.map(actionCard).join("");
+  } else {
+    renderEmptyList(els.todayList, "Nothing due today", "No overdue or same-day actions are currently open.");
+  }
+
+  if (priority.length) {
+    els.priorityList.innerHTML = priority.map(actionCard).join("");
+  } else {
+    renderEmptyList(els.priorityList, "Priority queue is clean", "Mark an action High or Urgent when it needs sharper visibility.");
+  }
+
+  if (blockers.length) {
+    els.blockerList.innerHTML = blockers.map(actionCard).join("");
+  } else {
+    renderEmptyList(els.blockerList, "No visible blockers", "Blocked work will appear here when an action is marked as a blocker.");
+  }
 };
 
 const renderRows = () => {
-  const filteredClients = getFilteredClients();
+  const filtered = getFilteredClients();
 
-  rowsTarget.innerHTML = filteredClients
+  if (!filtered.length) {
+    els.rows.innerHTML = `
+      <tr>
+        <td colspan="6">
+          <div class="empty-state">
+            <p class="eyebrow">No matches</p>
+            <h2>No clients found</h2>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  els.rows.innerHTML = filtered
     .map((client) => {
       const progress = getProgressEstimate(client);
 
       return `
-        <tr data-client-id="${escapeHtml(client.id)}" class="${client.id === selectedClientId ? "is-selected" : ""}" tabindex="0">
+        <tr data-client-id="${escapeHtml(client.id)}" class="${client.id === state.selectedClientId ? "is-selected" : ""}" tabindex="0">
           <td>
             <div class="client-name">
               <strong>${escapeHtml(client.name || "Untitled client")}</strong>
@@ -282,13 +296,8 @@ const renderRows = () => {
           </td>
           <td><span class="status-pill" data-status="${escapeHtml(client.status)}">${escapeHtml(client.status)}</span></td>
           <td>${escapeHtml(client.owner || "Unassigned")}</td>
+          <td><span class="focus-pill" data-focus="${escapeHtml(client.focusLevel)}">${escapeHtml(client.focusLevel || "Normal")}</span></td>
           <td>${escapeHtml(client.nextAction || "Add next move in Notion")}</td>
-          <td>
-            <div class="client-name">
-              <strong>${escapeHtml(client.email || "Email not added")}</strong>
-              <span>${escapeHtml(client.phone || client.leadSource || "Add contact details")}</span>
-            </div>
-          </td>
           <td>
             <div class="client-name">
               <div class="progress-track" aria-label="${progress} percent complete">
@@ -301,43 +310,44 @@ const renderRows = () => {
       `;
     })
     .join("");
+};
 
-  if (!filteredClients.length) {
-    rowsTarget.innerHTML = `
-      <tr>
-        <td colspan="6">
-          <div class="empty-state">
-            <p class="eyebrow">No matches</p>
-            <h2>No clients found</h2>
-          </div>
-        </td>
-      </tr>
-    `;
+const relatedList = (items, emptyText, formatter) => {
+  if (!items.length) {
+    return `<p class="muted">${escapeHtml(emptyText)}</p>`;
   }
+
+  return `<div class="related-list">${items.map(formatter).join("")}</div>`;
 };
 
 const renderDetail = () => {
-  const client = clients.find((item) => item.id === selectedClientId);
+  const client = getClient(state.selectedClientId);
 
   if (!client) {
-    detailTarget.innerHTML = `
+    els.detail.innerHTML = `
       <div class="empty-state">
         <p class="eyebrow">Client detail</p>
         <h2>Select a client</h2>
-        <p>Roster details appear here when an account is selected.</p>
+        <p>Related actions, opportunities, events, next move, and focus level appear here.</p>
       </div>
     `;
     return;
   }
 
   const progress = getProgressEstimate(client);
+  const relatedActions = getRelated(state.actions, client.id).filter((action) => !isComplete(action));
+  const relatedOpportunities = getRelated(state.opportunities, client.id);
+  const relatedEvents = getRelated(state.events, client.id);
 
-  detailTarget.innerHTML = `
+  els.detail.innerHTML = `
     <div class="client-detail-head">
       <div>
         <p class="eyebrow">${escapeHtml(client.category || "Client")}</p>
         <h2>${escapeHtml(client.name)}</h2>
-        <span class="status-pill" data-status="${escapeHtml(client.status)}">${escapeHtml(client.status)}</span>
+        <div class="pill-row">
+          <span class="status-pill" data-status="${escapeHtml(client.status)}">${escapeHtml(client.status)}</span>
+          <span class="focus-pill" data-focus="${escapeHtml(client.focusLevel)}">${escapeHtml(client.focusLevel || "Normal")}</span>
+        </div>
       </div>
       <button class="button button-secondary" type="button" data-edit-client="${escapeHtml(client.id)}">Edit Client</button>
     </div>
@@ -359,25 +369,29 @@ const renderDetail = () => {
         <span>Last touch</span>
         <strong>${formatDate(client.lastTouch || client.dueDate)}</strong>
       </div>
-    </div>
-
-    <div class="contact-grid">
       <div>
         <span>Contact email</span>
         <strong>${escapeHtml(client.email || "Not added")}</strong>
       </div>
       <div>
-        <span>Contact phone</span>
-        <strong>${escapeHtml(client.phone || "Not added")}</strong>
-      </div>
-      <div>
-        <span>Lead source</span>
-        <strong>${escapeHtml(client.leadSource || "Not added")}</strong>
-      </div>
-      <div>
-        <span>Progress estimate</span>
+        <span>Progress</span>
         <strong>${progress}%</strong>
       </div>
+    </div>
+
+    <div class="relation-grid">
+      <article>
+        <h3>Related Actions</h3>
+        ${relatedList(relatedActions, "No open actions linked yet.", (item) => `<button type="button" data-jump-action="${escapeHtml(item.id)}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.owner || "Unassigned")} / ${formatDate(item.dueDate)}</span></button>`)}
+      </article>
+      <article>
+        <h3>Opportunities</h3>
+        ${relatedList(relatedOpportunities, "No opportunities linked yet.", (item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.stage || "No stage")}</span></a>`)}
+      </article>
+      <article>
+        <h3>Events / Releases</h3>
+        ${relatedList(relatedEvents, "No events or releases linked yet.", (item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer"><strong>${escapeHtml(item.name)}</strong><span>${formatDate(item.date)} ${item.type ? `/ ${escapeHtml(item.type)}` : ""}</span></a>`)}
+      </article>
     </div>
 
     <p class="detail-notes">${escapeHtml(client.notes || "No notes added yet.")}</p>
@@ -390,87 +404,191 @@ const renderDetail = () => {
 };
 
 const renderActions = () => {
-  const sorted = [...clients].sort((a, b) => {
-    const aDate = a.lastTouch || a.dueDate || "9999-12-31";
-    const bDate = b.lastTouch || b.dueDate || "9999-12-31";
-    return new Date(aDate) - new Date(bDate);
+  const sorted = [...getOpenActions()].sort((a, b) => {
+    const priorityWeight = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
+    const priorityDelta = (priorityWeight[a.priority] ?? 2) - (priorityWeight[b.priority] ?? 2);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+
+    return getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate);
   });
 
-  actionListTarget.innerHTML = sorted
-    .slice(0, 6)
-    .map(
-      (client) => `
-        <article class="action-item" data-action-client="${escapeHtml(client.id)}" tabindex="0">
-          <header>
-            <strong>${escapeHtml(client.name)}</strong>
-            <span class="date-chip">${formatDate(client.lastTouch || client.dueDate)}</span>
-          </header>
-          <p>${escapeHtml(client.nextAction || "Add the next move in Notion.")}</p>
-          <span class="muted">${escapeHtml(client.owner || "Unassigned")} | ${escapeHtml(client.status || "No status")}</span>
-        </article>
-      `
-    )
-    .join("");
+  if (!sorted.length) {
+    renderEmptyList(els.actionList, "No open actions", "Add an action when a next move needs a clear owner and due date.");
+    return;
+  }
+
+  els.actionList.innerHTML = sorted.map(actionCard).join("");
 };
 
-const renderOwners = () => {
-  const ownerNames = [...new Set(clients.map((client) => client.owner || "Unassigned"))];
-  const owners = ownerNames.length ? ownerNames : ["Unassigned"];
+const renderPipeline = () => {
+  const stages = [...new Set(state.opportunities.map((opportunity) => opportunity.stage || "New"))];
 
-  ownerGridTarget.innerHTML = owners
-    .map((owner) => {
-      const ownedClients = clients.filter((client) => (client.owner || "Unassigned") === owner);
-      const activeCount = ownedClients.filter((client) => client.status === "Active").length;
-      const nextClient = [...ownedClients].sort((a, b) => {
-        const aDate = a.lastTouch || a.dueDate || "9999-12-31";
-        const bDate = b.lastTouch || b.dueDate || "9999-12-31";
-        return new Date(aDate) - new Date(bDate);
-      })[0];
+  if (!stages.length) {
+    renderEmptyList(els.pipelineGrid, "No opportunities yet", "Deals and partnership opportunities will appear by stage once the Notion database is shared.");
+    return;
+  }
+
+  els.pipelineGrid.innerHTML = stages
+    .map((stage) => {
+      const items = state.opportunities.filter((opportunity) => (opportunity.stage || "New") === stage);
 
       return `
-        <article class="owner-card">
-          <h3>${escapeHtml(owner)}</h3>
-          <strong>${ownedClients.length}</strong>
-          <p>${activeCount} active account${activeCount === 1 ? "" : "s"}</p>
-          <p class="muted">${nextClient ? `Next: ${escapeHtml(nextClient.name)} on ${formatDate(nextClient.lastTouch || nextClient.dueDate)}` : "No account assigned"}</p>
+        <article class="pipeline-column">
+          <h3>${escapeHtml(stage)}</h3>
+          <strong>${items.length}</strong>
+          <div class="stack-list">
+            ${items
+              .map(
+                (item) => `
+                  <a class="compact-card" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
+                    <span>${escapeHtml(item.name)}</span>
+                    <em>${escapeHtml(getClientName(item))}</em>
+                  </a>
+                `
+              )
+              .join("")}
+          </div>
         </article>
       `;
     })
     .join("");
 };
 
+const renderCalendar = () => {
+  const upcoming = [...state.events]
+    .filter((event) => getDaysUntil(event.date) >= 0)
+    .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date))
+    .slice(0, 8);
+
+  if (!upcoming.length) {
+    renderEmptyList(els.calendarList, "No upcoming releases", "Events and release dates will appear here once they are added in Notion.");
+    return;
+  }
+
+  els.calendarList.innerHTML = upcoming
+    .map(
+      (event) => `
+        <a class="calendar-item" href="${escapeHtml(event.url)}" target="_blank" rel="noreferrer">
+          <span>${formatDate(event.date)}</span>
+          <strong>${escapeHtml(event.name)}</strong>
+          <em>${escapeHtml(getClientName(event))}${event.type ? ` / ${escapeHtml(event.type)}` : ""}</em>
+        </a>
+      `
+    )
+    .join("");
+};
+
+const renderOwners = () => {
+  const owners = ["Maxwell", "Joe", "Erik", "Unassigned"];
+
+  els.ownerGrid.innerHTML = owners
+    .map((owner) => {
+      const ownedClients = state.clients.filter((client) => (client.owner || "Unassigned") === owner || (owner === "Maxwell" && client.owner === "Max"));
+      const ownedActions = getOpenActions().filter((action) => (action.owner || "Unassigned") === owner || (owner === "Maxwell" && action.owner === "Max"));
+      const nextAction = [...ownedActions].sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate))[0];
+
+      return `
+        <article class="owner-card">
+          <h3>${escapeHtml(owner)}</h3>
+          <strong>${ownedActions.length}</strong>
+          <p>${ownedClients.length} client${ownedClients.length === 1 ? "" : "s"} / ${ownedActions.length} open action${ownedActions.length === 1 ? "" : "s"}</p>
+          <p class="muted">${nextAction ? `Next: ${escapeHtml(nextAction.title)} on ${formatDate(nextAction.dueDate)}` : "No open action assigned"}</p>
+        </article>
+      `;
+    })
+    .join("");
+};
+
+const renderActionClientOptions = () => {
+  els.actionClientSelect.innerHTML = `<option value="">No client relation</option>${state.clients
+    .map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`)
+    .join("")}`;
+};
+
+const setLoadingState = () => {
+  els.clientsMetric.textContent = "-";
+  els.todayMetric.textContent = "-";
+  els.overdueMetric.textContent = "-";
+  els.blockersMetric.textContent = "-";
+  els.rows.innerHTML = `
+    <tr>
+      <td colspan="6">
+        <div class="empty-state">
+          <p class="eyebrow">Loading Notion</p>
+          <h2>Syncing the operating system</h2>
+        </div>
+      </td>
+    </tr>
+  `;
+  [els.todayList, els.priorityList, els.blockerList, els.actionList, els.pipelineGrid, els.calendarList, els.ownerGrid].forEach((target) => {
+    target.innerHTML = "";
+  });
+};
+
+const setErrorState = () => {
+  setSourceBadge("error", "Notion setup needed");
+  els.clientsMetric.textContent = "0";
+  els.todayMetric.textContent = "0";
+  els.overdueMetric.textContent = "0";
+  els.blockersMetric.textContent = "0";
+  els.rows.innerHTML = `
+    <tr>
+      <td colspan="6">
+        <div class="empty-state">
+          <p class="eyebrow">Shared data unavailable</p>
+          <h2>Connect Notion to use the team portal</h2>
+          <p>${escapeHtml(state.portalError || "The portal could not reach the shared Kijiji operating system.")}</p>
+        </div>
+      </td>
+    </tr>
+  `;
+  els.detail.innerHTML = `
+    <div class="empty-state">
+      <p class="eyebrow">Source of truth</p>
+      <h2>Notion Operating System</h2>
+      <p>Share Client Roster, Actions, Opportunities & Deals, and Events & Releases with the integration used by NOTION_TOKEN.</p>
+    </div>
+  `;
+};
+
 const renderPortal = () => {
-  if (isLoading) {
+  if (state.isLoading) {
     setLoadingState();
     return;
   }
 
-  if (portalError) {
+  if (state.portalError) {
     setErrorState();
     return;
   }
 
   renderMetrics();
+  renderFocusLists();
   renderRows();
   renderDetail();
   renderActions();
+  renderPipeline();
+  renderCalendar();
   renderOwners();
+  renderActionClientOptions();
 };
 
-const loadClients = async ({ code = portalAccessCode, fromUnlock = false } = {}) => {
+const loadDashboard = async ({ code = state.portalAccessCode, fromUnlock = false } = {}) => {
   const candidateCode = String(code || "").trim();
-  let shouldShowAccessAfterFailure = false;
+  let showAccessAfterFailure = false;
 
   if (!candidateCode) {
-    portalAccessCode = "";
+    state.portalAccessCode = "";
     sessionStorage.removeItem(accessStorageKey);
     setSourceBadge("locked", "Locked");
     showAccessPanel("Enter the team passcode to unlock the dashboard.", "info");
     return false;
   }
 
-  isLoading = true;
-  portalError = "";
+  state.isLoading = true;
+  state.portalError = "";
   setSourceBadge("loading", fromUnlock ? "Unlocking" : "Syncing Notion");
 
   if (fromUnlock) {
@@ -497,21 +615,27 @@ const loadClients = async ({ code = portalAccessCode, fromUnlock = false } = {})
       throw error;
     }
 
-    portalAccessCode = candidateCode;
-    sessionStorage.setItem(accessStorageKey, portalAccessCode);
-    clients = Array.isArray(data.clients) ? data.clients : [];
-    selectedClientId = selectedClientId || clients[0]?.id || "";
+    state.portalAccessCode = candidateCode;
+    sessionStorage.setItem(accessStorageKey, state.portalAccessCode);
+    state.clients = Array.isArray(data.clients) ? data.clients : [];
+    state.actions = Array.isArray(data.actions) ? data.actions : [];
+    state.opportunities = Array.isArray(data.opportunities) ? data.opportunities : [];
+    state.events = Array.isArray(data.events) ? data.events : [];
+    state.selectedClientId = state.selectedClientId || state.clients[0]?.id || "";
+    state.isLoading = false;
     setSourceBadge("ready", "Synced with Notion");
     setAccessMessage("");
     showDashboard();
-    isLoading = false;
     renderPortal();
     return true;
   } catch (error) {
-    clients = [];
-    selectedClientId = "";
-    portalAccessCode = error.statusCode === 401 ? "" : candidateCode;
-    portalError = fromUnlock ? "" : error.message;
+    state.clients = [];
+    state.actions = [];
+    state.opportunities = [];
+    state.events = [];
+    state.selectedClientId = "";
+    state.portalAccessCode = error.statusCode === 401 ? "" : candidateCode;
+    state.portalError = fromUnlock ? "" : error.message;
 
     if (error.statusCode === 401) {
       sessionStorage.removeItem(accessStorageKey);
@@ -523,69 +647,72 @@ const loadClients = async ({ code = portalAccessCode, fromUnlock = false } = {})
       setSourceBadge("error", "Access failed");
       showAccessPanel(error.message, "error");
     } else if (error.statusCode === 401) {
-      portalError = "";
-      shouldShowAccessAfterFailure = true;
+      state.portalError = "";
+      showAccessAfterFailure = true;
       setSourceBadge("locked", "Locked");
       showAccessPanel("Your saved passcode no longer works. Enter it again to unlock the dashboard.", "error");
     }
 
     return false;
   } finally {
-    isLoading = false;
+    state.isLoading = false;
     setAccessBusy(false);
 
-    if (!fromUnlock && !shouldShowAccessAfterFailure) {
+    if (!fromUnlock && !showAccessAfterFailure) {
       renderPortal();
     }
   }
 };
 
-const selectClient = (clientId) => {
-  selectedClientId = clientId;
-  renderPortal();
-};
-
-const openClientForm = (client = null) => {
-  clientForm.reset();
-  formTitle.textContent = client ? "Edit client" : "Add client";
-  clientForm.elements.id.value = client?.id || "";
-  clientForm.elements.name.value = client?.name || "";
-  clientForm.elements.category.value = client?.category || "";
-  clientForm.elements.status.value = client?.status || "Prospect";
-  clientForm.elements.owner.value = client?.owner || "";
-  clientForm.elements.stage.value = client?.stage || "";
-  clientForm.elements.lastTouch.value = client?.lastTouch || client?.dueDate || isoDate(0);
-  clientForm.elements.nextAction.value = client?.nextAction || "";
-  clientForm.elements.progress.value = client?.progress || getProgressEstimate(client || {});
-  clientForm.elements.email.value = client?.email || "";
-  clientForm.elements.phone.value = client?.phone || "";
-  clientForm.elements.leadSource.value = client?.leadSource || "";
-  clientForm.elements.notes.value = client?.notes || "";
-
-  if (typeof clientDialog.showModal === "function") {
-    clientDialog.showModal();
+const openDialog = (dialog) => {
+  if (typeof dialog.showModal === "function") {
+    dialog.showModal();
   } else {
-    clientDialog.setAttribute("open", "");
+    dialog.setAttribute("open", "");
   }
 };
 
-const closeClientForm = () => {
-  clientDialog.close();
+const closeDialog = (dialog) => {
+  dialog.close();
 };
 
-const logoutPortal = () => {
-  sessionStorage.removeItem(accessStorageKey);
-  portalAccessCode = "";
-  clients = [];
-  selectedClientId = "";
-  portalError = "";
-  isLoading = false;
-  setSourceBadge("signed-out", "Signed out");
-  showAccessPanel("You have been signed out. Enter the team passcode to unlock the dashboard again.", "info");
-  accessInput?.focus();
+const openClientForm = (client = null) => {
+  els.clientForm.reset();
+  els.clientFormTitle.textContent = client ? "Edit client" : "Add client";
+  els.clientForm.elements.id.value = client?.id || "";
+  els.clientForm.elements.name.value = client?.name || "";
+  els.clientForm.elements.category.value = client?.category || "";
+  els.clientForm.elements.status.value = client?.status || "Prospect";
+  els.clientForm.elements.owner.value = client?.owner || "";
+  els.clientForm.elements.focusLevel.value = client?.focusLevel || "Normal";
+  els.clientForm.elements.stage.value = client?.stage || "";
+  els.clientForm.elements.lastTouch.value = client?.lastTouch || client?.dueDate || todayISO;
+  els.clientForm.elements.nextAction.value = client?.nextAction || "";
+  els.clientForm.elements.progress.value = client?.progress || getProgressEstimate(client || {});
+  els.clientForm.elements.email.value = client?.email || "";
+  els.clientForm.elements.phone.value = client?.phone || "";
+  els.clientForm.elements.leadSource.value = client?.leadSource || "";
+  els.clientForm.elements.notes.value = client?.notes || "";
+  openDialog(els.clientDialog);
 };
 
-const saveClient = async (payload) => {
+const openActionForm = (action = null) => {
+  els.actionForm.reset();
+  renderActionClientOptions();
+  els.actionFormTitle.textContent = action ? "Edit action" : "Add action";
+  els.actionForm.elements.id.value = action?.id || "";
+  els.actionForm.elements.title.value = action?.title || "";
+  els.actionForm.elements.status.value = action?.status || "Open";
+  els.actionForm.elements.owner.value = action?.owner || "Unassigned";
+  els.actionForm.elements.priority.value = action?.priority || "Normal";
+  els.actionForm.elements.dueDate.value = action?.dueDate || todayISO;
+  els.actionForm.elements.clientId.value = action?.clientIds?.[0] || "";
+  els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
+  els.actionForm.elements.notes.value = action?.notes || "";
+  openDialog(els.actionDialog);
+};
+
+const saveResource = async (payload) => {
   const response = await fetch(apiEndpoint, {
     method: payload.id ? "PATCH" : "POST",
     headers: getRequestHeaders(),
@@ -599,22 +726,23 @@ const saveClient = async (payload) => {
   }
 
   if (!response.ok) {
-    throw new Error(data.message || "Unable to save client to Notion.");
+    throw new Error(data.message || "Unable to save to Notion.");
   }
 
-  return data.client;
+  return data;
 };
 
-const handleFormSubmit = async (event) => {
+const handleClientSubmit = async (event) => {
   event.preventDefault();
-
-  const formData = new FormData(clientForm);
+  const formData = new FormData(els.clientForm);
   const payload = {
+    resource: "client",
     id: String(formData.get("id") || ""),
     name: String(formData.get("name") || "").trim(),
     category: String(formData.get("category") || "").trim(),
     status: String(formData.get("status") || "Prospect"),
     owner: String(formData.get("owner") || "").trim(),
+    focusLevel: String(formData.get("focusLevel") || "Normal"),
     stage: String(formData.get("stage") || "").trim(),
     lastTouch: String(formData.get("lastTouch") || "").trim(),
     nextAction: String(formData.get("nextAction") || "").trim(),
@@ -624,145 +752,171 @@ const handleFormSubmit = async (event) => {
     leadSource: String(formData.get("leadSource") || "").trim(),
     notes: String(formData.get("notes") || "").trim(),
   };
-  const submitButton = clientForm.querySelector('[type="submit"]');
+  const submit = els.clientForm.querySelector('[type="submit"]');
 
-  submitButton.disabled = true;
-  submitButton.textContent = "Saving...";
+  submit.disabled = true;
+  submit.textContent = "Saving...";
 
   try {
-    const savedClient = await saveClient(payload);
-    selectedClientId = savedClient.id;
-    closeClientForm();
-    await loadClients();
+    const data = await saveResource(payload);
+    state.selectedClientId = data.client?.id || state.selectedClientId;
+    closeDialog(els.clientDialog);
+    await loadDashboard();
   } catch (error) {
     alert(error.message);
   } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "Save Client";
+    submit.disabled = false;
+    submit.textContent = "Save Client";
+  }
+};
+
+const handleActionSubmit = async (event) => {
+  event.preventDefault();
+  const formData = new FormData(els.actionForm);
+  const client = getClient(String(formData.get("clientId") || ""));
+  const payload = {
+    resource: "action",
+    id: String(formData.get("id") || ""),
+    title: String(formData.get("title") || "").trim(),
+    status: String(formData.get("status") || "Open"),
+    owner: String(formData.get("owner") || "Unassigned"),
+    priority: String(formData.get("priority") || "Normal"),
+    dueDate: String(formData.get("dueDate") || "").trim(),
+    clientId: client?.id || "",
+    clientName: client?.name || "",
+    blocker: formData.get("blocker") === "on",
+    notes: String(formData.get("notes") || "").trim(),
+  };
+  const submit = els.actionForm.querySelector('[type="submit"]');
+
+  submit.disabled = true;
+  submit.textContent = "Saving...";
+
+  try {
+    await saveResource(payload);
+    closeDialog(els.actionDialog);
+    await loadDashboard();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Save Action";
   }
 };
 
 const handleAccessSubmit = async (event) => {
   event.preventDefault();
-
-  const code = accessInput.value.trim();
+  const code = els.accessInput.value.trim();
 
   if (!code) {
     setAccessMessage("Enter the team passcode to unlock the dashboard.", "error");
-    accessInput.focus();
+    els.accessInput.focus();
     return;
   }
 
-  const didUnlock = await loadClients({ code, fromUnlock: true });
+  const didUnlock = await loadDashboard({ code, fromUnlock: true });
 
   if (!didUnlock) {
-    accessInput.focus();
-    accessInput.select();
+    els.accessInput.focus();
+    els.accessInput.select();
   }
 };
 
-const exportCsv = () => {
-  const headers = [
-    "Client",
-    "Type",
-    "Status",
-    "Owner",
-    "Current Offer",
-    "Progress Estimate",
-    "Next Move",
-    "Last Touch",
-    "Email",
-    "Phone",
-    "Lead Source",
-    "Notes",
-    "Notion URL",
-  ];
-  const rows = clients.map((client) => [
-    client.name,
-    client.category,
-    client.status,
-    client.owner,
-    client.stage,
-    getProgressEstimate(client),
-    client.nextAction,
-    client.lastTouch || client.dueDate,
-    client.email,
-    client.phone,
-    client.leadSource,
-    client.notes,
-    client.url,
-  ]);
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const link = document.createElement("a");
+function logoutPortal() {
+  sessionStorage.removeItem(accessStorageKey);
+  state = {
+    clients: [],
+    actions: [],
+    opportunities: [],
+    events: [],
+    selectedClientId: "",
+    isLoading: false,
+    portalError: "",
+    portalAccessCode: "",
+  };
+  setSourceBadge("signed-out", "Signed out");
+  showAccessPanel("You have been signed out. Enter the team passcode to unlock the dashboard again.", "info");
+  els.accessInput.focus();
+}
 
-  link.href = URL.createObjectURL(blob);
-  link.download = "kijiji-notion-client-roster.csv";
-  link.click();
-  URL.revokeObjectURL(link.href);
-};
-
-rowsTarget.addEventListener("click", (event) => {
+els.rows.addEventListener("click", (event) => {
   const row = event.target.closest("[data-client-id]");
-
   if (row) {
-    selectClient(row.dataset.clientId);
+    state.selectedClientId = row.dataset.clientId;
+    renderPortal();
   }
 });
 
-rowsTarget.addEventListener("keydown", (event) => {
+els.rows.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" && event.key !== " ") {
     return;
   }
 
   const row = event.target.closest("[data-client-id]");
-
   if (row) {
     event.preventDefault();
-    selectClient(row.dataset.clientId);
+    state.selectedClientId = row.dataset.clientId;
+    renderPortal();
   }
 });
 
-detailTarget.addEventListener("click", (event) => {
-  const editButton = event.target.closest("[data-edit-client]");
+els.detail.addEventListener("click", (event) => {
+  const editClient = event.target.closest("[data-edit-client]");
+  const jumpAction = event.target.closest("[data-jump-action]");
 
-  if (!editButton) {
-    return;
+  if (editClient) {
+    const client = getClient(editClient.dataset.editClient);
+    if (client) {
+      openClientForm(client);
+    }
   }
 
-  const client = clients.find((item) => item.id === editButton.dataset.editClient);
-
-  if (client) {
-    openClientForm(client);
-  }
-});
-
-actionListTarget.addEventListener("click", (event) => {
-  const action = event.target.closest("[data-action-client]");
-
-  if (action) {
-    selectClient(action.dataset.actionClient);
+  if (jumpAction) {
+    const action = state.actions.find((item) => item.id === jumpAction.dataset.jumpAction);
+    if (action) {
+      openActionForm(action);
+    }
   }
 });
 
-document.querySelector("[data-open-client-form]").addEventListener("click", () => openClientForm());
-document.querySelectorAll("[data-close-client-form]").forEach((button) => {
-  button.addEventListener("click", closeClientForm);
+els.actionList.addEventListener("click", (event) => {
+  const actionCardEl = event.target.closest("[data-action-id]");
+  if (actionCardEl) {
+    const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
+    if (action) {
+      openActionForm(action);
+    }
+  }
 });
-document.querySelector("[data-export-csv]").addEventListener("click", exportCsv);
-document.querySelector("[data-refresh-roster]").addEventListener("click", loadClients);
-logoutButton?.addEventListener("click", logoutPortal);
-accessForm.addEventListener("submit", handleAccessSubmit);
-clientForm.addEventListener("submit", handleFormSubmit);
-searchInput.addEventListener("input", renderRows);
-statusFilter.addEventListener("change", renderRows);
 
-if (portalAccessCode) {
-  loadClients();
+[els.todayList, els.priorityList, els.blockerList].forEach((target) => {
+  target.addEventListener("click", (event) => {
+    const actionCardEl = event.target.closest("[data-action-id]");
+    if (actionCardEl) {
+      const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
+      if (action) {
+        openActionForm(action);
+      }
+    }
+  });
+});
+
+$$("[data-open-action-form]").forEach((button) => button.addEventListener("click", () => openActionForm()));
+$$("[data-open-client-form]").forEach((button) => button.addEventListener("click", () => openClientForm()));
+$$("[data-close-action-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.actionDialog)));
+$$("[data-close-client-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.clientDialog)));
+$("[data-refresh-dashboard]").addEventListener("click", () => loadDashboard());
+els.logout?.addEventListener("click", logoutPortal);
+els.accessForm.addEventListener("submit", handleAccessSubmit);
+els.clientForm.addEventListener("submit", handleClientSubmit);
+els.actionForm.addEventListener("submit", handleActionSubmit);
+els.search.addEventListener("input", renderRows);
+els.statusFilter.addEventListener("change", renderRows);
+
+if (state.portalAccessCode) {
+  loadDashboard();
 } else {
-  isLoading = false;
+  state.isLoading = false;
   setSourceBadge("locked", "Locked");
   showAccessPanel("Enter the team passcode to unlock the dashboard.", "info");
 }
