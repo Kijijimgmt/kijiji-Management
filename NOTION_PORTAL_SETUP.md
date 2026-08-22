@@ -14,11 +14,21 @@ NOTION_OPPORTUNITIES_DATA_SOURCE_ID=8548a9d4-1ffe-4787-90fc-3eb0a0085531
 NOTION_EVENTS_DATA_SOURCE_ID=4bf7373c-c744-4fe3-854e-ff0470954497
 PORTAL_ACCESS_CODE=choose-a-private-team-code
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/kijiji/ops-webhook
+SLACK_SIGNING_SECRET=your-slack-app-signing-secret
+SLACK_ALLOWED_TEAM_IDS=T1234567890
+SLACK_ALLOWED_CHANNEL_IDS=C1234567890
+SLACK_ALLOWED_USER_IDS=U1234567890,U2345678901
 ```
 
 The data source IDs are optional while the current Notion operating system stays the same, because the API has the current IDs as fallbacks. Set them anyway so future migrations are easier.
 
 `SLACK_WEBHOOK_URL` is optional, but should be added in **Vercel Production** when the team wants internal alerts in Slack. Keep it server-side only. Do not add the webhook URL to browser JavaScript, HTML, or any public client-side config.
+
+`SLACK_SIGNING_SECRET` is required for Slack slash commands. The allowlist values are optional but recommended:
+
+- `SLACK_ALLOWED_TEAM_IDS`: restricts `/kijiji` to the approved Slack workspace.
+- `SLACK_ALLOWED_CHANNEL_IDS`: restricts `/kijiji` to `#kijiji-ops`; use the channel ID, not the channel name.
+- `SLACK_ALLOWED_USER_IDS`: restricts dashboard writes to approved Slack users.
 
 ## Required Notion Step
 
@@ -57,6 +67,37 @@ To enable this:
 4. Redeploy the latest production deployment.
 
 If `SLACK_WEBHOOK_URL` is missing or Slack is unavailable, Notion saves still complete. Slack notification failures are logged server-side and are never sent to the browser.
+
+## Slack Slash Command: Dashboard Updates
+
+Use an authenticated Slack slash command for Slack-to-dashboard updates. Do not use passive channel-message ingestion for writes.
+
+Slack app setup:
+
+1. Create or open the Kijiji Slack app at api.slack.com.
+2. Go to **Slash Commands** > **Create New Command**.
+3. Command: `/kijiji`
+4. Request URL: `https://www.kijijimgmt.com/api/slack-commands`
+5. Short description: `Update the Kijiji team dashboard`
+6. Usage hint: `task title="..." owner=Maxwell due=YYYY-MM-DD`
+7. Go to **OAuth & Permissions** and make sure the app has the `commands` scope.
+8. Install or reinstall the app into the Kijiji Slack workspace.
+9. Copy the app **Signing Secret** from **Basic Information**.
+10. In Vercel Production, set `SLACK_SIGNING_SECRET`.
+11. Recommended: set `SLACK_ALLOWED_TEAM_IDS` and `SLACK_ALLOWED_CHANNEL_IDS` to the workspace and `#kijiji-ops` IDs.
+12. Redeploy Production.
+
+Supported commands:
+
+```text
+/kijiji help
+/kijiji status
+/kijiji task title="Send launch plan" owner=Maxwell due=2026-08-30 client="Broshigeez" priority=High blocker=yes notes="Waiting on assets"
+/kijiji deal name="Brand partnership" stage=Pitching owner=Joe date=2026-09-04 client="Andra Pastry Chef" next="Send scope"
+/kijiji event name="Single release" type=Release date=2026-09-12 owner=Erik client="Bobby Outside" notes="Assets due Friday"
+```
+
+The slash command only creates new tasks, deals, and events. Edit existing records inside the Kijiji portal. The API verifies Slack's request signature server-side using `SLACK_SIGNING_SECRET` before writing to Notion.
 
 ## Email-Based Team Restriction
 
