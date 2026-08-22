@@ -25,6 +25,14 @@ const els = {
   actionForm: $("[data-action-form]"),
   actionFormTitle: $("[data-action-form-title]"),
   actionClientSelect: $("[data-action-client-select]"),
+  opportunityDialog: $("[data-opportunity-dialog]"),
+  opportunityForm: $("[data-opportunity-form]"),
+  opportunityFormTitle: $("[data-opportunity-form-title]"),
+  opportunityClientSelect: $("[data-opportunity-client-select]"),
+  eventDialog: $("[data-event-dialog]"),
+  eventForm: $("[data-event-form]"),
+  eventFormTitle: $("[data-event-form-title]"),
+  eventClientSelect: $("[data-event-client-select]"),
   clientsMetric: $("[data-metric-clients]"),
   todayMetric: $("[data-metric-today]"),
   overdueMetric: $("[data-metric-overdue]"),
@@ -209,6 +217,8 @@ const getFilteredClients = () => {
 const getOpenActions = () => state.actions.filter((action) => !isComplete(action));
 const getDueActions = () => getOpenActions().filter((action) => getDaysUntil(action.dueDate) <= 0);
 const getBlockers = () => getOpenActions().filter((action) => action.blocker);
+const getOpportunityBlockers = () => state.opportunities.filter((opportunity) => opportunity.blocker);
+const getOpenOpportunities = () => state.opportunities.filter((opportunity) => !isComplete(opportunity));
 
 const renderMetrics = () => {
   els.clientsMetric.textContent = String(state.clients.length);
@@ -242,10 +252,47 @@ const actionCard = (action) => `
   </article>
 `;
 
+const opportunityCard = (opportunity) => `
+  <article class="action-item editable-card" data-opportunity-id="${escapeHtml(opportunity.id)}" tabindex="0">
+    <header>
+      <strong>${escapeHtml(opportunity.name)}</strong>
+      <span class="date-chip" data-tone="${getDaysUntil(opportunity.dueDate) < 0 ? "danger" : ""}">${formatDate(opportunity.dueDate)}</span>
+    </header>
+    <p>${escapeHtml(opportunity.nextStep || getClientName(opportunity))}</p>
+    <div class="item-meta">
+      <span>${escapeHtml(opportunity.stage || "New")}</span>
+      <span>${escapeHtml(opportunity.owner || "Unassigned")}</span>
+      ${opportunity.priority ? `<span>${escapeHtml(opportunity.priority)}</span>` : ""}
+      ${opportunity.blocker ? "<span>Blocker</span>" : ""}
+    </div>
+    <button class="text-action" type="button">Edit Opportunity</button>
+  </article>
+`;
+
+const eventCard = (event) => `
+  <article class="calendar-item editable-card" data-event-id="${escapeHtml(event.id)}" tabindex="0">
+    <span>${formatDate(event.date)}</span>
+    <strong>${escapeHtml(event.name)}</strong>
+    <em>${escapeHtml(getClientName(event))}${event.type ? ` / ${escapeHtml(event.type)}` : ""}</em>
+    <button class="text-action" type="button">Edit Event</button>
+  </article>
+`;
+
 const renderFocusLists = () => {
   const due = getDueActions().sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate)).slice(0, 5);
-  const priority = getOpenActions().filter(isUrgent).slice(0, 5);
-  const blockers = getBlockers().slice(0, 5);
+  const priorityDeals = getOpenOpportunities()
+    .filter((opportunity) => isUrgent(opportunity) || getDaysUntil(opportunity.dueDate) <= 7)
+    .sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate))
+    .slice(0, 5);
+  const blockersAndDates = [
+    ...getBlockers().slice(0, 3).map((item) => ({ kind: "action", item })),
+    ...getOpportunityBlockers().slice(0, 3).map((item) => ({ kind: "opportunity", item })),
+    ...state.events
+      .filter((event) => getDaysUntil(event.date) >= 0)
+      .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date))
+      .slice(0, 3)
+      .map((item) => ({ kind: "event", item })),
+  ].slice(0, 6);
 
   if (due.length) {
     els.todayList.innerHTML = due.map(actionCard).join("");
@@ -253,16 +300,24 @@ const renderFocusLists = () => {
     renderEmptyList(els.todayList, "Nothing due today", "No overdue or same-day actions are currently open.");
   }
 
-  if (priority.length) {
-    els.priorityList.innerHTML = priority.map(actionCard).join("");
+  if (priorityDeals.length) {
+    els.priorityList.innerHTML = priorityDeals.map(opportunityCard).join("");
   } else {
-    renderEmptyList(els.priorityList, "Priority queue is clean", "Mark an action High or Urgent when it needs sharper visibility.");
+    renderEmptyList(els.priorityList, "No urgent deal moves", "High-priority opportunities and upcoming deal actions will appear here.");
   }
 
-  if (blockers.length) {
-    els.blockerList.innerHTML = blockers.map(actionCard).join("");
+  if (blockersAndDates.length) {
+    els.blockerList.innerHTML = blockersAndDates
+      .map(({ kind, item }) => {
+        if (kind === "event") {
+          return eventCard(item);
+        }
+
+        return kind === "opportunity" ? opportunityCard(item) : actionCard(item);
+      })
+      .join("");
   } else {
-    renderEmptyList(els.blockerList, "No visible blockers", "Blocked work will appear here when an action is marked as a blocker.");
+    renderEmptyList(els.blockerList, "Nothing blocking the system", "Blocked tasks, blocked deals, and upcoming launches will appear here.");
   }
 };
 
@@ -387,11 +442,11 @@ const renderDetail = () => {
       </article>
       <article>
         <h3>Opportunities</h3>
-        ${relatedList(relatedOpportunities, "No opportunities linked yet.", (item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.stage || "No stage")}</span></a>`)}
+        ${relatedList(relatedOpportunities, "No opportunities linked yet.", (item) => `<button type="button" data-jump-opportunity="${escapeHtml(item.id)}"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.stage || "No stage")} / ${formatDate(item.dueDate)}</span></button>`)}
       </article>
       <article>
         <h3>Events / Releases</h3>
-        ${relatedList(relatedEvents, "No events or releases linked yet.", (item) => `<a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer"><strong>${escapeHtml(item.name)}</strong><span>${formatDate(item.date)} ${item.type ? `/ ${escapeHtml(item.type)}` : ""}</span></a>`)}
+        ${relatedList(relatedEvents, "No events or releases linked yet.", (item) => `<button type="button" data-jump-event="${escapeHtml(item.id)}"><strong>${escapeHtml(item.name)}</strong><span>${formatDate(item.date)} ${item.type ? `/ ${escapeHtml(item.type)}` : ""}</span></button>`)}
       </article>
     </div>
 
@@ -443,10 +498,11 @@ const renderPipeline = () => {
             ${items
               .map(
                 (item) => `
-                  <a class="compact-card" href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">
+                  <button class="compact-card editable-card" type="button" data-opportunity-id="${escapeHtml(item.id)}">
                     <span>${escapeHtml(item.name)}</span>
-                    <em>${escapeHtml(getClientName(item))}</em>
-                  </a>
+                    <em>${escapeHtml(getClientName(item))} / ${escapeHtml(item.owner || "Unassigned")}</em>
+                    <small>${escapeHtml(item.nextStep || "Add next step")}</small>
+                  </button>
                 `
               )
               .join("")}
@@ -468,21 +524,15 @@ const renderCalendar = () => {
     return;
   }
 
-  els.calendarList.innerHTML = upcoming
-    .map(
-      (event) => `
-        <a class="calendar-item" href="${escapeHtml(event.url)}" target="_blank" rel="noreferrer">
-          <span>${formatDate(event.date)}</span>
-          <strong>${escapeHtml(event.name)}</strong>
-          <em>${escapeHtml(getClientName(event))}${event.type ? ` / ${escapeHtml(event.type)}` : ""}</em>
-        </a>
-      `
-    )
-    .join("");
+  els.calendarList.innerHTML = upcoming.map(eventCard).join("");
 };
 
 const renderOwners = () => {
   const owners = ["Maxwell", "Joe", "Erik", "Unassigned"];
+
+  if (!els.ownerGrid) {
+    return;
+  }
 
   els.ownerGrid.innerHTML = owners
     .map((owner) => {
@@ -502,11 +552,17 @@ const renderOwners = () => {
     .join("");
 };
 
-const renderActionClientOptions = () => {
-  els.actionClientSelect.innerHTML = `<option value="">No client relation</option>${state.clients
+const renderClientOptions = (selectEl) => {
+  if (!selectEl) {
+    return;
+  }
+
+  selectEl.innerHTML = `<option value="">No client relation</option>${state.clients
     .map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`)
     .join("")}`;
 };
+
+const renderActionClientOptions = () => renderClientOptions(els.actionClientSelect);
 
 const setLoadingState = () => {
   els.clientsMetric.textContent = "-";
@@ -523,9 +579,11 @@ const setLoadingState = () => {
       </td>
     </tr>
   `;
-  [els.todayList, els.priorityList, els.blockerList, els.actionList, els.pipelineGrid, els.calendarList, els.ownerGrid].forEach((target) => {
-    target.innerHTML = "";
-  });
+  [els.todayList, els.priorityList, els.blockerList, els.actionList, els.pipelineGrid, els.calendarList, els.ownerGrid]
+    .filter(Boolean)
+    .forEach((target) => {
+      target.innerHTML = "";
+    });
 };
 
 const setErrorState = () => {
@@ -677,15 +735,27 @@ const closeDialog = (dialog) => {
   dialog.close();
 };
 
+const setSelectValue = (selectEl, value) => {
+  if (!selectEl) {
+    return;
+  }
+
+  const nextValue = String(value || "");
+  if (nextValue && ![...selectEl.options].some((option) => option.value === nextValue)) {
+    selectEl.add(new Option(nextValue, nextValue));
+  }
+  selectEl.value = nextValue;
+};
+
 const openClientForm = (client = null) => {
   els.clientForm.reset();
   els.clientFormTitle.textContent = client ? "Edit client" : "Add client";
   els.clientForm.elements.id.value = client?.id || "";
   els.clientForm.elements.name.value = client?.name || "";
   els.clientForm.elements.category.value = client?.category || "";
-  els.clientForm.elements.status.value = client?.status || "Prospect";
+  setSelectValue(els.clientForm.elements.status, client?.status || "Prospect");
   els.clientForm.elements.owner.value = client?.owner || "";
-  els.clientForm.elements.focusLevel.value = client?.focusLevel || "Normal";
+  setSelectValue(els.clientForm.elements.focusLevel, client?.focusLevel || "Normal");
   els.clientForm.elements.stage.value = client?.stage || "";
   els.clientForm.elements.lastTouch.value = client?.lastTouch || client?.dueDate || todayISO;
   els.clientForm.elements.nextAction.value = client?.nextAction || "";
@@ -699,18 +769,49 @@ const openClientForm = (client = null) => {
 
 const openActionForm = (action = null) => {
   els.actionForm.reset();
-  renderActionClientOptions();
+  renderClientOptions(els.actionClientSelect);
   els.actionFormTitle.textContent = action ? "Edit task" : "Add task";
   els.actionForm.elements.id.value = action?.id || "";
   els.actionForm.elements.title.value = action?.title || "";
-  els.actionForm.elements.status.value = action?.status || "Open";
-  els.actionForm.elements.owner.value = action?.owner || "Unassigned";
-  els.actionForm.elements.priority.value = action?.priority || "Normal";
+  setSelectValue(els.actionForm.elements.status, action?.status || "Open");
+  setSelectValue(els.actionForm.elements.owner, action?.owner || "Unassigned");
+  setSelectValue(els.actionForm.elements.priority, action?.priority || "Normal");
   els.actionForm.elements.dueDate.value = action?.dueDate || todayISO;
   els.actionForm.elements.clientId.value = action?.clientIds?.[0] || "";
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
   els.actionForm.elements.notes.value = action?.notes || "";
   openDialog(els.actionDialog);
+};
+
+const openOpportunityForm = (opportunity = null) => {
+  els.opportunityForm.reset();
+  renderClientOptions(els.opportunityClientSelect);
+  els.opportunityFormTitle.textContent = opportunity ? "Edit opportunity" : "Add opportunity";
+  els.opportunityForm.elements.id.value = opportunity?.id || "";
+  els.opportunityForm.elements.name.value = opportunity?.name || "";
+  setSelectValue(els.opportunityForm.elements.stage, opportunity?.stage || "New");
+  setSelectValue(els.opportunityForm.elements.owner, opportunity?.owner || "Unassigned");
+  setSelectValue(els.opportunityForm.elements.priority, opportunity?.priority || "Normal");
+  els.opportunityForm.elements.dueDate.value = opportunity?.dueDate || todayISO;
+  els.opportunityForm.elements.clientId.value = opportunity?.clientIds?.[0] || "";
+  els.opportunityForm.elements.blocker.checked = Boolean(opportunity?.blocker);
+  els.opportunityForm.elements.nextStep.value = opportunity?.nextStep || "";
+  openDialog(els.opportunityDialog);
+};
+
+const openEventForm = (eventItem = null) => {
+  els.eventForm.reset();
+  renderClientOptions(els.eventClientSelect);
+  els.eventFormTitle.textContent = eventItem ? "Edit event" : "Add event";
+  els.eventForm.elements.id.value = eventItem?.id || "";
+  els.eventForm.elements.name.value = eventItem?.name || "";
+  setSelectValue(els.eventForm.elements.type, eventItem?.type || "Release");
+  setSelectValue(els.eventForm.elements.status, eventItem?.status || "Planned");
+  setSelectValue(els.eventForm.elements.owner, eventItem?.owner || "Unassigned");
+  els.eventForm.elements.date.value = eventItem?.date || todayISO;
+  els.eventForm.elements.clientId.value = eventItem?.clientIds?.[0] || "";
+  els.eventForm.elements.notes.value = eventItem?.notes || "";
+  openDialog(els.eventDialog);
 };
 
 const saveResource = async (payload) => {
@@ -805,6 +906,73 @@ const handleActionSubmit = async (event) => {
   }
 };
 
+const handleOpportunitySubmit = async (event) => {
+  event.preventDefault();
+  const formData = new FormData(els.opportunityForm);
+  const client = getClient(String(formData.get("clientId") || ""));
+  const payload = {
+    resource: "opportunity",
+    id: String(formData.get("id") || ""),
+    name: String(formData.get("name") || "").trim(),
+    stage: String(formData.get("stage") || "New"),
+    owner: String(formData.get("owner") || "Unassigned"),
+    priority: String(formData.get("priority") || "Normal"),
+    dueDate: String(formData.get("dueDate") || "").trim(),
+    clientId: client?.id || "",
+    clientName: client?.name || "",
+    blocker: formData.get("blocker") === "on",
+    nextStep: String(formData.get("nextStep") || "").trim(),
+  };
+  const submit = els.opportunityForm.querySelector('[type="submit"]');
+
+  submit.disabled = true;
+  submit.textContent = "Saving...";
+
+  try {
+    await saveResource(payload);
+    closeDialog(els.opportunityDialog);
+    await loadDashboard();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Save Opportunity";
+  }
+};
+
+const handleEventSubmit = async (event) => {
+  event.preventDefault();
+  const formData = new FormData(els.eventForm);
+  const client = getClient(String(formData.get("clientId") || ""));
+  const payload = {
+    resource: "event",
+    id: String(formData.get("id") || ""),
+    name: String(formData.get("name") || "").trim(),
+    type: String(formData.get("type") || "Event"),
+    status: String(formData.get("status") || "Planned"),
+    owner: String(formData.get("owner") || "Unassigned"),
+    date: String(formData.get("date") || "").trim(),
+    clientId: client?.id || "",
+    clientName: client?.name || "",
+    notes: String(formData.get("notes") || "").trim(),
+  };
+  const submit = els.eventForm.querySelector('[type="submit"]');
+
+  submit.disabled = true;
+  submit.textContent = "Saving...";
+
+  try {
+    await saveResource(payload);
+    closeDialog(els.eventDialog);
+    await loadDashboard();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Save Event";
+  }
+};
+
 const handleAccessSubmit = async (event) => {
   event.preventDefault();
   const code = els.accessInput.value.trim();
@@ -864,6 +1032,8 @@ els.rows.addEventListener("keydown", (event) => {
 els.detail.addEventListener("click", (event) => {
   const editClient = event.target.closest("[data-edit-client]");
   const jumpAction = event.target.closest("[data-jump-action]");
+  const jumpOpportunity = event.target.closest("[data-jump-opportunity]");
+  const jumpEvent = event.target.closest("[data-jump-event]");
 
   if (editClient) {
     const client = getClient(editClient.dataset.editClient);
@@ -876,6 +1046,20 @@ els.detail.addEventListener("click", (event) => {
     const action = state.actions.find((item) => item.id === jumpAction.dataset.jumpAction);
     if (action) {
       openActionForm(action);
+    }
+  }
+
+  if (jumpOpportunity) {
+    const opportunity = state.opportunities.find((item) => item.id === jumpOpportunity.dataset.jumpOpportunity);
+    if (opportunity) {
+      openOpportunityForm(opportunity);
+    }
+  }
+
+  if (jumpEvent) {
+    const eventItem = state.events.find((item) => item.id === jumpEvent.dataset.jumpEvent);
+    if (eventItem) {
+      openEventForm(eventItem);
     }
   }
 });
@@ -893,10 +1077,26 @@ els.actionList.addEventListener("click", (event) => {
 [els.todayList, els.priorityList, els.blockerList].forEach((target) => {
   target.addEventListener("click", (event) => {
     const actionCardEl = event.target.closest("[data-action-id]");
+    const opportunityCardEl = event.target.closest("[data-opportunity-id]");
+    const eventCardEl = event.target.closest("[data-event-id]");
     if (actionCardEl) {
       const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
       if (action) {
         openActionForm(action);
+      }
+    }
+
+    if (opportunityCardEl) {
+      const opportunity = state.opportunities.find((item) => item.id === opportunityCardEl.dataset.opportunityId);
+      if (opportunity) {
+        openOpportunityForm(opportunity);
+      }
+    }
+
+    if (eventCardEl) {
+      const eventItem = state.events.find((item) => item.id === eventCardEl.dataset.eventId);
+      if (eventItem) {
+        openEventForm(eventItem);
       }
     }
   });
@@ -907,11 +1107,29 @@ els.actionList.addEventListener("click", (event) => {
     }
 
     const actionCardEl = event.target.closest("[data-action-id]");
+    const opportunityCardEl = event.target.closest("[data-opportunity-id]");
+    const eventCardEl = event.target.closest("[data-event-id]");
     if (actionCardEl) {
       event.preventDefault();
       const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
       if (action) {
         openActionForm(action);
+      }
+    }
+
+    if (opportunityCardEl) {
+      event.preventDefault();
+      const opportunity = state.opportunities.find((item) => item.id === opportunityCardEl.dataset.opportunityId);
+      if (opportunity) {
+        openOpportunityForm(opportunity);
+      }
+    }
+
+    if (eventCardEl) {
+      event.preventDefault();
+      const eventItem = state.events.find((item) => item.id === eventCardEl.dataset.eventId);
+      if (eventItem) {
+        openEventForm(eventItem);
       }
     }
   });
@@ -932,15 +1150,71 @@ els.actionList.addEventListener("keydown", (event) => {
   }
 });
 
+els.pipelineGrid.addEventListener("click", (event) => {
+  const opportunityCardEl = event.target.closest("[data-opportunity-id]");
+  if (opportunityCardEl) {
+    const opportunity = state.opportunities.find((item) => item.id === opportunityCardEl.dataset.opportunityId);
+    if (opportunity) {
+      openOpportunityForm(opportunity);
+    }
+  }
+});
+
+els.pipelineGrid.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const opportunityCardEl = event.target.closest("[data-opportunity-id]");
+  if (opportunityCardEl) {
+    event.preventDefault();
+    const opportunity = state.opportunities.find((item) => item.id === opportunityCardEl.dataset.opportunityId);
+    if (opportunity) {
+      openOpportunityForm(opportunity);
+    }
+  }
+});
+
+els.calendarList.addEventListener("click", (event) => {
+  const eventCardEl = event.target.closest("[data-event-id]");
+  if (eventCardEl) {
+    const eventItem = state.events.find((item) => item.id === eventCardEl.dataset.eventId);
+    if (eventItem) {
+      openEventForm(eventItem);
+    }
+  }
+});
+
+els.calendarList.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const eventCardEl = event.target.closest("[data-event-id]");
+  if (eventCardEl) {
+    event.preventDefault();
+    const eventItem = state.events.find((item) => item.id === eventCardEl.dataset.eventId);
+    if (eventItem) {
+      openEventForm(eventItem);
+    }
+  }
+});
+
 $$("[data-open-action-form]").forEach((button) => button.addEventListener("click", () => openActionForm()));
 $$("[data-open-client-form]").forEach((button) => button.addEventListener("click", () => openClientForm()));
+$$("[data-open-opportunity-form]").forEach((button) => button.addEventListener("click", () => openOpportunityForm()));
+$$("[data-open-event-form]").forEach((button) => button.addEventListener("click", () => openEventForm()));
 $$("[data-close-action-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.actionDialog)));
 $$("[data-close-client-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.clientDialog)));
+$$("[data-close-opportunity-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.opportunityDialog)));
+$$("[data-close-event-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.eventDialog)));
 $("[data-refresh-dashboard]").addEventListener("click", () => loadDashboard());
 els.logout?.addEventListener("click", logoutPortal);
 els.accessForm.addEventListener("submit", handleAccessSubmit);
 els.clientForm.addEventListener("submit", handleClientSubmit);
 els.actionForm.addEventListener("submit", handleActionSubmit);
+els.opportunityForm.addEventListener("submit", handleOpportunitySubmit);
+els.eventForm.addEventListener("submit", handleEventSubmit);
 els.search.addEventListener("input", renderRows);
 els.statusFilter.addEventListener("change", renderRows);
 

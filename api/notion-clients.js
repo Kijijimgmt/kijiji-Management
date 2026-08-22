@@ -282,8 +282,9 @@ const mapPageToOpportunity = (page) => {
     priority: selectName(propertyByAliases(properties, ["Priority", "Urgency"])) || "",
     clientIds: relationIds(propertyByAliases(properties, ["Client", "Related Client"])),
     clientName: plainText(propertyByAliases(properties, ["Client Name", "Client Text", "Client"])),
-    nextStep: plainText(propertyByAliases(properties, ["Next Step", "Next Move", "Notes"])),
-    dueDate: dateStart(propertyByAliases(properties, ["Close Date", "Due Date", "Target Date"])),
+    nextStep: plainText(propertyByAliases(properties, ["Next Step", "Next Move", "Next Action", "Notes"])),
+    dueDate: dateStart(propertyByAliases(properties, ["Next Action Date", "Next Date", "Close Date", "Due Date", "Target Date"])),
+    blocker: checkboxValue(propertyByAliases(properties, ["Blocker", "Blocked", "Is Blocker"])),
   };
 };
 
@@ -335,6 +336,31 @@ const normalizeActionInput = (body) => ({
   notes: String(body.notes || "").trim(),
 });
 
+const normalizeOpportunityInput = (body) => ({
+  id: String(body.id || "").trim(),
+  name: String(body.name || body.opportunity || body.deal || "").trim(),
+  stage: String(body.stage || "New").trim(),
+  owner: String(body.owner || "Unassigned").trim(),
+  priority: String(body.priority || "Normal").trim(),
+  dueDate: String(body.dueDate || body.nextActionDate || "").trim(),
+  clientId: String(body.clientId || "").trim(),
+  clientName: String(body.clientName || "").trim(),
+  blocker: Boolean(body.blocker),
+  nextStep: String(body.nextStep || body.notes || "").trim(),
+});
+
+const normalizeEventInput = (body) => ({
+  id: String(body.id || "").trim(),
+  name: String(body.name || body.event || body.release || "").trim(),
+  type: String(body.type || "Event").trim(),
+  status: String(body.status || "Planned").trim(),
+  owner: String(body.owner || "Unassigned").trim(),
+  date: String(body.date || body.dueDate || "").trim(),
+  clientId: String(body.clientId || "").trim(),
+  clientName: String(body.clientName || "").trim(),
+  notes: String(body.notes || "").trim(),
+});
+
 const validateDate = (value, fieldName) => {
   if (!value) {
     return;
@@ -378,6 +404,39 @@ const validateAction = (action) => {
   validateDate(action.dueDate, "Due date");
 };
 
+const validateOwner = (owner) => {
+  if (!["Maxwell", "Max", "Joe", "Erik", "Unassigned", ""].includes(owner)) {
+    const error = new Error("Owner must be Maxwell, Joe, Erik, or Unassigned.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+};
+
+const validateOpportunity = (opportunity) => {
+  if (!opportunity.name) {
+    const error = new Error("Opportunity name is required.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
+  validateOwner(opportunity.owner);
+  validateDate(opportunity.dueDate, "Next action date");
+};
+
+const validateEvent = (event) => {
+  if (!event.name) {
+    const error = new Error("Event name is required.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
+  validateOwner(event.owner);
+  validateDate(event.date, "Event date");
+};
+
 const clientProperties = (client, schema) => {
   const properties = {};
 
@@ -416,6 +475,47 @@ const actionProperties = (action, schema) => {
   }
 
   assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, action.clientName);
+
+  return properties;
+};
+
+const opportunityProperties = (opportunity, schema) => {
+  const properties = {};
+
+  assignProperty(properties, schema, ["Opportunity", "Deal", "Name", "Title"], "title", title, opportunity.name);
+  assignProperty(properties, schema, ["Stage", "Status", "Pipeline Stage"], "select", select, opportunity.stage);
+  assignProperty(properties, schema, ["Owner", "Assigned Owner"], "select", select, opportunity.owner || "Unassigned");
+  assignProperty(properties, schema, ["Priority", "Urgency"], "select", select, opportunity.priority);
+  assignProperty(properties, schema, ["Next Action Date", "Next Date", "Close Date", "Due Date", "Target Date"], "date", date, opportunity.dueDate);
+  assignProperty(properties, schema, ["Blocker", "Blocked", "Is Blocker"], "checkbox", checkbox, opportunity.blocker);
+  assignProperty(properties, schema, ["Next Step", "Next Move", "Next Action", "Notes"], "rich_text", richText, opportunity.nextStep);
+
+  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client"], "relation");
+  if (relationKey && opportunity.clientId) {
+    properties[relationKey] = relation([opportunity.clientId]);
+  }
+
+  assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, opportunity.clientName);
+
+  return properties;
+};
+
+const eventProperties = (event, schema) => {
+  const properties = {};
+
+  assignProperty(properties, schema, ["Event", "Release", "Name", "Title"], "title", title, event.name);
+  assignProperty(properties, schema, ["Type", "Event Type", "Release Type"], "select", select, event.type);
+  assignProperty(properties, schema, ["Status", "Event Status"], "select", select, event.status);
+  assignProperty(properties, schema, ["Owner", "Lead"], "select", select, event.owner || "Unassigned");
+  assignProperty(properties, schema, ["Date", "Release Date", "Event Date"], "date", date, event.date);
+  assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, event.notes);
+
+  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client"], "relation");
+  if (relationKey && event.clientId) {
+    properties[relationKey] = relation([event.clientId]);
+  }
+
+  assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, event.clientName);
 
   return properties;
 };
@@ -509,6 +609,74 @@ const updateAction = async (action) => {
   return mapPageToAction(data);
 };
 
+const createOpportunity = async (opportunity) => {
+  validateOpportunity(opportunity);
+  const schema = await getSourceSchema(dataSources.opportunities);
+  const data = await notionRequest("/pages", {
+    method: "POST",
+    body: JSON.stringify({
+      parent: { type: "data_source_id", data_source_id: dataSources.opportunities },
+      properties: opportunityProperties(opportunity, schema),
+    }),
+  });
+
+  return mapPageToOpportunity(data);
+};
+
+const updateOpportunity = async (opportunity) => {
+  if (!opportunity.id) {
+    const error = new Error("Opportunity id is required.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
+  validateOpportunity(opportunity);
+  const schema = await getSourceSchema(dataSources.opportunities);
+  const data = await notionRequest(`/pages/${opportunity.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      properties: opportunityProperties(opportunity, schema),
+    }),
+  });
+
+  return mapPageToOpportunity(data);
+};
+
+const createEvent = async (event) => {
+  validateEvent(event);
+  const schema = await getSourceSchema(dataSources.events);
+  const data = await notionRequest("/pages", {
+    method: "POST",
+    body: JSON.stringify({
+      parent: { type: "data_source_id", data_source_id: dataSources.events },
+      properties: eventProperties(event, schema),
+    }),
+  });
+
+  return mapPageToEvent(data);
+};
+
+const updateEvent = async (event) => {
+  if (!event.id) {
+    const error = new Error("Event id is required.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
+  validateEvent(event);
+  const schema = await getSourceSchema(dataSources.events);
+  const data = await notionRequest(`/pages/${event.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      properties: eventProperties(event, schema),
+    }),
+  });
+
+  return mapPageToEvent(data);
+};
+
 module.exports = async (request, response) => {
   try {
     if (request.method === "OPTIONS") {
@@ -542,9 +710,23 @@ module.exports = async (request, response) => {
         return;
       }
 
+      if (resource === "opportunity") {
+        const opportunity = normalizeOpportunityInput(body);
+        const savedOpportunity = request.method === "POST" ? await createOpportunity(opportunity) : await updateOpportunity(opportunity);
+        json(response, 200, { opportunity: savedOpportunity });
+        return;
+      }
+
+      if (resource === "event") {
+        const event = normalizeEventInput(body);
+        const savedEvent = request.method === "POST" ? await createEvent(event) : await updateEvent(event);
+        json(response, 200, { event: savedEvent });
+        return;
+      }
+
       json(response, 400, {
         error: "validation_error",
-        message: "Resource must be client or action.",
+        message: "Resource must be client, action, opportunity, or event.",
       });
       return;
     }

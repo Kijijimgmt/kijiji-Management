@@ -341,21 +341,24 @@ h2 {
   background: rgba(255, 248, 237, 0.035);
 }
 
-.command-grid {
+.command-board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(260px, 0.8fr));
   gap: 18px;
   margin: 24px 0;
 }
 
 .command-panel {
-  min-height: 320px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:
     radial-gradient(circle at 90% 10%, rgba(201, 116, 42, 0.12), transparent 16rem),
     rgba(255, 248, 237, 0.045);
   overflow: hidden;
+}
+
+.command-primary {
+  min-height: 360px;
 }
 
 .metric-panel {
@@ -448,6 +451,10 @@ h2 {
   border-bottom: 1px solid var(--line);
 }
 
+.section-header > div:first-child {
+  max-width: 760px;
+}
+
 .section-header.compact {
   padding-bottom: 18px;
 }
@@ -465,6 +472,7 @@ h2 {
   flex-wrap: wrap;
   gap: 12px;
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 label {
@@ -745,6 +753,21 @@ textarea {
   cursor: pointer;
 }
 
+.editable-card {
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.editable-card:hover,
+.editable-card:focus-visible {
+  border-color: rgba(255, 178, 94, 0.42);
+  background: rgba(201, 116, 42, 0.1);
+  transform: translateY(-1px);
+  outline: none;
+}
+
 .action-item header {
   display: flex;
   align-items: center;
@@ -880,6 +903,7 @@ textarea {
   background: rgba(255, 248, 237, 0.04);
   color: inherit;
   text-align: left;
+  font: inherit;
 }
 
 .related-list a:hover,
@@ -902,6 +926,13 @@ textarea {
   color: var(--muted);
   font-size: 0.78rem;
   font-style: normal;
+}
+
+.compact-card small {
+  display: block;
+  color: rgba(237, 227, 208, 0.62);
+  font-size: 0.76rem;
+  line-height: 1.35;
 }
 
 .pipeline-grid {
@@ -942,12 +973,13 @@ textarea {
 }
 
 .calendar-item {
-  grid-template-columns: 110px minmax(0, 1fr) minmax(160px, 0.5fr);
+  grid-template-columns: 110px minmax(0, 1fr) minmax(160px, 0.5fr) auto;
   align-items: center;
   border-width: 0 0 1px;
   border-radius: 0;
   padding: 18px 24px;
   background: transparent;
+  cursor: pointer;
 }
 
 .calendar-item span {
@@ -1137,7 +1169,7 @@ textarea {
   .detail-grid,
   .workband,
   .access-form,
-  .command-grid,
+  .command-board,
   .relation-grid,
   .guidance-grid {
     grid-template-columns: 1fr;
