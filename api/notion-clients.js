@@ -258,7 +258,7 @@ const mapPageToAction = (page) => {
   return {
     id: page.id,
     url: page.url,
-    title: titleText(properties, ["Action", "Task", "Name", "Next Move"]) || "Untitled action",
+    title: titleText(properties, ["Action", "Task", "Next Step", "Name", "Next Move"]) || "Untitled action",
     status: selectName(propertyByAliases(properties, ["Status", "Action Status"])) || "Open",
     owner: selectName(propertyByAliases(properties, ["Owner", "Assigned Owner"])) || plainText(propertyByAliases(properties, ["Owner", "Assigned Owner"])),
     priority: selectName(propertyByAliases(properties, ["Priority", "Urgency"])) || "Normal",
@@ -324,7 +324,7 @@ const normalizeClientInput = (body) => ({
 
 const normalizeActionInput = (body) => ({
   id: String(body.id || "").trim(),
-  title: String(body.title || body.action || "").trim(),
+  title: String(body.title || body.nextStep || body.action || "").trim(),
   status: String(body.status || "Open").trim(),
   owner: String(body.owner || "").trim(),
   priority: String(body.priority || "Normal").trim(),
@@ -402,7 +402,7 @@ const clientProperties = (client, schema) => {
 const actionProperties = (action, schema) => {
   const properties = {};
 
-  assignProperty(properties, schema, ["Action", "Task", "Name", "Next Move"], "title", title, action.title);
+  assignProperty(properties, schema, ["Action", "Task", "Next Step", "Name", "Next Move"], "title", title, action.title);
   assignProperty(properties, schema, ["Status", "Action Status"], "select", select, action.status);
   assignProperty(properties, schema, ["Owner", "Assigned Owner"], "select", select, action.owner || "Unassigned");
   assignProperty(properties, schema, ["Priority", "Urgency"], "select", select, action.priority);

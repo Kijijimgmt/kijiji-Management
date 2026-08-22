@@ -779,6 +779,32 @@ textarea {
   text-transform: uppercase;
 }
 
+.text-action {
+  width: fit-content;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 178, 94, 0.52);
+  padding: 0 0 3px;
+  background: transparent;
+  color: var(--orange-hot);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.text-action:hover,
+.text-action:focus-visible {
+  color: var(--white);
+}
+
+.section-note {
+  max-width: 52ch;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .date-chip {
   white-space: nowrap;
   border-radius: 999px;

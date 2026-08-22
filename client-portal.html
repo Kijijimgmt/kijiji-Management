@@ -46,7 +46,7 @@
             <button class="button button-secondary" type="button" data-refresh-dashboard data-requires-access>Refresh</button>
             <button class="button button-secondary" type="button" data-logout-portal>Log Out</button>
             <button class="button button-secondary" type="button" data-open-client-form data-requires-access>Add Client</button>
-            <button class="button button-primary" type="button" data-open-action-form data-requires-access>Add Action</button>
+            <button class="button button-primary" type="button" data-open-action-form data-requires-access>Add Task</button>
           </div>
         </header>
 
@@ -178,8 +178,9 @@
                 <div>
                   <p class="eyebrow">Actions</p>
                   <h2 id="actions-title">Team action queue</h2>
+                  <p class="section-note">Select any task to update status, owner, due date, next step, or blocker state.</p>
                 </div>
-                <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add</button>
+                <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
               </div>
               <div class="action-list" data-action-list></div>
             </aside>
@@ -338,7 +339,7 @@
         <div class="dialog-head">
           <div>
             <p class="eyebrow">Team action</p>
-            <h2 data-action-form-title>Add action</h2>
+            <h2 data-action-form-title>Add task</h2>
           </div>
           <button class="icon-button" type="button" data-close-action-form aria-label="Close form">x</button>
         </div>
@@ -347,8 +348,8 @@
 
         <div class="form-grid">
           <label class="wide">
-            <span>Action</span>
-            <input name="title" required />
+            <span>Next step / task</span>
+            <input name="title" placeholder="Example: Send revised launch plan" required />
           </label>
           <label>
             <span>Status</span>
@@ -392,14 +393,14 @@
             <span>Visible blocker</span>
           </label>
           <label class="wide">
-            <span>Notes</span>
+            <span>Context / notes</span>
             <textarea name="notes" rows="4"></textarea>
           </label>
         </div>
 
         <div class="dialog-actions">
           <button class="button button-secondary" type="button" data-close-action-form>Cancel</button>
-          <button class="button button-primary" type="submit">Save Action</button>
+          <button class="button button-primary" type="submit">Save Task</button>
         </div>
       </form>
     </dialog>

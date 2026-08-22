@@ -238,6 +238,7 @@ const actionCard = (action) => `
       <span>${escapeHtml(action.priority || "Normal")}</span>
       ${action.blocker ? "<span>Blocker</span>" : ""}
     </div>
+    <button class="text-action" type="button">Edit Task</button>
   </article>
 `;
 
@@ -699,7 +700,7 @@ const openClientForm = (client = null) => {
 const openActionForm = (action = null) => {
   els.actionForm.reset();
   renderActionClientOptions();
-  els.actionFormTitle.textContent = action ? "Edit action" : "Add action";
+  els.actionFormTitle.textContent = action ? "Edit task" : "Add task";
   els.actionForm.elements.id.value = action?.id || "";
   els.actionForm.elements.title.value = action?.title || "";
   els.actionForm.elements.status.value = action?.status || "Open";
@@ -800,7 +801,7 @@ const handleActionSubmit = async (event) => {
     alert(error.message);
   } finally {
     submit.disabled = false;
-    submit.textContent = "Save Action";
+    submit.textContent = "Save Task";
   }
 };
 
@@ -899,6 +900,36 @@ els.actionList.addEventListener("click", (event) => {
       }
     }
   });
+
+  target.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    const actionCardEl = event.target.closest("[data-action-id]");
+    if (actionCardEl) {
+      event.preventDefault();
+      const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
+      if (action) {
+        openActionForm(action);
+      }
+    }
+  });
+});
+
+els.actionList.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  const actionCardEl = event.target.closest("[data-action-id]");
+  if (actionCardEl) {
+    event.preventDefault();
+    const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
+    if (action) {
+      openActionForm(action);
+    }
+  }
 });
 
 $$("[data-open-action-form]").forEach((button) => button.addEventListener("click", () => openActionForm()));
