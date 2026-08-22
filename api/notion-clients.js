@@ -1,6 +1,7 @@
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
 const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
 const PORTAL_ACCESS_CODE = process.env.PORTAL_ACCESS_CODE;
+const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 const DEFAULT_DATA_SOURCES = {
   clients: "03c5f70c-fb49-4d09-9de8-7fb8a45a04c7",
@@ -437,6 +438,99 @@ const validateEvent = (event) => {
   validateDate(event.date, "Event date");
 };
 
+const isSlackConfigured = () => Boolean(String(SLACK_WEBHOOK_URL || "").trim());
+
+const compact = (value, fallback = "Not set") => {
+  const text = String(value || "").trim();
+  return text ? text.slice(0, 180) : fallback;
+};
+
+const getResourceTitle = (resource, item) => {
+  if (resource === "action") return item.title;
+  return item.name;
+};
+
+const getSlackResourceLabel = (resource) => {
+  if (resource === "action") return "Task";
+  if (resource === "opportunity") return "Deal";
+  if (resource === "event") return "Event";
+  return "Record";
+};
+
+const getSlackFields = (resource, input) => {
+  if (resource === "action") {
+    return [
+      `Status: ${compact(input.status)}`,
+      `Owner: ${compact(input.owner || "Unassigned")}`,
+      `Priority: ${compact(input.priority || "Normal")}`,
+      `Due: ${compact(input.dueDate)}`,
+      `Client: ${compact(input.clientName)}`,
+      `Next: ${compact(input.notes)}`,
+    ];
+  }
+
+  if (resource === "opportunity") {
+    return [
+      `Stage: ${compact(input.stage)}`,
+      `Owner: ${compact(input.owner || "Unassigned")}`,
+      `Priority: ${compact(input.priority || "Normal")}`,
+      `Next action: ${compact(input.dueDate)}`,
+      `Client: ${compact(input.clientName)}`,
+      `Next: ${compact(input.nextStep)}`,
+    ];
+  }
+
+  return [
+    `Type: ${compact(input.type)}`,
+    `Status: ${compact(input.status)}`,
+    `Owner: ${compact(input.owner || "Unassigned")}`,
+    `Date: ${compact(input.date)}`,
+    `Client: ${compact(input.clientName)}`,
+    `Notes: ${compact(input.notes)}`,
+  ];
+};
+
+const notifySlack = async ({ resource, operation, input, saved }) => {
+  if (!isSlackConfigured()) {
+    return;
+  }
+
+  const label = getSlackResourceLabel(resource);
+  const isBlocker = Boolean(input.blocker);
+  const headline = `${isBlocker ? ":rotating_light: BLOCKER " : ""}${label} ${operation === "created" ? "created" : "updated"}: ${compact(getResourceTitle(resource, saved))}`;
+  const fields = getSlackFields(resource, input)
+    .filter((line) => !line.endsWith(": Not set"))
+    .slice(0, 6);
+  const notionLine = saved.url ? `\nNotion: ${saved.url}` : "";
+  const text = [`${headline}`, ...fields.map((line) => `- ${line}`)].join("\n") + notionLine;
+
+  let timeout;
+  try {
+    const controller = typeof AbortController === "function" ? new AbortController() : null;
+    timeout = controller ? setTimeout(() => controller.abort(), 1500) : null;
+    const response = await fetch(SLACK_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      ...(controller ? { signal: controller.signal } : {}),
+      body: JSON.stringify({
+        text,
+        unfurl_links: false,
+        unfurl_media: false,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`Slack notification failed with status ${response.status}.`);
+    }
+  } catch (error) {
+    console.warn(`Slack notification failed: ${error.message}`);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+  }
+};
+
 const clientProperties = (client, schema) => {
   const properties = {};
 
@@ -699,6 +793,12 @@ module.exports = async (request, response) => {
       if (resource === "action") {
         const action = normalizeActionInput(body);
         const savedAction = request.method === "POST" ? await createAction(action) : await updateAction(action);
+        await notifySlack({
+          resource,
+          operation: request.method === "POST" ? "created" : "updated",
+          input: action,
+          saved: savedAction,
+        });
         json(response, 200, { action: savedAction });
         return;
       }
@@ -713,6 +813,12 @@ module.exports = async (request, response) => {
       if (resource === "opportunity") {
         const opportunity = normalizeOpportunityInput(body);
         const savedOpportunity = request.method === "POST" ? await createOpportunity(opportunity) : await updateOpportunity(opportunity);
+        await notifySlack({
+          resource,
+          operation: request.method === "POST" ? "created" : "updated",
+          input: opportunity,
+          saved: savedOpportunity,
+        });
         json(response, 200, { opportunity: savedOpportunity });
         return;
       }
@@ -720,6 +826,12 @@ module.exports = async (request, response) => {
       if (resource === "event") {
         const event = normalizeEventInput(body);
         const savedEvent = request.method === "POST" ? await createEvent(event) : await updateEvent(event);
+        await notifySlack({
+          resource,
+          operation: request.method === "POST" ? "created" : "updated",
+          input: event,
+          saved: savedEvent,
+        });
         json(response, 200, { event: savedEvent });
         return;
       }

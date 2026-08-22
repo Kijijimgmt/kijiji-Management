@@ -13,9 +13,12 @@ NOTION_ACTIONS_DATA_SOURCE_ID=662c1c0d-d255-4fe9-8260-5dc4f293b051
 NOTION_OPPORTUNITIES_DATA_SOURCE_ID=8548a9d4-1ffe-4787-90fc-3eb0a0085531
 NOTION_EVENTS_DATA_SOURCE_ID=4bf7373c-c744-4fe3-854e-ff0470954497
 PORTAL_ACCESS_CODE=choose-a-private-team-code
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/kijiji/ops-webhook
 ```
 
 The data source IDs are optional while the current Notion operating system stays the same, because the API has the current IDs as fallbacks. Set them anyway so future migrations are easier.
+
+`SLACK_WEBHOOK_URL` is optional, but should be added in **Vercel Production** when the team wants internal alerts in Slack. Keep it server-side only. Do not add the webhook URL to browser JavaScript, HTML, or any public client-side config.
 
 ## Required Notion Step
 
@@ -37,6 +40,23 @@ The portal API requires `PORTAL_ACCESS_CODE`. Share that private code only with 
 When someone opens the portal, the browser shows an unlock form and keeps the passcode only in that browser session.
 
 The portal includes a **Log Out** button. It clears the browser's saved access-code session and removes loaded roster data from the page.
+
+## Slack Notifications
+
+The portal API can send concise internal alerts to Slack channel `#kijiji-ops` after successful Notion saves for:
+
+- Tasks: create/update, including owner, priority, due date, client, next step, and blocker state.
+- Opportunities & Deals: create/update, including stage, owner, priority, next action date, client, next step, and blocker state.
+- Events & Releases: create/update, including type, status, owner, date, client, and notes.
+
+To enable this:
+
+1. In Slack, create an incoming webhook for `#kijiji-ops`.
+2. In Vercel, open the Kijiji project > **Settings** > **Environment Variables**.
+3. Add `SLACK_WEBHOOK_URL` for **Production** only.
+4. Redeploy the latest production deployment.
+
+If `SLACK_WEBHOOK_URL` is missing or Slack is unavailable, Notion saves still complete. Slack notification failures are logged server-side and are never sent to the browser.
 
 ## Email-Based Team Restriction
 
@@ -60,8 +80,8 @@ After the provider is chosen, enforce the allowlist in `api/notion-clients.js` u
 
 - Clients: name/type, status, focus level, owner, contact, lead source, scope, next move, progress, last touch, and internal notes.
 - Actions: action, status, owner, priority, due date, related client, blocker, and notes.
-- Opportunities & Deals: read-only pipeline visibility by stage.
-- Events & Releases: read-only upcoming calendar visibility.
+- Opportunities & Deals: stage, owner, priority, next action date, related client, blocker, and next step.
+- Events & Releases: type, status, owner, date, related client, and notes.
 
 ## Organization Guidance
 
