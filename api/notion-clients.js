@@ -1,5 +1,5 @@
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
-const NOTION_VERSION = process.env.NOTION_VERSION || "2025-09-03";
+const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
 const PORTAL_ACCESS_CODE = process.env.PORTAL_ACCESS_CODE;
 
 const DEFAULT_DATA_SOURCES = {
