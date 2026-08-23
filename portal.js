@@ -241,7 +241,7 @@ const actionCard = (action) => `
       <strong>${escapeHtml(action.title)}</strong>
       <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
     </header>
-    <p>${escapeHtml(action.notes || getClientName(action))}</p>
+    <p title="${escapeHtml(action.notes || getClientName(action))}">${escapeHtml(action.notes || getClientName(action))}</p>
     <div class="item-meta">
       <span>${escapeHtml(action.owner || "Unassigned")}</span>
       <span>${escapeHtml(action.priority || "Normal")}</span>
@@ -257,7 +257,7 @@ const opportunityCard = (opportunity) => `
       <strong>${escapeHtml(opportunity.name)}</strong>
       <span class="date-chip" data-tone="${getDaysUntil(opportunity.dueDate) < 0 ? "danger" : ""}">${formatDate(opportunity.dueDate)}</span>
     </header>
-    <p>${escapeHtml(opportunity.nextStep || getClientName(opportunity))}</p>
+    <p title="${escapeHtml(opportunity.nextStep || getClientName(opportunity))}">${escapeHtml(opportunity.nextStep || getClientName(opportunity))}</p>
     <div class="item-meta">
       <span>${escapeHtml(opportunity.stage || "New")}</span>
       <span>${escapeHtml(opportunity.owner || "Unassigned")}</span>
@@ -500,7 +500,7 @@ const renderPipeline = () => {
                   <button class="compact-card editable-card" type="button" data-opportunity-id="${escapeHtml(item.id)}">
                     <span>${escapeHtml(item.name)}</span>
                     <em>${escapeHtml(getClientName(item))} / ${escapeHtml(item.owner || "Unassigned")}</em>
-                    <small>${escapeHtml(item.nextStep || "Add next step")}</small>
+                    <small title="${escapeHtml(item.nextStep || "Add next step")}">${escapeHtml(item.nextStep || "Add next step")}</small>
                   </button>
                 `
               )
