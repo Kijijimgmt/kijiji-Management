@@ -210,8 +210,8 @@ h2 {
 }
 
 .portal-main {
-  width: min(100%, 1380px);
-  margin: 0 auto;
+  width: 100%;
+  min-width: 0;
   padding: var(--space-4) clamp(var(--space-2), 3vw, 44px) 56px;
 }
 
@@ -665,13 +665,14 @@ textarea {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  grid-template-columns: minmax(280px, 0.68fr) minmax(420px, 1.32fr);
   gap: var(--space-3);
   margin-top: var(--space-3);
 }
 
 .detail-panel,
 .action-panel {
+  min-width: 0;
   min-height: 420px;
   padding: var(--space-3);
 }
