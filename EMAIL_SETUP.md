@@ -72,32 +72,41 @@ In Resend:
 
 Do not put the Resend API key in `script.js`.
 
-## How Resend Should Connect To This Site
+## How The Website Form Connects To The Dashboard
 
-The static website submits leads through a server-side Vercel endpoint. The endpoint saves the lead to Supabase and sends internal notifications with Resend:
+The static website submits leads through a server-side Vercel endpoint. The endpoint creates a new lead/opportunity in the shared Kijiji Notion dashboard, then sends optional internal alerts through Slack, Resend, and the Supabase archive:
 
 ```text
-Website form -> Vercel /api/strategy-session-lead -> Supabase + Resend
+Website form -> Vercel /api/strategy-session-lead -> Notion Opportunities & Deals + Slack + Resend + Supabase archive
 ```
 
 Use cases:
 
+- Create a dashboard lead/opportunity from every strategy session request.
+- Alert `#kijiji-ops` when a new website lead arrives.
 - Send internal notification to `joe@kijijimgmt.com`, `erik@kijijimgmt.com`, and `max@kijijimgmt.com`.
-- Send confirmation to the lead.
 - Later, send follow-up sequences or hand off to CRM.
 
 Set these Vercel environment variables:
 
 ```text
+NOTION_TOKEN=secret_your_notion_integration_token
+NOTION_OPPORTUNITIES_DATA_SOURCE_ID=8548a9d4-1ffe-4787-90fc-3eb0a0085531
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/kijiji/ops-webhook
 RESEND_API_KEY=your_resend_key
 LEAD_NOTIFICATION_FROM=Kijiji Management <leads@notify.kijijimgmt.com>
 LEAD_NOTIFICATION_RECIPIENTS=joe@kijijimgmt.com,erik@kijijimgmt.com,max@kijijimgmt.com
 SUPABASE_URL=https://vaqgriohhcccvvxgkhgh.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 SUPABASE_LEADS_TABLE=strategy_session_leads
+LEAD_ALLOWED_ORIGINS=https://www.kijijimgmt.com,https://kijijimgmt.com
 ```
 
-Only `RESEND_API_KEY` is secret. Keep it out of GitHub and frontend files.
+`NOTION_TOKEN`, `SLACK_WEBHOOK_URL`, and `RESEND_API_KEY` are secret. Keep them out of GitHub and frontend files.
+
+The browser should only know `/api/strategy-session-lead`. Do not put Notion, Slack, Resend, or service-role keys in `script.js`.
+
+In Notion, share the **Opportunities & Deals** data source with the integration tied to `NOTION_TOKEN`. If the form returns a Notion setup error, this share step or the Vercel environment variable is the first thing to check.
 
 ## Why Not Send Resend Emails Directly From The Browser?
 

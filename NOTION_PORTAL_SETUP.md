@@ -55,6 +55,7 @@ The portal includes a **Log Out** button. It clears the browser's saved access-c
 
 The portal API can send concise internal alerts to Slack channel `#kijiji-ops` after successful Notion saves for:
 
+- Website leads: new strategy session requests from `kijijimgmt.com`.
 - Tasks: create/update, including owner, priority, due date, client, next step, and blocker state.
 - Opportunities & Deals: create/update, including stage, owner, priority, next action date, client, next step, and blocker state.
 - Events & Releases: create/update, including type, status, owner, date, client, and notes.
@@ -67,6 +68,20 @@ To enable this:
 4. Redeploy the latest production deployment.
 
 If `SLACK_WEBHOOK_URL` is missing or Slack is unavailable, Notion saves still complete. Slack notification failures are logged server-side and are never sent to the browser.
+
+## Website Strategy Session Intake
+
+The public landing page form posts to `https://www.kijijimgmt.com/api/strategy-session-lead`.
+
+That endpoint:
+
+- Validates the required form fields server-side.
+- Uses a honeypot field, minimum completion-time check, origin check, and a best-effort short rate limit.
+- Creates a new lead/opportunity in **Opportunities & Deals**.
+- Sends a `#kijiji-ops` Slack alert when `SLACK_WEBHOOK_URL` is configured.
+- Sends Resend email notifications and the Supabase archive when those optional environment variables are configured.
+
+The website form does not write directly to Notion, Slack, or Supabase from browser JavaScript. If the endpoint returns `notion_not_configured` or `notion_access_missing`, set `NOTION_TOKEN` in Vercel Production and share the Opportunities & Deals data source with that Notion integration.
 
 ## Slack Slash Command: Dashboard Updates
 

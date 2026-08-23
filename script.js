@@ -22,12 +22,9 @@ const systemRows = Array.from(document.querySelectorAll(".system-list div"));
 const scrollFilmCanvas = document.querySelector(".scroll-film-canvas");
 const scrollFilmContext = scrollFilmCanvas?.getContext("2d");
 const canScrubScrollFilm = Boolean(scrollFilmCanvas && scrollFilmContext && !reduceMotion);
-// Add the project URL and public anon/publishable key after the Supabase table
-// and insert-only RLS policy are created. Never place a service_role key here.
+// Lead submissions go through the server-side endpoint so Notion, Slack, Resend,
+// and any archive writes can stay protected behind Vercel environment variables.
 const supabaseConfig = {
-  url: "https://vaqgriohhcccvvxgkhgh.supabase.co",
-  anonKey: "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn",
-  table: "strategy_session_leads",
   notificationEndpoint: "/api/strategy-session-lead",
   ...(window.KIJIJI_SUPABASE || {}),
 };
@@ -64,6 +61,8 @@ const collectLeadPayload = () => {
     biggest_bottleneck: String(formData.get("biggest_bottleneck") || "").trim(),
     preferred_contact: String(formData.get("preferred_contact") || "").trim(),
     budget_readiness: String(formData.get("budget_readiness") || "").trim(),
+    company_website: String(formData.get("company_website") || "").trim(),
+    form_started_at: String(formData.get("form_started_at") || ""),
     utm_source: String(formData.get("utm_source") || ""),
     utm_medium: String(formData.get("utm_medium") || ""),
     utm_campaign: String(formData.get("utm_campaign") || ""),
@@ -92,44 +91,27 @@ const configureTrackingFields = () => {
   if (leadForm.elements.page_url) {
     leadForm.elements.page_url.value = window.location.href;
   }
+
+  if (leadForm.elements.form_started_at && !leadForm.elements.form_started_at.value) {
+    leadForm.elements.form_started_at.value = new Date().toISOString();
+  }
 };
 
-const submitLeadToSupabase = async (payload) => {
-  const endpoint = `${supabaseConfig.url.replace(/\/$/, "")}/rest/v1/${supabaseConfig.table}`;
-  const response = await fetch(endpoint, {
+const submitLead = async (payload) => {
+  const response = await fetch(supabaseConfig.notificationEndpoint, {
     method: "POST",
     headers: {
-      apikey: supabaseConfig.anonKey,
-      Authorization: `Bearer ${supabaseConfig.anonKey}`,
       "Content-Type": "application/json",
-      Prefer: "return=minimal",
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
-    throw new Error(`Supabase insert failed with status ${response.status}`);
-  }
-};
-
-const submitLead = async (payload) => {
-  if (supabaseConfig.notificationEndpoint) {
-    const response = await fetch(supabaseConfig.notificationEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (response.ok) {
-      return;
-    }
-
-    console.warn(`Notification endpoint failed with status ${response.status}. Falling back to direct Supabase insert.`);
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || `Lead endpoint failed with status ${response.status}`);
   }
 
-  await submitLeadToSupabase(payload);
+  return response.json().catch(() => ({ ok: true }));
 };
 
 document.querySelectorAll('a[href^="#"]').forEach((link) => {
@@ -451,16 +433,16 @@ if (leadForm) {
 
     const payload = collectLeadPayload();
     const submitButton = leadForm.querySelector('button[type="submit"]');
-    const hasSupabaseCredentials = Boolean(supabaseConfig.url && supabaseConfig.anonKey);
+    const hasLeadEndpoint = Boolean(supabaseConfig.notificationEndpoint);
 
     if (leadForm.elements.company_website?.value) {
       setStatus("Request received. We'll follow up with next steps shortly.", "success");
       return;
     }
 
-    if (!hasSupabaseCredentials) {
+    if (!hasLeadEndpoint) {
       window.dispatchEvent(new CustomEvent("kijiji:lead-ready", { detail: payload }));
-      setStatus("Form is ready. Add Supabase URL and anon key in script.js to start collecting submissions.", "success");
+      setStatus("Form is ready. Add the secure lead endpoint to start collecting submissions.", "success");
       return;
     }
 
