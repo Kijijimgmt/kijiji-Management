@@ -261,7 +261,15 @@ const chooseSchemaKey = (schema, aliases, expectedType) => {
 const assignProperty = (properties, schema, aliases, expectedType, valueFactory, value) => {
   const key = chooseSchemaKey(schema, aliases, expectedType);
   if (!key) return;
+  if (Object.prototype.hasOwnProperty.call(properties, key)) return;
   properties[key] = propertyForType(schema?.[key]?.type || expectedType, valueFactory, value);
+};
+
+const clientRelationAliases = ["Client", "Related Client", "Client Relation", "Client Roster", "Related Client Roster"];
+
+const assignClientRelation = (properties, schema, client) => {
+  const relationKey = chooseSchemaKey(schema, clientRelationAliases, "relation");
+  if (relationKey && client) properties[relationKey] = relation([client.id]);
 };
 
 const notionRequest = async (path, options = {}) => {
@@ -361,8 +369,7 @@ const createTask = async (values) => {
   assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, values.notes || values.next || "");
   assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, client?.name || clientName);
 
-  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client", "Client Relation"], "relation");
-  if (relationKey && client) properties[relationKey] = relation([client.id]);
+  assignClientRelation(properties, schema, client);
 
   return createPage(dataSources.actions, properties);
 };
@@ -388,8 +395,7 @@ const createOpportunity = async (values) => {
   assignProperty(properties, schema, ["Next Step", "Next Move", "Next Action", "Notes"], "rich_text", richText, values.next || values.notes || "");
   assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, client?.name || clientName);
 
-  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client"], "relation");
-  if (relationKey && client) properties[relationKey] = relation([client.id]);
+  assignClientRelation(properties, schema, client);
 
   return createPage(dataSources.opportunities, properties);
 };
@@ -414,8 +420,7 @@ const createEvent = async (values) => {
   assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, values.notes || values.next || "");
   assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, client?.name || clientName);
 
-  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client"], "relation");
-  if (relationKey && client) properties[relationKey] = relation([client.id]);
+  assignClientRelation(properties, schema, client);
 
   return createPage(dataSources.events, properties);
 };
