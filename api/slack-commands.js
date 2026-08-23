@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
 const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
@@ -447,22 +448,41 @@ const helpText = () =>
     "Commands only create new records. Edit existing records in the dashboard.",
   ].join("\n");
 
-const executeCommand = async ({ action, values }) => {
+const slackActor = (payload) => (payload?.user_id ? `Slack user ${payload.user_id}` : "Slack slash command");
+
+const logSlackCreate = async ({ payload, action, resource, page, values }) =>
+  logActivity({
+    actor: slackActor(payload),
+    source: "slack",
+    action,
+    resource,
+    resourceId: page.id,
+    resourceUrl: page.url,
+    summary: `${resource} created from /kijiji; owner ${values.owner || "Unassigned"}; client ${values.client || "No client"}.`,
+  });
+
+const executeCommand = async ({ action, values }, payload) => {
   if (action === "help" || action === "") return helpText();
   if (action === "status") return getStatus();
 
   if (action === "task") {
+    assertWritesAllowed();
     const page = await createTask(values);
+    await logSlackCreate({ payload, action: "created", resource: "action", page, values });
     return `Task created: ${page.url}`;
   }
 
   if (action === "deal" || action === "opportunity") {
+    assertWritesAllowed();
     const page = await createOpportunity(values);
+    await logSlackCreate({ payload, action: "created", resource: "opportunity", page, values });
     return `Deal created: ${page.url}`;
   }
 
   if (action === "event" || action === "release") {
+    assertWritesAllowed();
     const page = await createEvent(values);
+    await logSlackCreate({ payload, action: "created", resource: "event", page, values });
     return `Event created: ${page.url}`;
   }
 
@@ -483,7 +503,7 @@ module.exports = async (request, response) => {
     assertAllowedSlackContext(payload);
 
     const parsed = parseCommandText(payload.text || "");
-    const text = await executeCommand(parsed);
+    const text = await executeCommand(parsed, payload);
     slackText(response, 200, text);
   } catch (error) {
     console.error(error);

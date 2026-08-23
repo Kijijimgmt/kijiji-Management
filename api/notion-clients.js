@@ -1,3 +1,5 @@
+const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
+
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
 const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
 const PORTAL_ACCESS_CODE = process.env.PORTAL_ACCESS_CODE;
@@ -545,6 +547,39 @@ const notifySlack = async ({ resource, operation, input, saved }) => {
   }
 };
 
+const auditSummary = (resource, input, saved) => {
+  if (resource === "action") {
+    return `Task ${saved.title || input.title}; owner ${input.owner || "Unassigned"}; status ${input.status || "Open"}; client ${
+      input.clientName || "No client"
+    }.`;
+  }
+
+  if (resource === "client") {
+    return `Client ${saved.name || input.name}; owner ${input.owner || "Unassigned"}; status ${input.status || "Prospect"}.`;
+  }
+
+  if (resource === "opportunity") {
+    return `Opportunity ${saved.name || input.name}; owner ${input.owner || "Unassigned"}; stage ${input.stage || "New"}; client ${
+      input.clientName || "No client"
+    }.`;
+  }
+
+  return `Event ${saved.name || input.name}; owner ${input.owner || "Unassigned"}; status ${input.status || "Planned"}; client ${
+    input.clientName || "No client"
+  }.`;
+};
+
+const auditWrite = async ({ resource, operation, input, saved }) =>
+  logActivity({
+    actor: "Portal passcode session",
+    source: "portal",
+    action: operation,
+    resource,
+    resourceId: saved.id,
+    resourceUrl: saved.url,
+    summary: auditSummary(resource, input, saved),
+  });
+
 const clientProperties = (client, schema) => {
   const properties = {};
 
@@ -792,15 +827,18 @@ module.exports = async (request, response) => {
     }
 
     if (request.method === "POST" || request.method === "PATCH") {
+      assertWritesAllowed();
       const body = parseBody(request.body);
       const resource = String(body.resource || "client");
+      const operation = request.method === "POST" ? "created" : "updated";
 
       if (resource === "action") {
         const action = normalizeActionInput(body);
         const savedAction = request.method === "POST" ? await createAction(action) : await updateAction(action);
+        await auditWrite({ resource, operation, input: action, saved: savedAction });
         await notifySlack({
           resource,
-          operation: request.method === "POST" ? "created" : "updated",
+          operation,
           input: action,
           saved: savedAction,
         });
@@ -811,6 +849,7 @@ module.exports = async (request, response) => {
       if (resource === "client") {
         const client = normalizeClientInput(body);
         const savedClient = request.method === "POST" ? await createClient(client) : await updateClient(client);
+        await auditWrite({ resource, operation, input: client, saved: savedClient });
         json(response, 200, { client: savedClient });
         return;
       }
@@ -818,9 +857,10 @@ module.exports = async (request, response) => {
       if (resource === "opportunity") {
         const opportunity = normalizeOpportunityInput(body);
         const savedOpportunity = request.method === "POST" ? await createOpportunity(opportunity) : await updateOpportunity(opportunity);
+        await auditWrite({ resource, operation, input: opportunity, saved: savedOpportunity });
         await notifySlack({
           resource,
-          operation: request.method === "POST" ? "created" : "updated",
+          operation,
           input: opportunity,
           saved: savedOpportunity,
         });
@@ -831,9 +871,10 @@ module.exports = async (request, response) => {
       if (resource === "event") {
         const event = normalizeEventInput(body);
         const savedEvent = request.method === "POST" ? await createEvent(event) : await updateEvent(event);
+        await auditWrite({ resource, operation, input: event, saved: savedEvent });
         await notifySlack({
           resource,
-          operation: request.method === "POST" ? "created" : "updated",
+          operation,
           input: event,
           saved: savedEvent,
         });

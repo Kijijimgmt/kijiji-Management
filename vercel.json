@@ -1,6 +1,12 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/health?deep=1",
+      "schedule": "0 13 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/assets/(.*)",

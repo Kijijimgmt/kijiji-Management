@@ -84,3 +84,12 @@ kijiji-management-group-backup-YYYY-MM-DD/
 ```
 
 If something breaks, redeploy the previous working Vercel deployment.
+
+## 7. Operations Readiness
+
+For the internal portal, use `OPERATIONS_READINESS.md` before calling the system production-hardened:
+
+- Set `CRON_SECRET` in Vercel Production so the daily `/api/health?deep=1` Cron check can authenticate.
+- Create and share the optional Notion **Kijiji Activity Log** data source, then set `NOTION_ACTIVITY_LOG_DATA_SOURCE_ID`.
+- Keep Preview deployments write-protected unless they point at duplicated staging Notion data sources.
+- Export the four Notion operating data sources weekly into the Kijiji Microsoft OneDrive or SharePoint backups folder.

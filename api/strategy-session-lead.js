@@ -1,3 +1,5 @@
+const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
+
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://vaqgriohhcccvvxgkhgh.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY =
   process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn";
@@ -687,7 +689,19 @@ module.exports = async (request, response) => {
     validateLead(lead);
     enforceRateLimit(request, lead);
 
+    assertWritesAllowed();
     const opportunity = await createNotionOpportunity(lead);
+    await logActivity({
+      actor: "Website visitor",
+      source: "website",
+      action: "created",
+      resource: "lead",
+      resourceId: opportunity.id,
+      resourceUrl: opportunity.url,
+      summary: `Website strategy lead submitted; type ${lead.client_type}; stage ${lead.current_stage}; services ${formatValue(
+        lead.services_needed
+      )}.`,
+    });
     const supabaseSaved = await archiveLead(lead);
     const slackSent = await notifySlack(lead, opportunity);
     const emailSent = await sendNotification(lead);

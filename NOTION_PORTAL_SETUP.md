@@ -18,6 +18,11 @@ SLACK_SIGNING_SECRET=your-slack-app-signing-secret
 SLACK_ALLOWED_TEAM_IDS=T1234567890
 SLACK_ALLOWED_CHANNEL_IDS=C1234567890
 SLACK_ALLOWED_USER_IDS=U1234567890,U2345678901
+NOTION_ACTIVITY_LOG_DATA_SOURCE_ID=optional_activity_log_collection_id
+CRON_SECRET=generate-a-long-random-secret
+HEALTH_CHECK_TOKEN=optional-health-token-if-not-using-cron-secret
+DISABLE_NOTION_WRITES=false
+ALLOW_PREVIEW_NOTION_WRITES=false
 ```
 
 The data source IDs are optional while the current Notion operating system stays the same, because the API has the current IDs as fallbacks. Set them anyway so future migrations are easier.
@@ -30,6 +35,12 @@ The data source IDs are optional while the current Notion operating system stays
 - `SLACK_ALLOWED_CHANNEL_IDS`: restricts `/kijiji` to `#kijiji-ops`; use the channel ID, not the channel name.
 - `SLACK_ALLOWED_USER_IDS`: restricts dashboard writes to approved Slack users.
 
+`NOTION_ACTIVITY_LOG_DATA_SOURCE_ID` is optional but recommended for production operations. See `OPERATIONS_READINESS.md` for the Activity Log schema.
+
+`CRON_SECRET` or `HEALTH_CHECK_TOKEN` is required for authenticated deep health checks at `/api/health?deep=1`. The basic `/api/health` endpoint is safe to call without a token.
+
+Preview deployments block Notion writes by default unless `ALLOW_PREVIEW_NOTION_WRITES=true`. Only enable that after Preview environment variables point to duplicated staging Notion data sources.
+
 ## Required Notion Step
 
 In Notion, open each shared data source, click **Share**, and invite/connect the Notion integration tied to `NOTION_TOKEN`.
@@ -40,8 +51,19 @@ Required shared data sources:
 - Actions: `collection://662c1c0d-d255-4fe9-8260-5dc4f293b051`
 - Opportunities & Deals: `collection://8548a9d4-1ffe-4787-90fc-3eb0a0085531`
 - Events & Releases: `collection://4bf7373c-c744-4fe3-854e-ff0470954497`
+- Optional Activity Log: the collection ID you create for `NOTION_ACTIVITY_LOG_DATA_SOURCE_ID`
 
 Without that share step, the portal API will not be allowed to read or update the dashboard data. If the live portal unlocks but says Notion setup is needed, this share step is the first thing to check.
+
+## Activity Log, Health Checks, And Staging
+
+The portal now includes production-hardening support for:
+
+- Activity history for portal saves, Slack slash-command writes, and website lead intake.
+- `/api/health` basic status and authenticated `/api/health?deep=1` Notion access checks.
+- Preview write protection to avoid accidental production Notion writes from staging deployments.
+
+The full setup and backup workflow lives in `OPERATIONS_READINESS.md`.
 
 ## Team Access Code
 
