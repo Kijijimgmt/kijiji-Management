@@ -10,7 +10,6 @@ const els = {
   rows: $("[data-client-rows]"),
   detail: $("[data-client-detail]"),
   actionList: $("[data-action-list]"),
-  ownerGrid: $("[data-owner-grid]"),
   todayList: $("[data-today-list]"),
   priorityList: $("[data-priority-list]"),
   blockerList: $("[data-blocker-list]"),
@@ -237,7 +236,7 @@ const renderEmptyList = (target, title, text) => {
 };
 
 const actionCard = (action) => `
-  <article class="action-item" data-action-id="${escapeHtml(action.id)}" tabindex="0">
+  <article class="action-item editable-card" data-action-id="${escapeHtml(action.id)}" tabindex="0">
     <header>
       <strong>${escapeHtml(action.title)}</strong>
       <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
@@ -527,31 +526,6 @@ const renderCalendar = () => {
   els.calendarList.innerHTML = upcoming.map(eventCard).join("");
 };
 
-const renderOwners = () => {
-  const owners = ["Maxwell", "Joe", "Erik", "Unassigned"];
-
-  if (!els.ownerGrid) {
-    return;
-  }
-
-  els.ownerGrid.innerHTML = owners
-    .map((owner) => {
-      const ownedClients = state.clients.filter((client) => (client.owner || "Unassigned") === owner || (owner === "Maxwell" && client.owner === "Max"));
-      const ownedActions = getOpenActions().filter((action) => (action.owner || "Unassigned") === owner || (owner === "Maxwell" && action.owner === "Max"));
-      const nextAction = [...ownedActions].sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate))[0];
-
-      return `
-        <article class="owner-card">
-          <h3>${escapeHtml(owner)}</h3>
-          <strong>${ownedActions.length}</strong>
-          <p>${ownedClients.length} client${ownedClients.length === 1 ? "" : "s"} / ${ownedActions.length} open action${ownedActions.length === 1 ? "" : "s"}</p>
-          <p class="muted">${nextAction ? `Next: ${escapeHtml(nextAction.title)} on ${formatDate(nextAction.dueDate)}` : "No open action assigned"}</p>
-        </article>
-      `;
-    })
-    .join("");
-};
-
 const renderClientOptions = (selectEl) => {
   if (!selectEl) {
     return;
@@ -575,15 +549,30 @@ const setLoadingState = () => {
         <div class="empty-state">
           <p class="eyebrow">Loading Notion</p>
           <h2>Syncing the operating system</h2>
+          <p>Pulling clients, tasks, opportunities, and key dates from the shared Kijiji workspace.</p>
         </div>
       </td>
     </tr>
   `;
-  [els.todayList, els.priorityList, els.blockerList, els.actionList, els.pipelineGrid, els.calendarList, els.ownerGrid]
-    .filter(Boolean)
-    .forEach((target) => {
-      target.innerHTML = "";
-    });
+  els.detail.innerHTML = `
+    <div class="empty-state">
+      <p class="eyebrow">Client detail</p>
+      <h2>Loading roster</h2>
+      <p>The selected client profile will appear here when the shared data finishes syncing.</p>
+    </div>
+  `;
+  [
+    [els.todayList, "Today", "Checking what needs attention now."],
+    [els.priorityList, "Priority", "Sorting high-focus work."],
+    [els.blockerList, "Blockers", "Looking for anything stuck."],
+    [els.actionList, "Tasks", "Loading open team actions."],
+    [els.pipelineGrid, "Pipeline", "Loading opportunities by stage."],
+    [els.calendarList, "Calendar", "Loading upcoming releases and events."],
+  ].forEach(([target, title, text]) => {
+    if (target) {
+      renderEmptyList(target, title, text);
+    }
+  });
 };
 
 const setErrorState = () => {
@@ -610,6 +599,18 @@ const setErrorState = () => {
       <p>Share Client Roster, Actions, Opportunities & Deals, and Events & Releases with the integration used by NOTION_TOKEN.</p>
     </div>
   `;
+  [
+    [els.todayList, "No task data", "Once Notion is connected, today's actions will appear here."],
+    [els.priorityList, "No priority data", "Urgent and high-priority work will appear here."],
+    [els.blockerList, "No blocker data", "Visible blockers will appear here."],
+    [els.actionList, "No actions available", "Task editing will unlock once the shared Actions database is reachable."],
+    [els.pipelineGrid, "No pipeline available", "Opportunity stages will unlock once the shared Opportunities database is reachable."],
+    [els.calendarList, "No calendar available", "Events and releases will unlock once the shared Events database is reachable."],
+  ].forEach(([target, title, text]) => {
+    if (target) {
+      renderEmptyList(target, title, text);
+    }
+  });
 };
 
 const renderPortal = () => {
@@ -630,7 +631,6 @@ const renderPortal = () => {
   renderActions();
   renderPipeline();
   renderCalendar();
-  renderOwners();
   renderActionClientOptions();
 };
 

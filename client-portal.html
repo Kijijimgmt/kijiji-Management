@@ -95,7 +95,9 @@
                   <p class="eyebrow">Today / Overdue</p>
                   <h2>Work that needs a next move</h2>
                 </div>
-                <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
+                <div class="section-actions">
+                  <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
+                </div>
               </div>
               <div class="stack-list" data-today-list></div>
             </article>
@@ -106,7 +108,9 @@
                   <p class="eyebrow">Deal Radar</p>
                   <h2>Pipeline moves</h2>
                 </div>
-                <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Deal</button>
+                <div class="section-actions">
+                  <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Deal</button>
+                </div>
               </div>
               <div class="stack-list" data-priority-list></div>
             </article>
@@ -117,7 +121,9 @@
                   <p class="eyebrow">Blockers + Dates</p>
                   <h2>Watch this</h2>
                 </div>
-                <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
+                <div class="section-actions">
+                  <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
+                </div>
               </div>
               <div class="stack-list" data-blocker-list></div>
             </article>
@@ -129,23 +135,25 @@
                 <p class="eyebrow">Clients</p>
                 <h2 id="clients-title">Roster, next moves, and focus</h2>
               </div>
-              <button class="button button-secondary" type="button" data-open-client-form data-requires-access>Add Client</button>
-              <div class="filters" aria-label="Client filters">
-                <label>
-                  <span>Search</span>
-                  <input data-search-clients type="search" placeholder="Name, owner, focus" />
-                </label>
-                <label>
-                  <span>Status</span>
-                  <select data-status-filter>
-                    <option value="all">All status</option>
-                    <option>Prospect</option>
-                    <option>Active</option>
-                    <option>Onboarding</option>
-                    <option>Paused</option>
-                    <option>Archived</option>
-                  </select>
-                </label>
+              <div class="section-actions">
+                <button class="button button-secondary" type="button" data-open-client-form data-requires-access>Add Client</button>
+                <div class="filters" aria-label="Client filters">
+                  <label>
+                    <span>Search</span>
+                    <input data-search-clients type="search" placeholder="Name, owner, focus" />
+                  </label>
+                  <label>
+                    <span>Status</span>
+                    <select data-status-filter>
+                      <option value="all">All status</option>
+                      <option>Prospect</option>
+                      <option>Active</option>
+                      <option>Onboarding</option>
+                      <option>Paused</option>
+                      <option>Archived</option>
+                    </select>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -195,7 +203,9 @@
                 <h2 id="opportunities-title">Deals by stage</h2>
                 <p class="section-note">Open any deal to update stage, owner, next step, next action date, blocker, and client relationship.</p>
               </div>
-              <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Opportunity</button>
+              <div class="section-actions">
+                <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Opportunity</button>
+              </div>
             </div>
             <div class="pipeline-grid" data-pipeline-grid></div>
           </section>
@@ -207,7 +217,9 @@
                 <h2 id="calendar-title">Upcoming events and releases</h2>
                 <p class="section-note">Keep launches, drops, sessions, and important client dates visible for the team.</p>
               </div>
-              <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
+              <div class="section-actions">
+                <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
+              </div>
             </div>
             <div class="calendar-list" data-calendar-list></div>
           </section>
