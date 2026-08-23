@@ -197,8 +197,22 @@ const assignProperty = (properties, schema, aliases, expectedType, valueFactory,
     return;
   }
 
+  if (Object.prototype.hasOwnProperty.call(properties, key)) {
+    return;
+  }
+
   const schemaType = schema?.[key]?.type || expectedType;
   properties[key] = propertyForType(schemaType, valueFactory, value);
+};
+
+const clientRelationAliases = ["Client", "Related Client", "Client Relation", "Client Roster", "Related Client Roster"];
+
+const assignClientRelation = (properties, schema, clientId) => {
+  const relationKey = chooseSchemaKey(schema, clientRelationAliases, "relation");
+
+  if (relationKey) {
+    properties[relationKey] = relation(clientId ? [clientId] : []);
+  }
 };
 
 const getSourceSchema = async (sourceId) => {
@@ -254,7 +268,7 @@ const mapPageToClient = (page) => {
 
 const mapPageToAction = (page) => {
   const properties = page.properties || {};
-  const clientRelation = relationIds(propertyByAliases(properties, ["Client", "Related Client", "Client Relation"]));
+  const clientRelation = relationIds(propertyByAliases(properties, clientRelationAliases));
 
   return {
     id: page.id,
@@ -281,7 +295,7 @@ const mapPageToOpportunity = (page) => {
     stage: selectName(propertyByAliases(properties, ["Stage", "Status", "Pipeline Stage"])) || "New",
     owner: selectName(propertyByAliases(properties, ["Owner", "Assigned Owner"])) || plainText(propertyByAliases(properties, ["Owner", "Assigned Owner"])),
     priority: selectName(propertyByAliases(properties, ["Priority", "Urgency"])) || "",
-    clientIds: relationIds(propertyByAliases(properties, ["Client", "Related Client"])),
+    clientIds: relationIds(propertyByAliases(properties, clientRelationAliases)),
     clientName: plainText(propertyByAliases(properties, ["Client Name", "Client Text", "Client"])),
     nextStep: plainText(propertyByAliases(properties, ["Next Step", "Next Move", "Next Action", "Notes"])),
     dueDate: dateStart(propertyByAliases(properties, ["Next Action Date", "Next Date", "Close Date", "Due Date", "Target Date"])),
@@ -300,7 +314,7 @@ const mapPageToEvent = (page) => {
     status: selectName(propertyByAliases(properties, ["Status", "Event Status"])) || "",
     owner: selectName(propertyByAliases(properties, ["Owner", "Lead"])) || plainText(propertyByAliases(properties, ["Owner", "Lead"])),
     date: dateStart(propertyByAliases(properties, ["Date", "Release Date", "Event Date"])),
-    clientIds: relationIds(propertyByAliases(properties, ["Client", "Related Client"])),
+    clientIds: relationIds(propertyByAliases(properties, clientRelationAliases)),
     clientName: plainText(propertyByAliases(properties, ["Client Name", "Client Text", "Client"])),
     notes: plainText(propertyByAliases(properties, ["Notes", "Details"])),
   };
@@ -563,10 +577,7 @@ const actionProperties = (action, schema) => {
   assignProperty(properties, schema, ["Blocker", "Blocked", "Is Blocker"], "checkbox", checkbox, action.blocker);
   assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, action.notes);
 
-  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client", "Client Relation"], "relation");
-  if (relationKey && action.clientId) {
-    properties[relationKey] = relation([action.clientId]);
-  }
+  assignClientRelation(properties, schema, action.clientId);
 
   assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, action.clientName);
 
@@ -584,10 +595,7 @@ const opportunityProperties = (opportunity, schema) => {
   assignProperty(properties, schema, ["Blocker", "Blocked", "Is Blocker"], "checkbox", checkbox, opportunity.blocker);
   assignProperty(properties, schema, ["Next Step", "Next Move", "Next Action", "Notes"], "rich_text", richText, opportunity.nextStep);
 
-  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client"], "relation");
-  if (relationKey && opportunity.clientId) {
-    properties[relationKey] = relation([opportunity.clientId]);
-  }
+  assignClientRelation(properties, schema, opportunity.clientId);
 
   assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, opportunity.clientName);
 
@@ -604,10 +612,7 @@ const eventProperties = (event, schema) => {
   assignProperty(properties, schema, ["Date", "Release Date", "Event Date"], "date", date, event.date);
   assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, event.notes);
 
-  const relationKey = chooseSchemaKey(schema, ["Client", "Related Client"], "relation");
-  if (relationKey && event.clientId) {
-    properties[relationKey] = relation([event.clientId]);
-  }
+  assignClientRelation(properties, schema, event.clientId);
 
   assignProperty(properties, schema, ["Client Name", "Client Text"], "rich_text", richText, event.clientName);
 
