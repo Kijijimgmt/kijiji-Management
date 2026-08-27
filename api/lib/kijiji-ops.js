@@ -89,6 +89,47 @@ const chooseSchemaKey = (schema, aliases, expectedType) => {
   return Object.entries(schema || {}).find(([, property]) => property?.type === expectedType)?.[0] || "";
 };
 
+const activitySelectLabels = {
+  action: {
+    created: "Created",
+    updated: "Updated",
+    deleted: "Deleted",
+    checked: "Health Check",
+    "health check": "Health Check",
+    alert: "Alert",
+  },
+  resource: {
+    client: "Client",
+    action: "Task",
+    task: "Task",
+    opportunity: "Deal",
+    deal: "Deal",
+    event: "Event",
+    release: "Event",
+    lead: "Lead",
+    system: "System",
+  },
+  source: {
+    portal: "Portal",
+    slack: "Slack",
+    website: "Website",
+    health: "System",
+    system: "System",
+  },
+  status: {
+    success: "Success",
+    failed: "Failed",
+    failure: "Failed",
+    skipped: "Filtered",
+    filtered: "Filtered",
+  },
+};
+
+const activityLabel = (group, value, fallback) => {
+  const text = String(value || fallback || "").trim();
+  return activitySelectLabels[group]?.[text.toLowerCase()] || text;
+};
+
 const propertyForType = (schemaType, fallbackFactory, value) => {
   if (schemaType === "title") return titleProperty(value);
   if (schemaType === "rich_text") return textProperty(value);
@@ -131,20 +172,22 @@ const assertWritesAllowed = () => {
 
 const buildActivityProperties = (schema, activity) => {
   const now = activity.time || new Date().toISOString();
-  const resource = String(activity.resource || "record").slice(0, 80);
-  const action = String(activity.action || "changed").slice(0, 80);
+  const resource = activityLabel("resource", activity.resource, "System").slice(0, 80);
+  const action = activityLabel("action", activity.action, "Updated").slice(0, 80);
+  const source = activityLabel("source", activity.source, "System").slice(0, 80);
+  const result = activityLabel("status", activity.status, "Success").slice(0, 80);
   const properties = {};
 
   assignProperty(properties, schema, ["Activity", "Name", "Title"], "title", titleProperty, `${action} ${resource}`);
-  assignProperty(properties, schema, ["Time", "Timestamp", "Created Time", "Created At", "Date"], "date", dateProperty, now);
+  assignProperty(properties, schema, ["Occurred At", "Time", "Timestamp", "Created Time", "Created At", "Date"], "date", dateProperty, now);
   assignProperty(properties, schema, ["Actor", "User", "Performed By"], "rich_text", textProperty, activity.actor || "System");
-  assignProperty(properties, schema, ["Source", "Channel"], "select", selectProperty, activity.source || "system");
+  assignProperty(properties, schema, ["Source", "Channel"], "select", selectProperty, source);
   assignProperty(properties, schema, ["Action", "Operation"], "select", selectProperty, action);
-  assignProperty(properties, schema, ["Resource", "Record Type", "Object"], "select", selectProperty, resource);
+  assignProperty(properties, schema, ["Resource Type", "Resource", "Record Type", "Object"], "select", selectProperty, resource);
   assignProperty(properties, schema, ["Resource ID", "Record ID", "Notion Page ID"], "rich_text", textProperty, activity.resourceId || "");
-  assignProperty(properties, schema, ["Resource URL", "Notion URL", "URL"], "url", urlProperty, activity.resourceUrl || "");
+  assignProperty(properties, schema, ["Resource Link", "Resource URL", "Notion URL", "URL"], "url", urlProperty, activity.resourceUrl || "");
   assignProperty(properties, schema, ["Summary", "Notes", "Details"], "rich_text", textProperty, activity.summary || "");
-  assignProperty(properties, schema, ["Status", "Result"], "select", selectProperty, activity.status || "Success");
+  assignProperty(properties, schema, ["Status", "Result"], "select", selectProperty, result);
 
   return properties;
 };
