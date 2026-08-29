@@ -12,7 +12,10 @@ NOTION_CLIENT_ROSTER_DATA_SOURCE_ID=03c5f70c-fb49-4d09-9de8-7fb8a45a04c7
 NOTION_ACTIONS_DATA_SOURCE_ID=662c1c0d-d255-4fe9-8260-5dc4f293b051
 NOTION_OPPORTUNITIES_DATA_SOURCE_ID=8548a9d4-1ffe-4787-90fc-3eb0a0085531
 NOTION_EVENTS_DATA_SOURCE_ID=4bf7373c-c744-4fe3-854e-ff0470954497
-PORTAL_ACCESS_CODE=choose-a-private-team-code
+SUPABASE_URL=https://vaqgriohhcccvvxgkhgh.supabase.co
+SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+ALLOW_PORTAL_CODE_FALLBACK=false
+PORTAL_ACCESS_CODE=optional-private-team-code-only-if-fallback-is-enabled
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/kijiji/ops-webhook
 SLACK_SIGNING_SECRET=your-slack-app-signing-secret
 SLACK_ALLOWED_TEAM_IDS=T1234567890
@@ -65,13 +68,32 @@ The portal now includes production-hardening support for:
 
 The full setup and backup workflow lives in `OPERATIONS_READINESS.md`.
 
-## Team Access Code
+## Supabase Auth Team Sign-In
 
-The portal API requires `PORTAL_ACCESS_CODE`. Share that private code only with Kijiji team members who should be able to view and manage client records.
+The portal uses Supabase Auth magic links for individual team sign-in. The browser sends the Supabase session token to `/api/notion-clients`, and the server verifies the user with Supabase before reading or writing Notion.
 
-When someone opens the portal, the browser shows an unlock form and keeps the passcode only in that browser session.
+Approved emails and roles are enforced server-side:
 
-The portal includes a **Log Out** button. It clears the browser's saved access-code session and removes loaded roster data from the page.
+- `max@kijijimgmt.com`: admin/full command center
+- `joe@kijijimgmt.com`: member, defaults to assigned My Work
+- `erik@kijijimgmt.com`: member, defaults to assigned My Work
+
+Joe and Erik receive only their assigned tasks, deals, events, and related clients from the API. Non-admin writes are limited to tasks, deals, and events already assigned to them, and new records are assigned to their verified owner automatically.
+
+Supabase setup:
+
+1. In Supabase Auth, enable the Email provider and magic-link/OTP sign-in.
+2. Set Site URL to `https://www.kijijimgmt.com/client-portal`.
+3. Add redirect URLs:
+   - `https://www.kijijimgmt.com/client-portal`
+   - `https://kijijimgmt.com/client-portal`
+   - any Vercel preview URL used for testing
+4. In Vercel Production, set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
+5. Redeploy Production.
+
+The portal includes a **Log Out** button. It clears the browser's Supabase session and removes loaded roster data from the page.
+
+`PORTAL_ACCESS_CODE` is no longer the primary access method. Keep `ALLOW_PORTAL_CODE_FALLBACK=false` in production. Only set `ALLOW_PORTAL_CODE_FALLBACK=true` temporarily during a migration window if the team intentionally wants the old shared passcode fallback.
 
 ## Slack Notifications
 
@@ -135,24 +157,6 @@ Supported commands:
 ```
 
 The slash command only creates new tasks, deals, and events. Edit existing records inside the Kijiji portal. The API verifies Slack's request signature server-side using `SLACK_SIGNING_SECRET` before writing to Notion.
-
-## Email-Based Team Restriction
-
-The approved team emails are:
-
-- max@kijijimgmt.com
-- erik@kijijimgmt.com
-- joe@kijijimgmt.com
-
-Do not enforce this with a browser email field or a client-side allowlist. Email restriction must be handled by a real identity provider that proves the signed-in user's email to the server before the Notion API is called.
-
-Good options:
-
-- Supabase Auth with Microsoft/Azure or email magic-link login
-- Clerk, Auth0, or another hosted identity provider
-- Vercel-level authentication/protection if it can pass a trusted verified email claim to the app
-
-After the provider is chosen, enforce the allowlist in `api/notion-clients.js` using the provider's verified server-side session/JWT email claim, then keep `PORTAL_ACCESS_CODE` only as a secondary layer or remove it.
 
 ## What The Portal Can Manage
 

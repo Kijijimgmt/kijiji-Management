@@ -1,5 +1,7 @@
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
 const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
+const DEFAULT_SUPABASE_URL = "https://vaqgriohhcccvvxgkhgh.supabase.co";
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn";
 
 const DEFAULT_DATA_SOURCES = {
   clients: "03c5f70c-fb49-4d09-9de8-7fb8a45a04c7",
@@ -24,6 +26,9 @@ const dataSources = {
 const optionalBooleans = {
   notionTokenConfigured: Boolean(NOTION_TOKEN),
   portalAccessConfigured: Boolean(process.env.PORTAL_ACCESS_CODE),
+  supabaseUrlConfigured: Boolean(process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL),
+  supabasePublishableKeyConfigured: Boolean(process.env.SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_PUBLISHABLE_KEY),
+  portalCodeFallbackEnabled: process.env.ALLOW_PORTAL_CODE_FALLBACK === "true",
   slackWebhookConfigured: Boolean(process.env.SLACK_WEBHOOK_URL),
   slackSigningSecretConfigured: Boolean(process.env.SLACK_SIGNING_SECRET),
   activityLogConfigured: Boolean(dataSources.activity),
@@ -293,7 +298,12 @@ const getDeepHealth = async () => {
       : Promise.resolve({ label: "activity", ok: false, status: "optional_missing_config" }),
   ]);
   const requiredSourcesOk = sources.filter((source) => source.label !== "activity").every((source) => source.ok);
-  const requiredEnvOk = Boolean(NOTION_TOKEN && process.env.PORTAL_ACCESS_CODE);
+  const supabaseAuthReady = Boolean(
+    (process.env.SUPABASE_URL || DEFAULT_SUPABASE_URL) &&
+      (process.env.SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_PUBLISHABLE_KEY)
+  );
+  const passcodeFallbackReady = Boolean(process.env.ALLOW_PORTAL_CODE_FALLBACK === "true" && process.env.PORTAL_ACCESS_CODE);
+  const requiredEnvOk = Boolean(NOTION_TOKEN && (supabaseAuthReady || passcodeFallbackReady));
 
   return {
     ...getEnvironmentSummary(),
@@ -302,7 +312,8 @@ const getDeepHealth = async () => {
     notionSources: sources,
     required: {
       notionToken: Boolean(NOTION_TOKEN),
-      portalAccessCode: Boolean(process.env.PORTAL_ACCESS_CODE),
+      supabaseAuth: supabaseAuthReady,
+      portalAccessCodeFallback: passcodeFallbackReady,
       coreNotionSources: requiredSourcesOk,
     },
   };

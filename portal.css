@@ -326,7 +326,8 @@ h2 {
 }
 
 .dashboard-content[hidden],
-.access-panel[hidden] {
+.access-panel[hidden],
+[data-admin-only][hidden] {
   display: none;
 }
 
@@ -381,6 +382,93 @@ h2 {
   overflow: hidden;
   background: rgba(255, 248, 237, 0.035);
   box-shadow: var(--shadow-panel);
+}
+
+.my-work-section {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 84% 0%, rgba(255, 178, 94, 0.14), transparent 18rem),
+    rgba(255, 248, 237, 0.045);
+  box-shadow: var(--shadow-panel);
+}
+
+.my-work-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.my-work-hero h2 {
+  max-width: 11ch;
+  font-size: clamp(2.2rem, 5vw, 5.1rem);
+}
+
+.my-work-hero p:last-child {
+  max-width: 56ch;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.user-badge {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  border: 1px solid rgba(255, 178, 94, 0.28);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: var(--orange-hot);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.personal-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.personal-metrics article {
+  min-height: 92px;
+  padding: var(--space-2);
+  border-right: 1px solid var(--line);
+}
+
+.personal-metrics article:last-child {
+  border-right: 0;
+}
+
+.personal-metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.personal-metrics strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--white);
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.my-work-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(260px, 0.8fr);
+  gap: var(--space-2);
+  padding: var(--space-2);
 }
 
 .command-board {
@@ -1201,6 +1289,7 @@ textarea {
   .detail-grid,
   .access-form,
   .command-board,
+  .my-work-board,
   .relation-grid,
   .guidance-grid {
     grid-template-columns: 1fr;
@@ -1226,7 +1315,8 @@ textarea {
 
   .portal-topbar,
   .section-header,
-  .client-detail-head {
+  .client-detail-head,
+  .my-work-hero {
     display: grid;
   }
 
@@ -1246,6 +1336,7 @@ textarea {
   }
 
   .overview-grid,
+  .personal-metrics,
   .detail-meta,
   .form-grid {
     grid-template-columns: 1fr;
@@ -1270,11 +1361,13 @@ textarea {
   }
 
   .metric-panel,
+  .personal-metrics article,
   .metric-panel:nth-child(2) {
     border-right: 0;
     border-bottom: 1px solid var(--line);
   }
 
+  .personal-metrics article:last-child,
   .metric-panel:last-child {
     border-bottom: 0;
   }

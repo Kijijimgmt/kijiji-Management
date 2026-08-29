@@ -1,8 +1,14 @@
 const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
+const {
+  assertCanManageClient,
+  assertCanManageOwnedRecord,
+  assignMemberOwner,
+  filterDashboardForIdentity,
+  verifyTeamAccess,
+} = require("./lib/kijiji-auth");
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
 const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
-const PORTAL_ACCESS_CODE = process.env.PORTAL_ACCESS_CODE;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 const DEFAULT_DATA_SOURCES = {
@@ -86,24 +92,6 @@ const notionRequest = async (path, options = {}) => {
   }
 
   return response.json();
-};
-
-const verifyPortalAccess = (request) => {
-  if (!PORTAL_ACCESS_CODE) {
-    const error = new Error("Portal access code is not configured in Vercel.");
-    error.statusCode = 503;
-    error.code = "portal_access_not_configured";
-    throw error;
-  }
-
-  const accessCode = request.headers["x-portal-access-code"];
-
-  if (accessCode !== PORTAL_ACCESS_CODE) {
-    const error = new Error("Enter the Kijiji portal access code.");
-    error.statusCode = 401;
-    error.code = "portal_access_required";
-    throw error;
-  }
 };
 
 const propertyByAliases = (properties, aliases) => {
@@ -569,9 +557,48 @@ const auditSummary = (resource, input, saved) => {
   }.`;
 };
 
-const auditWrite = async ({ resource, operation, input, saved }) =>
+const getExistingRecord = async (resource, id) => {
+  const data = await notionRequest(`/pages/${id}`);
+  if (resource === "action") return mapPageToAction(data);
+  if (resource === "opportunity") return mapPageToOpportunity(data);
+  if (resource === "event") return mapPageToEvent(data);
+  if (resource === "client") return mapPageToClient(data);
+  return null;
+};
+
+const enforceTeamWriteScope = async (resource, record, identity, method) => {
+  if (resource === "client") {
+    assertCanManageClient(identity);
+    return;
+  }
+
+  if (identity.isAdmin) {
+    return;
+  }
+
+  if (method === "PATCH") {
+    if (!record.id) {
+      const error = new Error("Record id is required.");
+      error.statusCode = 400;
+      error.code = "validation_error";
+      throw error;
+    }
+
+    const existing = await getExistingRecord(resource, record.id);
+    const labels = {
+      action: "Task",
+      opportunity: "Opportunity",
+      event: "Event",
+    };
+    assertCanManageOwnedRecord(existing, identity, labels[resource] || "Record");
+  }
+
+  assignMemberOwner(record, identity);
+};
+
+const auditWrite = async ({ resource, operation, input, saved, identity }) =>
   logActivity({
-    actor: "Portal passcode session",
+    actor: identity?.email || identity?.fullName || "Portal session",
     source: "portal",
     action: operation,
     resource,
@@ -819,10 +846,11 @@ module.exports = async (request, response) => {
       return;
     }
 
-    verifyPortalAccess(request);
+    const identity = await verifyTeamAccess(request);
 
     if (request.method === "GET") {
-      json(response, 200, await listDashboard());
+      const dashboard = await listDashboard();
+      json(response, 200, filterDashboardForIdentity(dashboard, identity));
       return;
     }
 
@@ -834,8 +862,9 @@ module.exports = async (request, response) => {
 
       if (resource === "action") {
         const action = normalizeActionInput(body);
+        await enforceTeamWriteScope(resource, action, identity, request.method);
         const savedAction = request.method === "POST" ? await createAction(action) : await updateAction(action);
-        await auditWrite({ resource, operation, input: action, saved: savedAction });
+        await auditWrite({ resource, operation, input: action, saved: savedAction, identity });
         await notifySlack({
           resource,
           operation,
@@ -848,16 +877,18 @@ module.exports = async (request, response) => {
 
       if (resource === "client") {
         const client = normalizeClientInput(body);
+        await enforceTeamWriteScope(resource, client, identity, request.method);
         const savedClient = request.method === "POST" ? await createClient(client) : await updateClient(client);
-        await auditWrite({ resource, operation, input: client, saved: savedClient });
+        await auditWrite({ resource, operation, input: client, saved: savedClient, identity });
         json(response, 200, { client: savedClient });
         return;
       }
 
       if (resource === "opportunity") {
         const opportunity = normalizeOpportunityInput(body);
+        await enforceTeamWriteScope(resource, opportunity, identity, request.method);
         const savedOpportunity = request.method === "POST" ? await createOpportunity(opportunity) : await updateOpportunity(opportunity);
-        await auditWrite({ resource, operation, input: opportunity, saved: savedOpportunity });
+        await auditWrite({ resource, operation, input: opportunity, saved: savedOpportunity, identity });
         await notifySlack({
           resource,
           operation,
@@ -870,8 +901,9 @@ module.exports = async (request, response) => {
 
       if (resource === "event") {
         const event = normalizeEventInput(body);
+        await enforceTeamWriteScope(resource, event, identity, request.method);
         const savedEvent = request.method === "POST" ? await createEvent(event) : await updateEvent(event);
-        await auditWrite({ resource, operation, input: event, saved: savedEvent });
+        await auditWrite({ resource, operation, input: event, saved: savedEvent, identity });
         await notifySlack({
           resource,
           operation,
@@ -896,6 +928,7 @@ module.exports = async (request, response) => {
     json(response, statusCode, {
       error: error.code || "notion_clients_error",
       message: error.message,
+      ...(statusCode === 401 || statusCode === 403 ? { user: null } : {}),
     });
   }
 };

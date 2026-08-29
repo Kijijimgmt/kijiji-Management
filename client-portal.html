@@ -22,8 +22,9 @@
           <img src="assets/kijiji-logo.png" alt="Kijiji Management" />
         </a>
         <nav class="portal-nav">
-          <a class="is-active" href="#overview">Overview</a>
-          <a href="#clients">Clients</a>
+          <a class="is-active" href="#my-work">My Work</a>
+          <a href="#overview" data-admin-only>Overview</a>
+          <a href="#clients" data-admin-only>Clients</a>
           <a href="#actions">Tasks</a>
           <a href="#opportunities">Deals</a>
           <a href="#calendar">Calendar</a>
@@ -52,20 +53,81 @@
           <form class="access-form" data-access-form>
             <div>
               <p class="eyebrow">Secure Team Access</p>
-              <h2 id="access-title">Unlock the Kijiji dashboard</h2>
-              <p>Enter the team passcode to sync the shared Notion operating system.</p>
+              <h2 id="access-title">Sign in to the Kijiji dashboard</h2>
+              <p>Use an approved Kijiji email. We will send a secure magic link before syncing the shared Notion operating system.</p>
             </div>
             <label>
-              <span>Team passcode</span>
-              <input data-access-code name="portalCode" type="password" autocomplete="current-password" required />
+              <span>Team email</span>
+              <input data-auth-email name="email" type="email" autocomplete="email" placeholder="max@kijijimgmt.com" required />
             </label>
-            <button class="button button-primary" type="submit" data-access-submit>Unlock Dashboard</button>
+            <button class="button button-primary" type="submit" data-access-submit>Send Magic Link</button>
             <p class="access-message" data-access-message role="status" aria-live="polite"></p>
           </form>
         </section>
 
         <div class="dashboard-content" data-dashboard-content hidden>
-          <section class="overview-grid" id="overview" aria-label="Operating overview">
+          <section class="my-work-section" id="my-work" aria-labelledby="my-work-title">
+            <div class="my-work-hero">
+              <div>
+                <p class="eyebrow">My Work</p>
+                <h2 id="my-work-title" data-my-work-title>Your assigned operating lane</h2>
+                <p data-my-work-subtitle>Tasks, deals, dates, and blockers assigned to you.</p>
+              </div>
+              <span class="user-badge" data-user-badge>Signed in</span>
+            </div>
+            <div class="personal-metrics">
+              <article>
+                <span>Open Tasks</span>
+                <strong data-my-work-tasks>0</strong>
+              </article>
+              <article>
+                <span>Deals</span>
+                <strong data-my-work-deals>0</strong>
+              </article>
+              <article>
+                <span>Upcoming</span>
+                <strong data-my-work-events>0</strong>
+              </article>
+              <article>
+                <span>Blockers</span>
+                <strong data-my-work-blockers>0</strong>
+              </article>
+            </div>
+            <div class="my-work-board">
+              <article class="command-panel">
+                <div class="section-header compact">
+                  <div>
+                    <p class="eyebrow">Assigned Tasks</p>
+                    <h2>Next moves</h2>
+                  </div>
+                  <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
+                </div>
+                <div class="stack-list" data-my-work-action-list></div>
+              </article>
+              <article class="command-panel">
+                <div class="section-header compact">
+                  <div>
+                    <p class="eyebrow">Assigned Deals</p>
+                    <h2>Pipeline focus</h2>
+                  </div>
+                  <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Deal</button>
+                </div>
+                <div class="stack-list" data-my-work-deal-list></div>
+              </article>
+              <article class="command-panel">
+                <div class="section-header compact">
+                  <div>
+                    <p class="eyebrow">Dates + Blockers</p>
+                    <h2>Watch list</h2>
+                  </div>
+                  <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
+                </div>
+                <div class="stack-list" data-my-work-watch-list></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="overview-grid" id="overview" aria-label="Operating overview" data-admin-only>
             <article class="metric-panel">
               <span>Clients</span>
               <strong data-metric-clients>0</strong>
@@ -88,7 +150,7 @@
             </article>
           </section>
 
-          <section class="command-board" aria-label="Today and priorities">
+          <section class="command-board" aria-label="Today and priorities" data-admin-only>
             <article class="command-panel command-primary">
               <div class="section-header compact">
                 <div>
@@ -129,7 +191,7 @@
             </article>
           </section>
 
-          <section class="portal-section" id="clients" aria-labelledby="clients-title">
+          <section class="portal-section" id="clients" aria-labelledby="clients-title" data-admin-only>
             <div class="section-header">
               <div>
                 <p class="eyebrow">Clients</p>
@@ -174,7 +236,7 @@
             </div>
           </section>
 
-          <section class="detail-grid" aria-label="Client detail and operating context">
+          <section class="detail-grid" aria-label="Client detail and operating context" data-admin-only>
             <article class="detail-panel" data-client-detail>
               <div class="empty-state">
                 <p class="eyebrow">Client detail</p>
@@ -556,6 +618,7 @@
       </form>
     </dialog>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="portal.js"></script>
   </body>
 </html>

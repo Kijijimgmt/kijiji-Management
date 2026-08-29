@@ -1,5 +1,13 @@
 const apiEndpoint = "/api/notion-clients";
-const accessStorageKey = "kijiji-portal-access-code";
+const supabaseUrl = "https://vaqgriohhcccvvxgkhgh.supabase.co";
+const supabasePublishableKey = "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn";
+const supabaseClient = window.supabase?.createClient?.(supabaseUrl, supabasePublishableKey, {
+  auth: {
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    persistSession: true,
+  },
+});
 const today = new Date();
 const todayISO = today.toISOString().slice(0, 10);
 
@@ -15,6 +23,16 @@ const els = {
   blockerList: $("[data-blocker-list]"),
   pipelineGrid: $("[data-pipeline-grid]"),
   calendarList: $("[data-calendar-list]"),
+  myWorkActionList: $("[data-my-work-action-list]"),
+  myWorkDealList: $("[data-my-work-deal-list]"),
+  myWorkWatchList: $("[data-my-work-watch-list]"),
+  myWorkTitle: $("[data-my-work-title]"),
+  myWorkSubtitle: $("[data-my-work-subtitle]"),
+  myWorkTasksMetric: $("[data-my-work-tasks]"),
+  myWorkDealsMetric: $("[data-my-work-deals]"),
+  myWorkEventsMetric: $("[data-my-work-events]"),
+  myWorkBlockersMetric: $("[data-my-work-blockers]"),
+  userBadge: $("[data-user-badge]"),
   search: $("[data-search-clients]"),
   statusFilter: $("[data-status-filter]"),
   clientDialog: $("[data-client-dialog]"),
@@ -40,7 +58,7 @@ const els = {
   logout: $("[data-logout-portal]"),
   accessPanel: $("[data-access-panel]"),
   accessForm: $("[data-access-form]"),
-  accessInput: $("[data-access-code]"),
+  accessInput: $("[data-auth-email]"),
   accessSubmit: $("[data-access-submit]"),
   accessMessage: $("[data-access-message]"),
   dashboard: $("[data-dashboard-content]"),
@@ -54,7 +72,8 @@ let state = {
   selectedClientId: "",
   isLoading: true,
   portalError: "",
-  portalAccessCode: sessionStorage.getItem(accessStorageKey) || "",
+  authSession: null,
+  teamUser: null,
 };
 
 const escapeHtml = (value) =>
@@ -93,6 +112,15 @@ const getDaysUntil = (value) => {
 
 const isComplete = (item) => ["complete", "done", "closed"].includes(String(item.status || "").toLowerCase());
 const isUrgent = (item) => ["urgent", "high"].includes(String(item.priority || item.focusLevel || "").toLowerCase());
+const isAdminUser = () => Boolean(state.teamUser?.isAdmin);
+const ownerKey = (value) => {
+  const text = String(value || "").trim().toLowerCase();
+  if (text === "max" || text === "maxwell") return "maxwell";
+  if (text === "joe") return "joe";
+  if (text === "erik") return "erik";
+  return text;
+};
+const ownerMatches = (value, owner) => ownerKey(value) === ownerKey(owner);
 
 const getProgressEstimate = (client) => {
   if (Number.isFinite(Number(client.progress)) && Number(client.progress) > 0) {
@@ -136,7 +164,7 @@ const setAccessMessage = (message = "", mode = "") => {
 
 const setAccessBusy = (isBusy) => {
   els.accessSubmit.disabled = isBusy;
-  els.accessSubmit.textContent = isBusy ? "Unlocking..." : "Unlock Dashboard";
+  els.accessSubmit.textContent = isBusy ? "Sending..." : "Send Magic Link";
   els.accessInput.disabled = isBusy;
 };
 
@@ -160,18 +188,40 @@ const showDashboard = () => {
   setProtectedAccess(true);
 };
 
-const getRequestHeaders = () => ({
-  "Content-Type": "application/json",
-  "X-Portal-Access-Code": state.portalAccessCode,
-});
+const applyRoleUi = () => {
+  const isAdmin = isAdminUser();
+  document.body.dataset.portalRole = state.teamUser?.role || "signed-out";
+  $$("[data-admin-only]").forEach((element) => {
+    element.hidden = !isAdmin;
+  });
+  $$("[data-member-owner-lock]").forEach((element) => {
+    element.hidden = isAdmin;
+  });
+};
+
+const getRequestHeaders = () => {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (state.authSession?.access_token) {
+    headers.Authorization = `Bearer ${state.authSession.access_token}`;
+  }
+
+  return headers;
+};
 
 const getPortalErrorMessage = (response, data) => {
   if (response.status === 401) {
-    return "That passcode did not unlock the dashboard. Check it and try again.";
+    return data?.message || "Your secure session expired. Sign in again with your Kijiji email.";
+  }
+
+  if (response.status === 403) {
+    return data?.message || "This email is not approved for the Kijiji team portal.";
   }
 
   if (data?.error === "notion_not_configured") {
-    return "The passcode worked, but Notion is not configured in Vercel yet.";
+    return "Your sign-in worked, but Notion is not configured in Vercel yet.";
   }
 
   if (data?.error === "notion_access_missing") {
@@ -179,11 +229,11 @@ const getPortalErrorMessage = (response, data) => {
   }
 
   if (data?.error === "portal_access_not_configured") {
-    return "The portal passcode is not configured in Vercel yet.";
+    return "Supabase Auth is not configured in Vercel yet.";
   }
 
   if (response.status >= 500) {
-    return "The passcode was accepted, but the Notion operating system could not load. Check the Notion token and database sharing.";
+    return "Your sign-in worked, but the Notion operating system could not load. Check the Notion token and database sharing.";
   }
 
   return data?.message || "The dashboard could not load. Try again or check the portal configuration.";
@@ -224,6 +274,85 @@ const renderMetrics = () => {
   els.todayMetric.textContent = String(getOpenActions().filter((action) => action.dueDate === todayISO).length);
   els.overdueMetric.textContent = String(getOpenActions().filter((action) => getDaysUntil(action.dueDate) < 0).length);
   els.blockersMetric.textContent = String(getBlockers().length);
+};
+
+const getPersonalActions = () => {
+  if (!isAdminUser()) {
+    return getOpenActions();
+  }
+
+  return getOpenActions().filter((action) => ownerMatches(action.owner, state.teamUser?.owner));
+};
+
+const getPersonalOpportunities = () => {
+  const open = getOpenOpportunities();
+  if (!isAdminUser()) {
+    return open;
+  }
+
+  return open.filter((opportunity) => ownerMatches(opportunity.owner, state.teamUser?.owner));
+};
+
+const getPersonalEvents = () => {
+  const upcoming = state.events.filter((event) => getDaysUntil(event.date) >= 0);
+  if (!isAdminUser()) {
+    return upcoming;
+  }
+
+  return upcoming.filter((event) => ownerMatches(event.owner, state.teamUser?.owner));
+};
+
+const renderMyWork = () => {
+  const userName = state.teamUser?.fullName || "Team member";
+  const personalActions = getPersonalActions().sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate)).slice(0, 6);
+  const personalDeals = getPersonalOpportunities()
+    .sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate))
+    .slice(0, 6);
+  const personalEvents = getPersonalEvents()
+    .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date))
+    .slice(0, 4);
+  const personalBlockers = [
+    ...getPersonalActions()
+      .filter((action) => action.blocker)
+      .map((item) => ({ kind: "action", item })),
+    ...getPersonalOpportunities()
+      .filter((opportunity) => opportunity.blocker)
+      .map((item) => ({ kind: "opportunity", item })),
+  ].slice(0, 4);
+  const watchItems = [...personalBlockers, ...personalEvents.map((item) => ({ kind: "event", item }))].slice(0, 6);
+
+  els.myWorkTitle.textContent = `${userName}'s work`;
+  els.myWorkSubtitle.textContent = isAdminUser()
+    ? "Your personal lane is here. The full command center remains available below."
+    : "Your dashboard is filtered to the tasks, deals, dates, and clients assigned to you.";
+  els.userBadge.textContent = `${state.teamUser?.role === "admin" ? "Admin" : "Member"} / ${state.teamUser?.email || "Signed in"}`;
+  els.myWorkTasksMetric.textContent = String(getPersonalActions().length);
+  els.myWorkDealsMetric.textContent = String(getPersonalOpportunities().length);
+  els.myWorkEventsMetric.textContent = String(getPersonalEvents().length);
+  els.myWorkBlockersMetric.textContent = String(personalBlockers.length);
+
+  if (personalActions.length) {
+    els.myWorkActionList.innerHTML = personalActions.map(actionCard).join("");
+  } else {
+    renderEmptyList(els.myWorkActionList, "No assigned tasks", "Assigned open tasks will appear here.");
+  }
+
+  if (personalDeals.length) {
+    els.myWorkDealList.innerHTML = personalDeals.map(opportunityCard).join("");
+  } else {
+    renderEmptyList(els.myWorkDealList, "No assigned deals", "Assigned opportunities and partnership moves will appear here.");
+  }
+
+  if (watchItems.length) {
+    els.myWorkWatchList.innerHTML = watchItems
+      .map(({ kind, item }) => {
+        if (kind === "event") return eventCard(item);
+        return kind === "opportunity" ? opportunityCard(item) : actionCard(item);
+      })
+      .join("");
+  } else {
+    renderEmptyList(els.myWorkWatchList, "No blockers or dates", "Visible blockers and upcoming dates assigned to you will appear here.");
+  }
 };
 
 const renderEmptyList = (target, title, text) => {
@@ -543,6 +672,10 @@ const setLoadingState = () => {
   els.todayMetric.textContent = "-";
   els.overdueMetric.textContent = "-";
   els.blockersMetric.textContent = "-";
+  els.myWorkTasksMetric.textContent = "-";
+  els.myWorkDealsMetric.textContent = "-";
+  els.myWorkEventsMetric.textContent = "-";
+  els.myWorkBlockersMetric.textContent = "-";
   els.rows.innerHTML = `
     <tr>
       <td colspan="6">
@@ -565,6 +698,9 @@ const setLoadingState = () => {
     [els.todayList, "Today", "Checking what needs attention now."],
     [els.priorityList, "Priority", "Sorting high-focus work."],
     [els.blockerList, "Blockers", "Looking for anything stuck."],
+    [els.myWorkActionList, "My Tasks", "Loading your assigned tasks."],
+    [els.myWorkDealList, "My Deals", "Loading your assigned opportunities."],
+    [els.myWorkWatchList, "Watch List", "Loading your blockers and dates."],
     [els.actionList, "Tasks", "Loading open team actions."],
     [els.pipelineGrid, "Pipeline", "Loading opportunities by stage."],
     [els.calendarList, "Calendar", "Loading upcoming releases and events."],
@@ -581,6 +717,10 @@ const setErrorState = () => {
   els.todayMetric.textContent = "0";
   els.overdueMetric.textContent = "0";
   els.blockersMetric.textContent = "0";
+  els.myWorkTasksMetric.textContent = "0";
+  els.myWorkDealsMetric.textContent = "0";
+  els.myWorkEventsMetric.textContent = "0";
+  els.myWorkBlockersMetric.textContent = "0";
   els.rows.innerHTML = `
     <tr>
       <td colspan="6">
@@ -603,6 +743,9 @@ const setErrorState = () => {
     [els.todayList, "No task data", "Once Notion is connected, today's actions will appear here."],
     [els.priorityList, "No priority data", "Urgent and high-priority work will appear here."],
     [els.blockerList, "No blocker data", "Visible blockers will appear here."],
+    [els.myWorkActionList, "No task data", "Your assigned tasks will appear here when the shared dashboard loads."],
+    [els.myWorkDealList, "No deal data", "Your assigned deals will appear here when the shared dashboard loads."],
+    [els.myWorkWatchList, "No watch data", "Your blockers and dates will appear here when the shared dashboard loads."],
     [els.actionList, "No actions available", "Task editing will unlock once the shared Actions database is reachable."],
     [els.pipelineGrid, "No pipeline available", "Opportunity stages will unlock once the shared Opportunities database is reachable."],
     [els.calendarList, "No calendar available", "Events and releases will unlock once the shared Events database is reachable."],
@@ -614,6 +757,8 @@ const setErrorState = () => {
 };
 
 const renderPortal = () => {
+  applyRoleUi();
+
   if (state.isLoading) {
     setLoadingState();
     return;
@@ -625,6 +770,7 @@ const renderPortal = () => {
   }
 
   renderMetrics();
+  renderMyWork();
   renderFocusLists();
   renderRows();
   renderDetail();
@@ -634,24 +780,13 @@ const renderPortal = () => {
   renderActionClientOptions();
 };
 
-const loadDashboard = async ({ code = state.portalAccessCode, fromUnlock = false } = {}) => {
-  const candidateCode = String(code || "").trim();
-  let showAccessAfterFailure = false;
-
-  if (!candidateCode) {
-    state.portalAccessCode = "";
-    sessionStorage.removeItem(accessStorageKey);
-    setSourceBadge("locked", "Locked");
-    showAccessPanel("Enter the team passcode to unlock the dashboard.", "info");
-    return false;
-  }
-
+const loadDashboard = async ({ fromAuth = false } = {}) => {
   state.isLoading = true;
   state.portalError = "";
-  setSourceBadge("loading", fromUnlock ? "Unlocking" : "Syncing Notion");
+  setSourceBadge("loading", fromAuth ? "Verifying" : "Syncing Notion");
 
-  if (fromUnlock) {
-    showAccessPanel("Checking passcode and syncing Notion...", "info");
+  if (fromAuth) {
+    showAccessPanel("Verifying your Kijiji session and syncing Notion...", "info");
     setAccessBusy(true);
   } else {
     showDashboard();
@@ -660,10 +795,7 @@ const loadDashboard = async ({ code = state.portalAccessCode, fromUnlock = false
 
   try {
     const response = await fetch(apiEndpoint, {
-      headers: {
-        "Content-Type": "application/json",
-        "X-Portal-Access-Code": candidateCode,
-      },
+      headers: getRequestHeaders(),
     });
     const data = await response.json();
 
@@ -674,15 +806,14 @@ const loadDashboard = async ({ code = state.portalAccessCode, fromUnlock = false
       throw error;
     }
 
-    state.portalAccessCode = candidateCode;
-    sessionStorage.setItem(accessStorageKey, state.portalAccessCode);
+    state.teamUser = data.source?.user || state.teamUser;
     state.clients = Array.isArray(data.clients) ? data.clients : [];
     state.actions = Array.isArray(data.actions) ? data.actions : [];
     state.opportunities = Array.isArray(data.opportunities) ? data.opportunities : [];
     state.events = Array.isArray(data.events) ? data.events : [];
     state.selectedClientId = state.selectedClientId || state.clients[0]?.id || "";
     state.isLoading = false;
-    setSourceBadge("ready", "Synced with Notion");
+    setSourceBadge("ready", state.teamUser?.fullName ? `${state.teamUser.fullName} / Notion synced` : "Synced with Notion");
     setAccessMessage("");
     showDashboard();
     renderPortal();
@@ -693,23 +824,24 @@ const loadDashboard = async ({ code = state.portalAccessCode, fromUnlock = false
     state.opportunities = [];
     state.events = [];
     state.selectedClientId = "";
-    state.portalAccessCode = error.statusCode === 401 ? "" : candidateCode;
-    state.portalError = fromUnlock ? "" : error.message;
+    state.teamUser = error.statusCode === 401 || error.statusCode === 403 ? null : state.teamUser;
+    state.portalError = fromAuth ? "" : error.message;
 
-    if (error.statusCode === 401) {
-      sessionStorage.removeItem(accessStorageKey);
-    } else if (candidateCode) {
-      sessionStorage.setItem(accessStorageKey, candidateCode);
+    if (error.statusCode === 401 || error.statusCode === 403) {
+      await supabaseClient?.auth?.signOut?.();
     }
 
-    if (fromUnlock) {
+    if (fromAuth) {
       setSourceBadge("error", "Access failed");
       showAccessPanel(error.message, "error");
     } else if (error.statusCode === 401) {
       state.portalError = "";
-      showAccessAfterFailure = true;
       setSourceBadge("locked", "Locked");
-      showAccessPanel("Your saved passcode no longer works. Enter it again to unlock the dashboard.", "error");
+      showAccessPanel("Your secure session expired. Sign in again with your Kijiji email.", "error");
+    } else if (error.statusCode === 403) {
+      state.portalError = "";
+      setSourceBadge("locked", "Not approved");
+      showAccessPanel(error.message, "error");
     }
 
     return false;
@@ -717,7 +849,7 @@ const loadDashboard = async ({ code = state.portalAccessCode, fromUnlock = false
     state.isLoading = false;
     setAccessBusy(false);
 
-    if (!fromUnlock && !showAccessAfterFailure) {
+    if (!fromAuth) {
       renderPortal();
     }
   }
@@ -746,6 +878,23 @@ const setSelectValue = (selectEl, value) => {
   }
   selectEl.value = nextValue;
 };
+
+const applyOwnerFieldPolicy = (selectEl) => {
+  if (!selectEl) {
+    return;
+  }
+
+  if (isAdminUser()) {
+    selectEl.disabled = false;
+    return;
+  }
+
+  setSelectValue(selectEl, state.teamUser?.owner || "Unassigned");
+  selectEl.disabled = true;
+};
+
+const getFormOwnerValue = (form, formData) =>
+  String(formData.get("owner") || form.elements.owner?.value || state.teamUser?.owner || "Unassigned");
 
 const openClientForm = (client = null) => {
   els.clientForm.reset();
@@ -780,6 +929,7 @@ const openActionForm = (action = null) => {
   els.actionForm.elements.clientId.value = action?.clientIds?.[0] || "";
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
   els.actionForm.elements.notes.value = action?.notes || "";
+  applyOwnerFieldPolicy(els.actionForm.elements.owner);
   openDialog(els.actionDialog);
 };
 
@@ -796,6 +946,7 @@ const openOpportunityForm = (opportunity = null) => {
   els.opportunityForm.elements.clientId.value = opportunity?.clientIds?.[0] || "";
   els.opportunityForm.elements.blocker.checked = Boolean(opportunity?.blocker);
   els.opportunityForm.elements.nextStep.value = opportunity?.nextStep || "";
+  applyOwnerFieldPolicy(els.opportunityForm.elements.owner);
   openDialog(els.opportunityDialog);
 };
 
@@ -811,6 +962,7 @@ const openEventForm = (eventItem = null) => {
   els.eventForm.elements.date.value = eventItem?.date || todayISO;
   els.eventForm.elements.clientId.value = eventItem?.clientIds?.[0] || "";
   els.eventForm.elements.notes.value = eventItem?.notes || "";
+  applyOwnerFieldPolicy(els.eventForm.elements.owner);
   openDialog(els.eventDialog);
 };
 
@@ -824,7 +976,11 @@ const saveResource = async (payload) => {
 
   if (response.status === 401) {
     logoutPortal();
-    throw new Error("Your portal session expired or the passcode no longer works. Unlock the dashboard again.");
+    throw new Error("Your secure session expired. Sign in again with your Kijiji email.");
+  }
+
+  if (response.status === 403) {
+    throw new Error(data.message || "This action is outside your Kijiji portal access.");
   }
 
   if (!response.ok) {
@@ -881,7 +1037,7 @@ const handleActionSubmit = async (event) => {
     id: String(formData.get("id") || ""),
     title: String(formData.get("title") || "").trim(),
     status: String(formData.get("status") || "Open"),
-    owner: String(formData.get("owner") || "Unassigned"),
+    owner: getFormOwnerValue(els.actionForm, formData),
     priority: String(formData.get("priority") || "Normal"),
     dueDate: String(formData.get("dueDate") || "").trim(),
     clientId: client?.id || "",
@@ -915,7 +1071,7 @@ const handleOpportunitySubmit = async (event) => {
     id: String(formData.get("id") || ""),
     name: String(formData.get("name") || "").trim(),
     stage: String(formData.get("stage") || "New"),
-    owner: String(formData.get("owner") || "Unassigned"),
+    owner: getFormOwnerValue(els.opportunityForm, formData),
     priority: String(formData.get("priority") || "Normal"),
     dueDate: String(formData.get("dueDate") || "").trim(),
     clientId: client?.id || "",
@@ -950,7 +1106,7 @@ const handleEventSubmit = async (event) => {
     name: String(formData.get("name") || "").trim(),
     type: String(formData.get("type") || "Event"),
     status: String(formData.get("status") || "Planned"),
-    owner: String(formData.get("owner") || "Unassigned"),
+    owner: getFormOwnerValue(els.eventForm, formData),
     date: String(formData.get("date") || "").trim(),
     clientId: client?.id || "",
     clientName: client?.name || "",
@@ -975,24 +1131,43 @@ const handleEventSubmit = async (event) => {
 
 const handleAccessSubmit = async (event) => {
   event.preventDefault();
-  const code = els.accessInput.value.trim();
+  const email = els.accessInput.value.trim().toLowerCase();
 
-  if (!code) {
-    setAccessMessage("Enter the team passcode to unlock the dashboard.", "error");
+  if (!email) {
+    setAccessMessage("Enter your Kijiji email to receive a secure sign-in link.", "error");
     els.accessInput.focus();
     return;
   }
 
-  const didUnlock = await loadDashboard({ code, fromUnlock: true });
-
-  if (!didUnlock) {
-    els.accessInput.focus();
-    els.accessInput.select();
+  if (!supabaseClient) {
+    setAccessMessage("Supabase Auth did not load. Refresh the page, then try again.", "error");
+    return;
   }
+
+  setAccessBusy(true);
+  setAccessMessage("Sending secure sign-in link...", "info");
+
+  const redirectTo = `${window.location.origin}${window.location.pathname}`;
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: redirectTo,
+    },
+  });
+
+  setAccessBusy(false);
+
+  if (error) {
+    setAccessMessage(error.message || "Unable to send a sign-in link. Check Supabase Auth settings.", "error");
+    els.accessInput.focus();
+    return;
+  }
+
+  setAccessMessage("Check your inbox for the secure Kijiji sign-in link. Keep this tab open after you click it.", "info");
 };
 
-function logoutPortal() {
-  sessionStorage.removeItem(accessStorageKey);
+async function logoutPortal() {
+  await supabaseClient?.auth?.signOut?.();
   state = {
     clients: [],
     actions: [],
@@ -1001,10 +1176,12 @@ function logoutPortal() {
     selectedClientId: "",
     isLoading: false,
     portalError: "",
-    portalAccessCode: "",
+    authSession: null,
+    teamUser: null,
   };
   setSourceBadge("signed-out", "Signed out");
-  showAccessPanel("You have been signed out. Enter the team passcode to unlock the dashboard again.", "info");
+  applyRoleUi();
+  showAccessPanel("You have been signed out. Use your approved Kijiji email to sign back in.", "info");
   els.accessInput.focus();
 }
 
@@ -1218,10 +1395,51 @@ els.eventForm.addEventListener("submit", handleEventSubmit);
 els.search.addEventListener("input", renderRows);
 els.statusFilter.addEventListener("change", renderRows);
 
-if (state.portalAccessCode) {
-  loadDashboard();
-} else {
+const initializeAuth = async () => {
+  if (!supabaseClient) {
+    state.isLoading = false;
+    setSourceBadge("error", "Auth unavailable");
+    showAccessPanel("Supabase Auth could not load. Refresh the page, then try again.", "error");
+    return;
+  }
+
+  setSourceBadge("loading", "Checking session");
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    state.isLoading = false;
+    setSourceBadge("locked", "Locked");
+    showAccessPanel(error.message || "Sign in with your approved Kijiji email.", "error");
+    return;
+  }
+
+  state.authSession = data?.session || null;
+
+  if (state.authSession) {
+    await loadDashboard({ fromAuth: true });
+  } else {
+    state.isLoading = false;
+    setSourceBadge("locked", "Locked");
+    showAccessPanel("Sign in with your approved Kijiji email to open your dashboard.", "info");
+  }
+
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    state.authSession = session || null;
+    if (event === "SIGNED_IN" && state.authSession) {
+      await loadDashboard({ fromAuth: true });
+    }
+    if (event === "SIGNED_OUT") {
+      state.teamUser = null;
+      state.authSession = null;
+      applyRoleUi();
+    }
+  });
+};
+
+if (!supabaseClient) {
   state.isLoading = false;
-  setSourceBadge("locked", "Locked");
-  showAccessPanel("Enter the team passcode to unlock the dashboard.", "info");
+  setSourceBadge("error", "Auth unavailable");
+  showAccessPanel("Supabase Auth could not load. Refresh the page, then try again.", "error");
+} else {
+  initializeAuth();
 }
