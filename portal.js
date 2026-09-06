@@ -1,6 +1,7 @@
 const apiEndpoint = "/api/notion-clients";
 const supabaseUrl = "https://vaqgriohhcccvvxgkhgh.supabase.co";
 const supabasePublishableKey = "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn";
+const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
 const supabaseClient = window.supabase?.createClient?.(supabaseUrl, supabasePublishableKey, {
   auth: {
     autoRefreshToken: true,
@@ -1133,6 +1134,11 @@ const handleAccessSubmit = async (event) => {
   event.preventDefault();
   const email = els.accessInput.value.trim().toLowerCase();
 
+  if (window.location.protocol === "file:") {
+    setAccessMessage(`Magic-link sign-in only works from the live secure portal: ${livePortalUrl}`, "error");
+    return;
+  }
+
   if (!email) {
     setAccessMessage("Enter your Kijiji email to receive a secure sign-in link.", "error");
     els.accessInput.focus();
@@ -1148,17 +1154,27 @@ const handleAccessSubmit = async (event) => {
   setAccessMessage("Sending secure sign-in link...", "info");
 
   const redirectTo = `${window.location.origin}${window.location.pathname}`;
-  const { error } = await supabaseClient.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: redirectTo,
-    },
-  });
+  let error = null;
+
+  try {
+    const result = await supabaseClient.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectTo,
+      },
+    });
+    error = result.error;
+  } catch (fetchError) {
+    error = fetchError;
+  }
 
   setAccessBusy(false);
 
   if (error) {
-    setAccessMessage(error.message || "Unable to send a sign-in link. Check Supabase Auth settings.", "error");
+    const message = /failed to fetch/i.test(error.message || "")
+      ? "Could not reach Supabase Auth from this page. Open the live secure portal and try again."
+      : error.message || "Unable to send a sign-in link. Check Supabase Auth settings.";
+    setAccessMessage(message, "error");
     els.accessInput.focus();
     return;
   }
