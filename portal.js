@@ -1,4 +1,5 @@
 const apiEndpoint = "/api/notion-clients";
+const authLinkEndpoint = "/api/auth-link";
 const supabaseUrl = "https://vaqgriohhcccvvxgkhgh.supabase.co";
 const supabasePublishableKey = "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn";
 const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
@@ -1145,25 +1146,30 @@ const handleAccessSubmit = async (event) => {
     return;
   }
 
-  if (!supabaseClient) {
-    setAccessMessage("Supabase Auth did not load. Refresh the page, then try again.", "error");
-    return;
-  }
-
   setAccessBusy(true);
   setAccessMessage("Sending secure sign-in link...", "info");
 
   const redirectTo = `${window.location.origin}${window.location.pathname}`;
   let error = null;
+  let data = null;
 
   try {
-    const result = await supabaseClient.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectTo,
+    const response = await fetch(authLinkEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        email,
+        redirectTo,
+      }),
     });
-    error = result.error;
+
+    data = await response.json();
+
+    if (!response.ok) {
+      error = new Error(data.message || "Unable to send a sign-in link.");
+    }
   } catch (fetchError) {
     error = fetchError;
   }
@@ -1172,14 +1178,14 @@ const handleAccessSubmit = async (event) => {
 
   if (error) {
     const message = /failed to fetch/i.test(error.message || "")
-      ? "Could not reach Supabase Auth from this page. Open the live secure portal and try again."
+      ? "Could not reach the Kijiji sign-in service. Refresh the live portal and try again."
       : error.message || "Unable to send a sign-in link. Check Supabase Auth settings.";
     setAccessMessage(message, "error");
     els.accessInput.focus();
     return;
   }
 
-  setAccessMessage("Check your inbox for the secure Kijiji sign-in link. Keep this tab open after you click it.", "info");
+  setAccessMessage(data?.message || "Check your inbox for the secure Kijiji sign-in link.", "info");
 };
 
 async function logoutPortal() {
