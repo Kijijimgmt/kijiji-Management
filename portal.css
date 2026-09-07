@@ -2099,18 +2099,18 @@ body::before {
 
 /* Premium operating flow */
 :root {
-  --black: #080807;
-  --espresso: #0d0c0b;
-  --espresso-2: #15120f;
-  --panel: #11100e;
-  --panel-strong: #171411;
-  --line: rgba(243, 238, 230, 0.1);
-  --line-strong: rgba(243, 238, 230, 0.18);
-  --champagne: #f3eee6;
-  --white: #fffdf8;
-  --muted: #918a82;
-  --orange: #d8792c;
-  --orange-hot: #f1a057;
+  --black: #121211;
+  --espresso: #171614;
+  --espresso-2: #1d1a17;
+  --panel: #1a1917;
+  --panel-strong: #211e1a;
+  --line: rgba(235, 229, 218, 0.11);
+  --line-strong: rgba(235, 229, 218, 0.19);
+  --champagne: #e9e3d9;
+  --white: #f5f0e8;
+  --muted: #aaa29a;
+  --orange: #c87532;
+  --orange-hot: #e29a58;
 }
 
 body {
@@ -2126,7 +2126,7 @@ body {
 .portal-sidebar {
   padding: 24px 16px;
   border-right: 1px solid var(--line);
-  background: #090908;
+  background: #0f0f0e;
 }
 
 .portal-brand,
@@ -2144,7 +2144,7 @@ body {
   padding: 0 12px;
   border: 0;
   border-radius: 6px;
-  color: #8d867e;
+  color: #a39b93;
   font-size: 0.8rem;
   font-weight: 650;
 }
@@ -2152,13 +2152,13 @@ body {
 .portal-nav a:hover,
 .portal-nav a:focus-visible {
   border: 0;
-  background: #12110f;
+  background: #1a1917;
   color: var(--champagne);
 }
 
 .portal-nav a.is-active {
   border: 0;
-  background: #1b1510;
+  background: #241c16;
   box-shadow: inset 3px 0 0 var(--orange);
   color: var(--white);
 }
@@ -2172,7 +2172,7 @@ body {
 }
 
 .sidebar-note strong {
-  color: #aaa39a;
+  color: #b7afa6;
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -2212,7 +2212,7 @@ body {
   padding: 0 12px;
   border-color: var(--line);
   background: transparent;
-  color: #9e978f;
+  color: #b2aaa2;
   font-size: 0.7rem;
 }
 
@@ -2235,7 +2235,7 @@ body {
 .button-secondary:hover,
 .button-secondary:focus-visible {
   border-color: rgba(243, 238, 230, 0.3);
-  background: #171512;
+  background: #211f1c;
 }
 
 .my-work-hero {
@@ -2285,7 +2285,7 @@ body {
 
 .operating-flow a:hover,
 .operating-flow a:focus-visible {
-  background: #11100e;
+  background: #1a1917;
   outline: none;
 }
 
@@ -2321,7 +2321,7 @@ body {
   margin-bottom: 24px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #0d0c0b;
+  background: #171614;
   overflow: hidden;
 }
 
@@ -2404,7 +2404,7 @@ body {
 .calendar-item:hover,
 .calendar-item:focus-visible {
   padding-inline: 12px;
-  background: #11100e;
+  background: #1b1a18;
   outline: none;
   transform: none;
 }
@@ -2438,7 +2438,7 @@ body {
 .pipeline-grid,
 .calendar-list {
   border-color: var(--line);
-  background: #0d0c0b;
+  background: #171614;
 }
 
 .client-table th,
@@ -2448,7 +2448,7 @@ body {
 
 .client-table tbody tr:hover,
 .client-table tbody tr.is-selected {
-  background: #1a140f;
+  background: #241c16;
 }
 
 .detail-panel {
@@ -2465,12 +2465,45 @@ body {
 }
 
 .roadmap-current {
-  background: #11100e;
+  background: #1b1a18;
 }
 
 .roadmap-milestone:hover,
 .roadmap-milestone:focus-visible {
-  background: #11100e;
+  background: #1b1a18;
+}
+
+.roadmap-phase-marker {
+  border-color: #4a443e;
+  background: var(--black);
+}
+
+.roadmap-phase strong {
+  color: #bbb3aa;
+}
+
+.roadmap-phase small {
+  color: #938b83;
+}
+
+.roadmap-phase.is-complete .roadmap-phase-marker,
+.roadmap-phase.is-current .roadmap-phase-marker {
+  color: #17120e;
+}
+
+.create-menu-popover,
+.client-dialog {
+  background: #1a1917;
+}
+
+input,
+select,
+textarea {
+  background: #141311;
+}
+
+.client-dialog::backdrop {
+  background: rgba(15, 14, 13, 0.72);
 }
 
 .pipeline-column {
