@@ -27,6 +27,16 @@
     />
     <meta name="twitter:image" content="https://www.kijijimgmt.com/assets/kijiji-creative-hero.jpg" />
     <title>Kijiji Management Group | Every Vision Needs a Village</title>
+    <script>
+      (() => {
+        const hash = window.location.hash || "";
+        const hasAuthToken = hash.includes("access_token=") || hash.includes("refresh_token=");
+
+        if (hasAuthToken && window.location.pathname !== "/client-portal") {
+          window.location.replace(`https://www.kijijimgmt.com/client-portal${hash}`);
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
