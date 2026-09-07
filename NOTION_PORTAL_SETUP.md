@@ -12,7 +12,7 @@ NOTION_CLIENT_ROSTER_DATA_SOURCE_ID=03c5f70c-fb49-4d09-9de8-7fb8a45a04c7
 NOTION_ACTIONS_DATA_SOURCE_ID=662c1c0d-d255-4fe9-8260-5dc4f293b051
 NOTION_OPPORTUNITIES_DATA_SOURCE_ID=8548a9d4-1ffe-4787-90fc-3eb0a0085531
 NOTION_EVENTS_DATA_SOURCE_ID=4bf7373c-c744-4fe3-854e-ff0470954497
-SUPABASE_URL=https://vaqgriohhcccvvxgkhgh.supabase.co
+SUPABASE_URL=https://your-active-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ALLOW_PORTAL_CODE_FALLBACK=false
 PORTAL_ACCESS_CODE=optional-private-team-code-only-if-fallback-is-enabled
@@ -88,8 +88,10 @@ Supabase setup:
    - `https://www.kijijimgmt.com/client-portal`
    - `https://kijijimgmt.com/client-portal`
    - any Vercel preview URL used for testing
-4. In Vercel Production, set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
+4. In Vercel Production, set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from Supabase **Project Settings > API**.
 5. Redeploy Production.
+
+If the portal says Supabase Auth is unreachable, confirm the project is active in Supabase and that `SUPABASE_URL` resolves in the format `https://your-project-ref.supabase.co`.
 
 The portal includes a **Log Out** button. It clears the browser's Supabase session and removes loaded roster data from the page.
 

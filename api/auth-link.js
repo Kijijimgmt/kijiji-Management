@@ -1,8 +1,7 @@
 const { TEAM_MEMBERS } = require("./lib/kijiji-auth");
 
-const SUPABASE_URL = process.env.SUPABASE_URL || "https://vaqgriohhcccvvxgkhgh.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY =
-  process.env.SUPABASE_PUBLISHABLE_KEY || "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 const allowedOrigins = new Set(["https://www.kijijimgmt.com", "https://kijijimgmt.com"]);
 const recentRequests = new Map();
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -129,10 +128,14 @@ module.exports = async (request, response) => {
 
     json(response, 200, { ok: true, message: "Check your inbox for the secure Kijiji sign-in link." });
   } catch (error) {
+    const isSupabaseFetchFailure = /fetch failed|getaddrinfo|enotfound|econnrefused|network/i.test(error.message || "");
+
     json(response, 500, {
       ok: false,
-      error: "auth_link_failed",
-      message: error.message || "Unable to request a sign-in link.",
+      error: isSupabaseFetchFailure ? "supabase_auth_unreachable" : "auth_link_failed",
+      message: isSupabaseFetchFailure
+        ? "Supabase Auth is unreachable from the current project URL. Check SUPABASE_URL in Vercel and confirm the Supabase project is active."
+        : error.message || "Unable to request a sign-in link.",
     });
   }
 };

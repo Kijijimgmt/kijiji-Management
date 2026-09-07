@@ -1,15 +1,8 @@
 const apiEndpoint = "/api/notion-clients";
 const authLinkEndpoint = "/api/auth-link";
-const supabaseUrl = "https://vaqgriohhcccvvxgkhgh.supabase.co";
-const supabasePublishableKey = "sb_publishable_DPHPYm5DJGMqw13aiZP76w_q7pNidrn";
+const authConfigEndpoint = "/api/auth-config";
 const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
-const supabaseClient = window.supabase?.createClient?.(supabaseUrl, supabasePublishableKey, {
-  auth: {
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    persistSession: true,
-  },
-});
+let supabaseClient = null;
 const today = new Date();
 const todayISO = today.toISOString().slice(0, 10);
 
@@ -1458,10 +1451,36 @@ const initializeAuth = async () => {
   });
 };
 
-if (!supabaseClient) {
-  state.isLoading = false;
-  setSourceBadge("error", "Auth unavailable");
-  showAccessPanel("Supabase Auth could not load. Refresh the page, then try again.", "error");
-} else {
-  initializeAuth();
-}
+const bootstrapAuth = async () => {
+  if (!window.supabase?.createClient) {
+    state.isLoading = false;
+    setSourceBadge("error", "Auth unavailable");
+    showAccessPanel("Supabase Auth could not load. Refresh the page, then try again.", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch(authConfigEndpoint, { cache: "no-store" });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Supabase Auth is not configured in Vercel yet.");
+    }
+
+    supabaseClient = window.supabase.createClient(data.supabaseUrl, data.supabasePublishableKey, {
+      auth: {
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        persistSession: true,
+      },
+    });
+
+    await initializeAuth();
+  } catch (error) {
+    state.isLoading = false;
+    setSourceBadge("error", "Auth setup issue");
+    showAccessPanel(error.message || "The Kijiji sign-in service could not load. Check Supabase settings.", "error");
+  }
+};
+
+bootstrapAuth();
