@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260907-client-roadmaps" />
+    <link rel="stylesheet" href="portal.css?v=20260907-premium-flow" />
   </head>
   <body>
     <div class="portal-shell">
@@ -22,13 +22,13 @@
           <img src="assets/kijiji-logo.png" alt="Kijiji Management" />
         </a>
         <nav class="portal-nav">
-          <a class="is-active" href="#my-work" aria-current="page">My Work</a>
-          <a href="#overview" data-admin-only>Overview</a>
+          <a class="is-active" href="#my-work" aria-current="page">Today</a>
+          <a href="#overview" data-admin-only>Team Pulse</a>
           <a href="#clients">Clients</a>
           <a href="#actions">Tasks</a>
           <a href="#opportunities">Deals</a>
           <a href="#calendar">Calendar</a>
-          <a href="#guidance">Guide</a>
+          <a href="#guidance">Playbook</a>
         </nav>
         <div class="sidebar-note">
           <span>Operating OS</span>
@@ -84,6 +84,28 @@
               </div>
               <span class="user-badge" data-user-badge>Signed in</span>
             </div>
+            <nav class="operating-flow" aria-label="Kijiji operating flow">
+              <a class="is-current" href="#my-work">
+                <span>01</span>
+                <strong>Focus</strong>
+                <small>Know the priority</small>
+              </a>
+              <a href="#clients">
+                <span>02</span>
+                <strong>Review</strong>
+                <small>Check client roadmaps</small>
+              </a>
+              <a href="#actions">
+                <span>03</span>
+                <strong>Move</strong>
+                <small>Advance the work</small>
+              </a>
+              <a href="#calendar">
+                <span>04</span>
+                <strong>Deliver</strong>
+                <small>Protect key dates</small>
+              </a>
+            </nav>
             <div class="personal-metrics">
               <article>
                 <span>Open Tasks</span>
@@ -106,8 +128,8 @@
               <article class="command-panel">
                 <div class="section-header compact">
                   <div>
-                    <p class="eyebrow">Assigned Tasks</p>
-                    <h2>Next moves</h2>
+                    <p class="eyebrow">01 / Focus</p>
+                    <h2>What needs your attention</h2>
                   </div>
                   <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
                 </div>
@@ -116,8 +138,8 @@
               <article class="command-panel">
                 <div class="section-header compact">
                   <div>
-                    <p class="eyebrow">Assigned Deals</p>
-                    <h2>Pipeline focus</h2>
+                    <p class="eyebrow">02 / Advance</p>
+                    <h2>Opportunities to move</h2>
                   </div>
                   <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Deal</button>
                 </div>
@@ -126,8 +148,8 @@
               <article class="command-panel">
                 <div class="section-header compact">
                   <div>
-                    <p class="eyebrow">Dates + Blockers</p>
-                    <h2>Watch list</h2>
+                    <p class="eyebrow">03 / Deliver</p>
+                    <h2>Dates to protect</h2>
                   </div>
                   <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
                 </div>
@@ -627,6 +649,6 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260907-client-roadmaps"></script>
+    <script src="portal.js?v=20260907-premium-flow"></script>
   </body>
 </html>

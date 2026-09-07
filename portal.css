@@ -2096,3 +2096,478 @@ body::before {
     display: none;
   }
 }
+
+/* Premium operating flow */
+:root {
+  --black: #080807;
+  --espresso: #0d0c0b;
+  --espresso-2: #15120f;
+  --panel: #11100e;
+  --panel-strong: #171411;
+  --line: rgba(243, 238, 230, 0.1);
+  --line-strong: rgba(243, 238, 230, 0.18);
+  --champagne: #f3eee6;
+  --white: #fffdf8;
+  --muted: #918a82;
+  --orange: #d8792c;
+  --orange-hot: #f1a057;
+}
+
+body {
+  background: var(--black);
+}
+
+.portal-shell {
+  grid-template-columns: 216px minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--black);
+}
+
+.portal-sidebar {
+  padding: 24px 16px;
+  border-right: 1px solid var(--line);
+  background: #090908;
+}
+
+.portal-brand,
+.portal-brand img {
+  width: 108px;
+}
+
+.portal-nav {
+  gap: 2px;
+  margin-top: 34px;
+}
+
+.portal-nav a {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  color: #8d867e;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.portal-nav a:hover,
+.portal-nav a:focus-visible {
+  border: 0;
+  background: #12110f;
+  color: var(--champagne);
+}
+
+.portal-nav a.is-active {
+  border: 0;
+  background: #1b1510;
+  box-shadow: inset 3px 0 0 var(--orange);
+  color: var(--white);
+}
+
+.sidebar-note {
+  padding: 14px 12px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.sidebar-note strong {
+  color: #aaa39a;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.portal-main {
+  width: 100%;
+  max-width: 1540px;
+  margin: 0 auto;
+  padding: 20px 28px 48px;
+}
+
+.portal-topbar {
+  min-height: 62px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.portal-topbar .eyebrow {
+  display: none;
+}
+
+.portal-topbar h1 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.topbar-actions {
+  gap: 8px;
+}
+
+.source-badge,
+.user-badge {
+  min-height: 36px;
+  padding: 0 12px;
+  border-color: var(--line);
+  background: transparent;
+  color: #9e978f;
+  font-size: 0.7rem;
+}
+
+.source-badge[data-state="connected"] {
+  border-color: rgba(128, 201, 137, 0.28);
+  background: rgba(128, 201, 137, 0.05);
+}
+
+.button {
+  min-height: 38px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.button-secondary {
+  border-color: var(--line-strong);
+  background: transparent;
+}
+
+.button-secondary:hover,
+.button-secondary:focus-visible {
+  border-color: rgba(243, 238, 230, 0.3);
+  background: #171512;
+}
+
+.my-work-hero {
+  display: flex;
+  align-items: flex-end;
+  padding: 4px 0 22px;
+}
+
+.my-work-hero .eyebrow {
+  margin-bottom: 7px;
+}
+
+.my-work-hero h2 {
+  font-family: var(--sans);
+  font-size: clamp(1.8rem, 2.5vw, 2.7rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.my-work-hero p:last-child {
+  max-width: 580px;
+  color: var(--muted);
+}
+
+.operating-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 20px;
+  border-block: 1px solid var(--line);
+}
+
+.operating-flow a {
+  position: relative;
+  display: grid;
+  min-height: 86px;
+  align-content: center;
+  gap: 3px;
+  padding: 14px 18px;
+  border-right: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.operating-flow a:last-child {
+  border-right: 0;
+}
+
+.operating-flow a:hover,
+.operating-flow a:focus-visible {
+  background: #11100e;
+  outline: none;
+}
+
+.operating-flow a.is-current::after {
+  position: absolute;
+  right: 18px;
+  bottom: -1px;
+  left: 18px;
+  height: 2px;
+  background: var(--orange);
+  content: "";
+}
+
+.operating-flow span {
+  color: var(--orange-hot);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.operating-flow strong {
+  color: var(--champagne);
+  font-size: 0.88rem;
+}
+
+.operating-flow small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.personal-metrics,
+.overview-grid {
+  gap: 0;
+  margin-bottom: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0d0c0b;
+  overflow: hidden;
+}
+
+.personal-metrics article,
+.metric-panel {
+  min-height: 70px;
+  padding: 12px 16px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.personal-metrics article:last-child,
+.metric-panel:last-child {
+  border-right: 0;
+}
+
+.personal-metrics strong,
+.metric-panel strong {
+  margin-top: 4px;
+  font-size: 1.55rem;
+  font-weight: 650;
+}
+
+.my-work-board {
+  grid-template-columns: minmax(0, 1.65fr) minmax(260px, 0.75fr);
+  gap: 26px 30px;
+}
+
+.command-panel,
+.portal-section,
+.detail-panel,
+.action-panel {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.command-panel {
+  min-width: 0;
+}
+
+.command-panel .section-header,
+.portal-section > .section-header,
+.action-panel > .section-header {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.section-header h2,
+.command-panel .section-header h2 {
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.section-header .eyebrow {
+  margin-bottom: 5px;
+}
+
+.stack-list,
+.action-list {
+  padding: 0;
+}
+
+.action-item,
+.calendar-item {
+  min-height: 76px;
+  margin: 0;
+  padding: 12px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.action-item:hover,
+.action-item:focus-visible,
+.calendar-item:hover,
+.calendar-item:focus-visible {
+  padding-inline: 12px;
+  background: #11100e;
+  outline: none;
+  transform: none;
+}
+
+.action-item p {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.action-item .text-action,
+.calendar-item .text-action {
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.action-item:hover .text-action,
+.action-item:focus-within .text-action,
+.calendar-item:hover .text-action,
+.calendar-item:focus-within .text-action {
+  opacity: 1;
+}
+
+.mini-empty {
+  min-height: 90px;
+  padding: 20px 8px;
+  border: 0;
+  background: transparent;
+}
+
+.client-table-wrap,
+.pipeline-grid,
+.calendar-list {
+  border-color: var(--line);
+  background: #0d0c0b;
+}
+
+.client-table th,
+.client-table td {
+  padding: 13px 14px;
+}
+
+.client-table tbody tr:hover,
+.client-table tbody tr.is-selected {
+  background: #1a140f;
+}
+
+.detail-panel {
+  padding: 20px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.client-roadmap {
+  padding: 20px 0;
+  border: 0;
+  border-block: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.roadmap-current {
+  background: #11100e;
+}
+
+.roadmap-milestone:hover,
+.roadmap-milestone:focus-visible {
+  background: #11100e;
+}
+
+.pipeline-column {
+  background: transparent;
+}
+
+.compact-card {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.guidance-grid article {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+@media (max-width: 1100px) {
+  .portal-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-main {
+    padding-inline: 22px;
+  }
+
+  .my-work-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .portal-sidebar {
+    padding: 9px 12px;
+  }
+
+  .portal-main {
+    padding: 14px 14px 36px;
+  }
+
+  .portal-topbar {
+    margin-bottom: 18px;
+  }
+
+  .my-work-hero {
+    align-items: flex-start;
+    padding-bottom: 16px;
+  }
+
+  .my-work-hero h2 {
+    font-size: 1.75rem;
+  }
+
+  .operating-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .operating-flow a {
+    min-height: 72px;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .operating-flow a:nth-child(2) {
+    border-right: 0;
+  }
+
+  .operating-flow a:nth-child(3),
+  .operating-flow a:nth-child(4) {
+    border-bottom: 0;
+  }
+
+  .personal-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .personal-metrics article:nth-child(2) {
+    border-right: 0;
+  }
+
+  .personal-metrics article:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .my-work-board {
+    gap: 28px;
+  }
+
+  .action-item .text-action,
+  .calendar-item .text-action {
+    opacity: 1;
+  }
+
+  .client-roadmap {
+    padding-inline: 0;
+  }
+}

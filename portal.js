@@ -199,13 +199,13 @@ const applyRoleUi = () => {
 };
 
 const viewTitles = {
-  "my-work": "My work",
-  overview: "Overview",
+  "my-work": "Today",
+  overview: "Team pulse",
   clients: "Clients",
   actions: "Tasks",
   opportunities: "Deals",
   calendar: "Calendar",
-  guidance: "Operating guide",
+  guidance: "Playbook",
 };
 
 const setActiveView = () => {
@@ -359,8 +359,8 @@ const renderMyWork = () => {
   ].slice(0, 4);
   const watchItems = [...personalBlockers, ...personalEvents.map((item) => ({ kind: "event", item }))].slice(0, 6);
 
-  els.myWorkTitle.textContent = `Welcome back, ${userName}`;
-  els.myWorkSubtitle.textContent = "Here are the priorities, follow-ups, and blockers that need your attention.";
+  els.myWorkTitle.textContent = `${userName}'s focus`;
+  els.myWorkSubtitle.textContent = "Start with the next move, then protect the dates that matter.";
   els.userBadge.textContent = `${state.teamUser?.role === "admin" ? "Admin" : "Member"} / ${state.teamUser?.email || "Signed in"}`;
   els.myWorkTasksMetric.textContent = String(getPersonalActions().length);
   els.myWorkDealsMetric.textContent = String(getPersonalOpportunities().length);
