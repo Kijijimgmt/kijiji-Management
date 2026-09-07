@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260907-focused-workspace" />
+    <link rel="stylesheet" href="portal.css?v=20260907-client-roadmaps" />
   </head>
   <body>
     <div class="portal-shell">
@@ -24,7 +24,7 @@
         <nav class="portal-nav">
           <a class="is-active" href="#my-work" aria-current="page">My Work</a>
           <a href="#overview" data-admin-only>Overview</a>
-          <a href="#clients" data-admin-only>Clients</a>
+          <a href="#clients">Clients</a>
           <a href="#actions">Tasks</a>
           <a href="#opportunities">Deals</a>
           <a href="#calendar">Calendar</a>
@@ -200,14 +200,14 @@
             </article>
           </section>
 
-          <section class="portal-section" id="clients" aria-labelledby="clients-title" data-admin-only data-portal-view="clients">
+          <section class="portal-section" id="clients" aria-labelledby="clients-title" data-portal-view="clients">
             <div class="section-header">
               <div>
                 <p class="eyebrow">Clients</p>
                 <h2 id="clients-title">Roster, next moves, and focus</h2>
               </div>
               <div class="section-actions">
-                <button class="button button-secondary" type="button" data-open-client-form data-requires-access>Add Client</button>
+                <button class="button button-secondary" type="button" data-open-client-form data-requires-access data-admin-only>Add Client</button>
                 <div class="filters" aria-label="Client filters">
                   <label>
                     <span>Search</span>
@@ -245,7 +245,7 @@
             </div>
           </section>
 
-          <section class="detail-panel" aria-label="Client detail" data-admin-only data-portal-view="clients" data-client-detail>
+          <section class="detail-panel" aria-label="Client detail" data-portal-view="clients" data-client-detail>
             <div class="empty-state">
               <p class="eyebrow">Client detail</p>
               <h2>Select a client</h2>
@@ -576,6 +576,7 @@
           <label>
             <span>Type</span>
             <select name="type">
+              <option>Milestone</option>
               <option>Release</option>
               <option>Launch</option>
               <option>Meeting</option>
@@ -626,6 +627,6 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260907-focused-workspace"></script>
+    <script src="portal.js?v=20260907-client-roadmaps"></script>
   </body>
 </html>

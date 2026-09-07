@@ -121,8 +121,8 @@ const ownerKey = (value) => {
 const ownerMatches = (value, owner) => ownerKey(value) === ownerKey(owner);
 
 const getProgressEstimate = (client) => {
-  if (Number.isFinite(Number(client.progress)) && Number(client.progress) > 0) {
-    return Number(client.progress);
+  if (Number.isFinite(Number(client.progress)) && Number(client.progress) >= 0) {
+    return Math.min(100, Math.max(0, Number(client.progress)));
   }
 
   const byStatus = {
@@ -210,7 +210,7 @@ const viewTitles = {
 
 const setActiveView = () => {
   const requestedView = window.location.hash.slice(1) || "my-work";
-  const isAdminView = ["overview", "clients"].includes(requestedView);
+  const isAdminView = requestedView === "overview";
   const activeView = viewTitles[requestedView] && (!isAdminView || isAdminUser()) ? requestedView : "my-work";
 
   els.portalViews.forEach((view) => {
@@ -532,13 +532,75 @@ const renderRows = () => {
     .join("");
 };
 
-const relatedList = (items, emptyText, formatter) => {
-  if (!items.length) {
-    return `<p class="muted">${escapeHtml(emptyText)}</p>`;
-  }
+const roadmapPhases = [
+  { name: "Align", detail: "Goals and direction" },
+  { name: "Build", detail: "Systems and assets" },
+  { name: "Activate", detail: "Launch and execution" },
+  { name: "Scale", detail: "Growth and expansion" },
+];
 
-  return `<div class="related-list">${items.map(formatter).join("")}</div>`;
+const getRoadmapMilestones = (clientId) => {
+  const milestones = [
+    ...getRelated(state.actions, clientId).map((item) => ({
+      id: item.id,
+      kind: "Task",
+      jump: "action",
+      title: item.title,
+      date: item.dueDate,
+      status: item.status || "Open",
+      owner: item.owner,
+      blocker: item.blocker,
+      complete: isComplete(item),
+    })),
+    ...getRelated(state.opportunities, clientId).map((item) => ({
+      id: item.id,
+      kind: "Deal",
+      jump: "opportunity",
+      title: item.name,
+      date: item.dueDate,
+      status: item.stage || "New",
+      owner: item.owner,
+      blocker: item.blocker,
+      complete: ["Won", "Closed", "Complete"].includes(item.stage),
+    })),
+    ...getRelated(state.events, clientId).map((item) => ({
+      id: item.id,
+      kind: item.type || "Event",
+      jump: "event",
+      title: item.name,
+      date: item.date,
+      status: item.status || "Planned",
+      owner: item.owner,
+      blocker: item.status === "Delayed",
+      complete: ["Complete", "Completed"].includes(item.status),
+    })),
+  ];
+
+  return milestones.sort((a, b) => {
+    if (!a.date && !b.date) return a.title.localeCompare(b.title);
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date.localeCompare(b.date);
+  });
 };
+
+const renderRoadmapMilestone = (item) => `
+  <button
+    class="roadmap-milestone ${item.complete ? "is-complete" : ""} ${item.blocker ? "is-blocked" : ""}"
+    type="button"
+    data-jump-${item.jump}="${escapeHtml(item.id)}"
+  >
+    <span class="roadmap-milestone-marker" aria-hidden="true"></span>
+    <span class="roadmap-milestone-copy">
+      <span>${escapeHtml(item.kind)} / ${formatDate(item.date)}</span>
+      <strong>${escapeHtml(item.title || "Untitled milestone")}</strong>
+    </span>
+    <span class="roadmap-milestone-meta">
+      <em>${escapeHtml(item.status)}</em>
+      <small>${escapeHtml(item.owner || "Unassigned")}</small>
+    </span>
+  </button>
+`;
 
 const renderDetail = () => {
   const client = getClient(state.selectedClientId);
@@ -555,9 +617,8 @@ const renderDetail = () => {
   }
 
   const progress = getProgressEstimate(client);
-  const relatedActions = getRelated(state.actions, client.id).filter((action) => !isComplete(action));
-  const relatedOpportunities = getRelated(state.opportunities, client.id);
-  const relatedEvents = getRelated(state.events, client.id);
+  const currentPhase = Math.min(roadmapPhases.length - 1, Math.floor(progress / 25));
+  const milestones = getRoadmapMilestones(client.id);
 
   els.detail.innerHTML = `
     <div class="client-detail-head">
@@ -569,8 +630,53 @@ const renderDetail = () => {
           <span class="focus-pill" data-focus="${escapeHtml(client.focusLevel)}">${escapeHtml(client.focusLevel || "Normal")}</span>
         </div>
       </div>
-      <button class="button button-secondary" type="button" data-edit-client="${escapeHtml(client.id)}">Edit Client</button>
+      ${isAdminUser() ? `<button class="button button-secondary" type="button" data-edit-client="${escapeHtml(client.id)}">Edit Client</button>` : ""}
     </div>
+
+    <section class="client-roadmap" aria-label="${escapeHtml(client.name)} roadmap" style="--roadmap-progress:${progress}%">
+      <div class="roadmap-head">
+        <div>
+          <p class="eyebrow">Client roadmap</p>
+          <h3>Where we are and what comes next</h3>
+        </div>
+        <div class="roadmap-actions">
+          <button class="button button-secondary" type="button" data-roadmap-add-task="${escapeHtml(client.id)}">Add Task</button>
+          <button class="button button-primary" type="button" data-roadmap-add-milestone="${escapeHtml(client.id)}">Add Milestone</button>
+        </div>
+      </div>
+
+      <div class="roadmap-track" aria-label="${progress} percent complete">
+        ${roadmapPhases
+          .map(
+            (phase, index) => `
+              <div class="roadmap-phase ${index < currentPhase ? "is-complete" : ""} ${index === currentPhase ? "is-current" : ""}">
+                <span class="roadmap-phase-marker">${index < currentPhase ? "&#10003;" : index + 1}</span>
+                <strong>${phase.name}</strong>
+                <small>${phase.detail}</small>
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+
+      <div class="roadmap-current">
+        <span>Current focus</span>
+        <strong>${escapeHtml(client.nextAction || "Add the next move")}</strong>
+        <small>${progress}% complete / ${escapeHtml(client.owner || "Unassigned")}</small>
+      </div>
+
+      <div class="roadmap-milestones">
+        <div class="roadmap-milestones-head">
+          <h4>Timeline</h4>
+          <span>${milestones.length} linked ${milestones.length === 1 ? "item" : "items"}</span>
+        </div>
+        ${
+          milestones.length
+            ? `<div class="roadmap-milestone-list">${milestones.map(renderRoadmapMilestone).join("")}</div>`
+            : `<div class="roadmap-empty"><strong>No milestones yet</strong><span>Add a client-linked task or milestone to start the roadmap.</span></div>`
+        }
+      </div>
+    </section>
 
     <div class="detail-meta">
       <div>
@@ -597,21 +703,6 @@ const renderDetail = () => {
         <span>Progress</span>
         <strong>${progress}%</strong>
       </div>
-    </div>
-
-    <div class="relation-grid">
-      <article>
-        <h3>Related Actions</h3>
-        ${relatedList(relatedActions, "No open actions linked yet.", (item) => `<button type="button" data-jump-action="${escapeHtml(item.id)}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.owner || "Unassigned")} / ${formatDate(item.dueDate)}</span></button>`)}
-      </article>
-      <article>
-        <h3>Opportunities</h3>
-        ${relatedList(relatedOpportunities, "No opportunities linked yet.", (item) => `<button type="button" data-jump-opportunity="${escapeHtml(item.id)}"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.stage || "No stage")} / ${formatDate(item.dueDate)}</span></button>`)}
-      </article>
-      <article>
-        <h3>Events / Releases</h3>
-        ${relatedList(relatedEvents, "No events or releases linked yet.", (item) => `<button type="button" data-jump-event="${escapeHtml(item.id)}"><strong>${escapeHtml(item.name)}</strong><span>${formatDate(item.date)} ${item.type ? `/ ${escapeHtml(item.type)}` : ""}</span></button>`)}
-      </article>
     </div>
 
     <p class="detail-notes">${escapeHtml(client.notes || "No notes added yet.")}</p>
@@ -952,7 +1043,7 @@ const openClientForm = (client = null) => {
   openDialog(els.clientDialog);
 };
 
-const openActionForm = (action = null) => {
+const openActionForm = (action = null, clientId = "") => {
   els.actionForm.reset();
   renderClientOptions(els.actionClientSelect);
   els.actionFormTitle.textContent = action ? "Edit task" : "Add task";
@@ -962,7 +1053,7 @@ const openActionForm = (action = null) => {
   setSelectValue(els.actionForm.elements.owner, action?.owner || "Unassigned");
   setSelectValue(els.actionForm.elements.priority, action?.priority || "Normal");
   els.actionForm.elements.dueDate.value = action?.dueDate || todayISO;
-  els.actionForm.elements.clientId.value = action?.clientIds?.[0] || "";
+  els.actionForm.elements.clientId.value = action?.clientIds?.[0] || clientId;
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
   els.actionForm.elements.notes.value = action?.notes || "";
   applyOwnerFieldPolicy(els.actionForm.elements.owner);
@@ -986,7 +1077,7 @@ const openOpportunityForm = (opportunity = null) => {
   openDialog(els.opportunityDialog);
 };
 
-const openEventForm = (eventItem = null) => {
+const openEventForm = (eventItem = null, clientId = "") => {
   els.eventForm.reset();
   renderClientOptions(els.eventClientSelect);
   els.eventFormTitle.textContent = eventItem ? "Edit event" : "Add event";
@@ -996,7 +1087,7 @@ const openEventForm = (eventItem = null) => {
   setSelectValue(els.eventForm.elements.status, eventItem?.status || "Planned");
   setSelectValue(els.eventForm.elements.owner, eventItem?.owner || "Unassigned");
   els.eventForm.elements.date.value = eventItem?.date || todayISO;
-  els.eventForm.elements.clientId.value = eventItem?.clientIds?.[0] || "";
+  els.eventForm.elements.clientId.value = eventItem?.clientIds?.[0] || clientId;
   els.eventForm.elements.notes.value = eventItem?.notes || "";
   applyOwnerFieldPolicy(els.eventForm.elements.owner);
   openDialog(els.eventDialog);
@@ -1264,6 +1355,8 @@ els.rows.addEventListener("keydown", (event) => {
 
 els.detail.addEventListener("click", (event) => {
   const editClient = event.target.closest("[data-edit-client]");
+  const addRoadmapTask = event.target.closest("[data-roadmap-add-task]");
+  const addRoadmapMilestone = event.target.closest("[data-roadmap-add-milestone]");
   const jumpAction = event.target.closest("[data-jump-action]");
   const jumpOpportunity = event.target.closest("[data-jump-opportunity]");
   const jumpEvent = event.target.closest("[data-jump-event]");
@@ -1273,6 +1366,16 @@ els.detail.addEventListener("click", (event) => {
     if (client) {
       openClientForm(client);
     }
+  }
+
+  if (addRoadmapTask) {
+    openActionForm(null, addRoadmapTask.dataset.roadmapAddTask);
+  }
+
+  if (addRoadmapMilestone) {
+    openEventForm(null, addRoadmapMilestone.dataset.roadmapAddMilestone);
+    els.eventFormTitle.textContent = "Add roadmap milestone";
+    setSelectValue(els.eventForm.elements.type, "Milestone");
   }
 
   if (jumpAction) {

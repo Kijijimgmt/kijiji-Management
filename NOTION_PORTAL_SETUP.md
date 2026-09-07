@@ -162,10 +162,22 @@ The slash command only creates new tasks, deals, and events. Edit existing recor
 
 ## What The Portal Can Manage
 
-- Clients: name/type, status, focus level, owner, contact, lead source, scope, next move, progress, last touch, and internal notes.
+- Clients: name/type, status, focus level, owner, contact, lead source, scope, next move, progress, last touch, internal notes, and a shared roadmap.
 - Actions: action, status, owner, priority, due date, related client, blocker, and notes.
 - Opportunities & Deals: stage, owner, priority, next action date, related client, blocker, and next step.
 - Events & Releases: type, status, owner, date, related client, and notes.
+
+## Client Roadmaps
+
+Each client profile includes an operational roadmap with four phases: **Align**, **Build**, **Activate**, and **Scale**. The roadmap uses the existing Notion data rather than creating a separate source that the team would need to maintain.
+
+- The client's **Progress** value controls the active roadmap phase.
+- The client's **Next Move** appears as the current focus.
+- Client-linked tasks, opportunities, events, releases, and milestones appear together in date order on the timeline.
+- **Add Task** creates a task with the client relationship already selected.
+- **Add Milestone** creates a dated record in Events & Releases with the client relationship already selected.
+
+Maxwell can edit client-level progress and next move. Joe and Erik can view roadmaps for the clients returned by their secure team access and update their assigned linked work.
 
 ## Organization Guidance
 
