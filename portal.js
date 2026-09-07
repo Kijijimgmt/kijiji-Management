@@ -57,6 +57,9 @@ const els = {
   accessSubmit: $("[data-access-submit]"),
   accessMessage: $("[data-access-message]"),
   dashboard: $("[data-dashboard-content]"),
+  workspaceTitle: $("[data-workspace-title]"),
+  navLinks: $$(".portal-nav a[href^='#']"),
+  portalViews: $$("[data-portal-view]"),
 };
 
 let state = {
@@ -192,6 +195,46 @@ const applyRoleUi = () => {
   $$("[data-member-owner-lock]").forEach((element) => {
     element.hidden = isAdmin;
   });
+  setActiveView();
+};
+
+const viewTitles = {
+  "my-work": "My work",
+  overview: "Overview",
+  clients: "Clients",
+  actions: "Tasks",
+  opportunities: "Deals",
+  calendar: "Calendar",
+  guidance: "Operating guide",
+};
+
+const setActiveView = () => {
+  const requestedView = window.location.hash.slice(1) || "my-work";
+  const isAdminView = ["overview", "clients"].includes(requestedView);
+  const activeView = viewTitles[requestedView] && (!isAdminView || isAdminUser()) ? requestedView : "my-work";
+
+  els.portalViews.forEach((view) => {
+    const adminOnly = view.hasAttribute("data-admin-only");
+    view.hidden = view.dataset.portalView !== activeView || (adminOnly && !isAdminUser());
+  });
+
+  els.navLinks.forEach((link) => {
+    const isActive = link.getAttribute("href") === `#${activeView}`;
+    link.classList.toggle("is-active", isActive);
+    if (isActive) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+
+  if (els.workspaceTitle) {
+    els.workspaceTitle.textContent = viewTitles[activeView];
+  }
+
+  if (activeView !== requestedView) {
+    window.history.replaceState(null, "", "#my-work");
+  }
 };
 
 const getRequestHeaders = () => {
@@ -316,10 +359,8 @@ const renderMyWork = () => {
   ].slice(0, 4);
   const watchItems = [...personalBlockers, ...personalEvents.map((item) => ({ kind: "event", item }))].slice(0, 6);
 
-  els.myWorkTitle.textContent = `${userName}'s work`;
-  els.myWorkSubtitle.textContent = isAdminUser()
-    ? "Your personal lane is here. The full command center remains available below."
-    : "Your dashboard is filtered to the tasks, deals, dates, and clients assigned to you.";
+  els.myWorkTitle.textContent = `Welcome back, ${userName}`;
+  els.myWorkSubtitle.textContent = "Here are the priorities, follow-ups, and blockers that need your attention.";
   els.userBadge.textContent = `${state.teamUser?.role === "admin" ? "Admin" : "Member"} / ${state.teamUser?.email || "Signed in"}`;
   els.myWorkTasksMetric.textContent = String(getPersonalActions().length);
   els.myWorkDealsMetric.textContent = String(getPersonalOpportunities().length);
@@ -1396,6 +1437,9 @@ $$("[data-open-action-form]").forEach((button) => button.addEventListener("click
 $$("[data-open-client-form]").forEach((button) => button.addEventListener("click", () => openClientForm()));
 $$("[data-open-opportunity-form]").forEach((button) => button.addEventListener("click", () => openOpportunityForm()));
 $$("[data-open-event-form]").forEach((button) => button.addEventListener("click", () => openEventForm()));
+$$(".create-menu [data-open-action-form], .create-menu [data-open-client-form], .create-menu [data-open-opportunity-form], .create-menu [data-open-event-form]").forEach((button) =>
+  button.addEventListener("click", () => button.closest("details")?.removeAttribute("open")),
+);
 $$("[data-close-action-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.actionDialog)));
 $$("[data-close-client-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.clientDialog)));
 $$("[data-close-opportunity-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.opportunityDialog)));
@@ -1409,6 +1453,7 @@ els.opportunityForm.addEventListener("submit", handleOpportunitySubmit);
 els.eventForm.addEventListener("submit", handleEventSubmit);
 els.search.addEventListener("input", renderRows);
 els.statusFilter.addEventListener("change", renderRows);
+window.addEventListener("hashchange", setActiveView);
 
 const initializeAuth = async () => {
   if (!supabaseClient) {
