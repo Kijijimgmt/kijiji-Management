@@ -125,6 +125,7 @@ const multiSelectNames = (property) => property?.multi_select?.map((item) => ite
 const dateStart = (property) => property?.date?.start || "";
 const numberValue = (property) => (typeof property?.number === "number" ? property.number : 0);
 const checkboxValue = (property) => Boolean(property?.checkbox);
+const blockerValue = (property) => checkboxValue(property) || Boolean(plainText(property).trim());
 const emailValue = (property) => property?.email || "";
 const phoneValue = (property) => property?.phone_number || "";
 const relationIds = (property) => property?.relation?.map((item) => item.id) || [];
@@ -195,7 +196,14 @@ const assignProperty = (properties, schema, aliases, expectedType, valueFactory,
   properties[key] = propertyForType(schemaType, valueFactory, value);
 };
 
-const clientRelationAliases = ["Client", "Related Client", "Client Relation", "Client Roster", "Related Client Roster"];
+const clientRelationAliases = [
+  "Client / Initiative",
+  "Client",
+  "Related Client",
+  "Client Relation",
+  "Client Roster",
+  "Related Client Roster",
+];
 
 const assignClientRelation = (properties, schema, clientId) => {
   const relationKey = chooseSchemaKey(schema, clientRelationAliases, "relation");
@@ -247,7 +255,7 @@ const mapPageToClient = (page) => {
     progress: numberValue(propertyByAliases(properties, ["Progress", "Project Progress"])),
     nextAction: plainText(propertyByAliases(properties, ["Next Move", "Next Action", "Next Step"])),
     focusLevel: selectName(propertyByAliases(properties, ["Focus Level", "Focus", "Priority"])) || "Normal",
-    dueDate: dateStart(propertyByAliases(properties, ["Next Date", "Due Date", "Last Touch"])),
+    dueDate: dateStart(propertyByAliases(properties, ["Next Action Date", "Next Date", "Due Date", "Last Touch"])),
     lastTouch: dateStart(propertyByAliases(properties, ["Last Touch", "Last Contact", "Updated"])),
     email: emailValue(propertyByAliases(properties, ["Contact Email", "Email"])),
     phone: phoneValue(propertyByAliases(properties, ["Contact Phone", "Phone"])),
@@ -270,7 +278,7 @@ const mapPageToAction = (page) => {
     dueDate: dateStart(propertyByAliases(properties, ["Due Date", "Date", "Next Date"])),
     clientIds: clientRelation,
     clientName: plainText(propertyByAliases(properties, ["Client Name", "Client Text", "Client"])),
-    blocker: checkboxValue(propertyByAliases(properties, ["Blocker", "Blocked", "Is Blocker"])),
+    blocker: blockerValue(propertyByAliases(properties, ["Blocker", "Blocked", "Is Blocker"])),
     notes: plainText(propertyByAliases(properties, ["Notes", "Details"])),
   };
 };
@@ -288,8 +296,8 @@ const mapPageToOpportunity = (page) => {
     clientIds: relationIds(propertyByAliases(properties, clientRelationAliases)),
     clientName: plainText(propertyByAliases(properties, ["Client Name", "Client Text", "Client"])),
     nextStep: plainText(propertyByAliases(properties, ["Next Step", "Next Move", "Next Action", "Notes"])),
-    dueDate: dateStart(propertyByAliases(properties, ["Next Action Date", "Next Date", "Close Date", "Due Date", "Target Date"])),
-    blocker: checkboxValue(propertyByAliases(properties, ["Blocker", "Blocked", "Is Blocker"])),
+    dueDate: dateStart(propertyByAliases(properties, ["Next Follow-up", "Next Action Date", "Next Date", "Close Date", "Due Date", "Target Date"])),
+    blocker: blockerValue(propertyByAliases(properties, ["Blocker", "Blocked", "Is Blocker"])),
   };
 };
 
@@ -299,14 +307,14 @@ const mapPageToEvent = (page) => {
   return {
     id: page.id,
     url: page.url,
-    name: titleText(properties, ["Event", "Release", "Name", "Title"]) || "Untitled event",
+    name: titleText(properties, ["Event / Release", "Event", "Release", "Name", "Title"]) || "Untitled event",
     type: selectName(propertyByAliases(properties, ["Type", "Event Type", "Release Type"])) || "",
     status: selectName(propertyByAliases(properties, ["Status", "Event Status"])) || "",
     owner: selectName(propertyByAliases(properties, ["Owner", "Lead"])) || plainText(propertyByAliases(properties, ["Owner", "Lead"])),
     date: dateStart(propertyByAliases(properties, ["Date", "Release Date", "Event Date"])),
     clientIds: relationIds(propertyByAliases(properties, clientRelationAliases)),
     clientName: plainText(propertyByAliases(properties, ["Client Name", "Client Text", "Client"])),
-    notes: plainText(propertyByAliases(properties, ["Notes", "Details"])),
+    notes: plainText(propertyByAliases(properties, ["Next Step", "Notes", "Details"])),
   };
 };
 

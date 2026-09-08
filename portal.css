@@ -2604,3 +2604,215 @@ textarea {
     padding-inline: 0;
   }
 }
+
+/* Intentional Today workspace */
+.my-work-section {
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+.my-work-hero {
+  min-height: 126px;
+  padding: 18px 0 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.my-work-hero > div {
+  min-width: 0;
+}
+
+.my-work-hero h2 {
+  font-size: clamp(2rem, 3vw, 3rem);
+}
+
+.my-work-hero p:last-child {
+  margin-bottom: 0;
+}
+
+.user-badge {
+  flex: 0 0 auto;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personal-metrics {
+  margin: 18px 0 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171614;
+}
+
+.personal-metrics article,
+.personal-metrics article:last-child {
+  min-height: 72px;
+  padding: 12px 18px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.personal-metrics article:last-child {
+  border-right: 0;
+}
+
+.personal-metrics span {
+  color: #918a83;
+  font-size: 0.64rem;
+}
+
+.personal-metrics strong {
+  color: var(--white);
+  font-size: 1.45rem;
+}
+
+.my-work-board {
+  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.8fr);
+  grid-template-areas:
+    "tasks deals"
+    "tasks watch";
+  align-items: start;
+  gap: 16px;
+}
+
+.my-work-board .command-panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #171614;
+}
+
+.my-work-board > :first-child {
+  min-height: 382px;
+}
+
+.my-work-board .section-header {
+  min-height: 74px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.my-work-board .section-header h2 {
+  font-size: 1rem;
+}
+
+.my-work-board .section-header .eyebrow {
+  margin-bottom: 4px;
+  color: var(--orange-hot);
+  font-size: 0.63rem;
+}
+
+.my-work-board .stack-list {
+  padding: 0 12px;
+}
+
+.my-work-board .action-item,
+.my-work-board .calendar-item {
+  min-height: 88px;
+  padding: 14px 6px;
+}
+
+.my-work-board .action-item:hover,
+.my-work-board .action-item:focus-visible,
+.my-work-board .calendar-item:hover,
+.my-work-board .calendar-item:focus-visible {
+  padding-inline: 10px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.my-work-board .action-item header {
+  gap: 16px;
+}
+
+.my-work-board .action-item header strong {
+  max-width: 78ch;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.my-work-board .action-item p {
+  margin: 5px 0 8px;
+  color: #9f9891;
+  font-size: 0.76rem;
+}
+
+.my-work-board .item-meta {
+  gap: 6px;
+}
+
+.my-work-board .item-meta span,
+.my-work-board .date-chip {
+  font-size: 0.6rem;
+}
+
+.my-work-board .mini-empty {
+  display: grid;
+  min-height: 112px;
+  place-content: center;
+  padding: 22px 18px;
+  text-align: center;
+}
+
+.my-work-board .mini-empty p {
+  max-width: 32ch;
+  margin: 6px auto 0;
+  color: #8f8881;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 1100px) {
+  .my-work-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "tasks tasks"
+      "deals watch";
+  }
+
+  .my-work-board > :first-child {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .my-work-hero {
+    min-height: 0;
+    padding: 10px 0 18px;
+  }
+
+  .my-work-hero .user-badge {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .personal-metrics {
+    margin-top: 14px;
+  }
+
+  .personal-metrics article,
+  .personal-metrics article:last-child {
+    min-height: 64px;
+    padding: 10px 12px;
+    border-right: 1px solid var(--line);
+  }
+
+  .personal-metrics article:nth-child(2),
+  .personal-metrics article:last-child {
+    border-right: 0;
+  }
+
+  .my-work-board {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "tasks"
+      "deals"
+      "watch";
+    gap: 12px;
+  }
+
+  .my-work-board .command-panel {
+    border-radius: 6px;
+  }
+}
