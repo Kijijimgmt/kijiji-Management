@@ -9,11 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Playfair+Display:wght@600;700;800&amp;display=swap"
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260908-intentional-today" />
+    <link rel="stylesheet" href="portal.css?v=20260913-workflow-intelligence" />
   </head>
   <body>
     <div class="portal-shell">
@@ -86,11 +86,11 @@
             </div>
             <div class="personal-metrics">
               <article>
-                <span>Open Tasks</span>
+                <span>Needs Action</span>
                 <strong data-my-work-tasks>0</strong>
               </article>
               <article>
-                <span>Deals</span>
+                <span>Waiting</span>
                 <strong data-my-work-deals>0</strong>
               </article>
               <article>
@@ -106,8 +106,8 @@
               <article class="command-panel">
                 <div class="section-header compact">
                   <div>
-                    <p class="eyebrow">Priority work</p>
-                    <h2>Next moves</h2>
+                    <p class="eyebrow">01 / Move</p>
+                    <h2>Needs action</h2>
                   </div>
                   <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
                 </div>
@@ -116,18 +116,18 @@
               <article class="command-panel">
                 <div class="section-header compact">
                   <div>
-                    <p class="eyebrow">Pipeline</p>
-                    <h2>Opportunities</h2>
+                    <p class="eyebrow">02 / Hold</p>
+                    <h2>Waiting</h2>
                   </div>
-                  <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Deal</button>
+                  <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
                 </div>
                 <div class="stack-list" data-my-work-deal-list></div>
               </article>
               <article class="command-panel">
                 <div class="section-header compact">
                   <div>
-                    <p class="eyebrow">Schedule</p>
-                    <h2>Dates and blockers</h2>
+                    <p class="eyebrow">03 / Protect</p>
+                    <h2>Upcoming</h2>
                   </div>
                   <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
                 </div>
@@ -236,6 +236,7 @@
                     <th>Status</th>
                     <th>Owner</th>
                     <th>Focus</th>
+                    <th>Health</th>
                     <th>Next Move</th>
                     <th>Progress</th>
                   </tr>
@@ -434,6 +435,7 @@
               <option>Open</option>
               <option>In Progress</option>
               <option>Waiting</option>
+              <option>Needs Approval</option>
               <option>Complete</option>
             </select>
           </label>
@@ -465,9 +467,23 @@
               <option value="">No client relation</option>
             </select>
           </label>
+          <label>
+            <span>Approver</span>
+            <select name="approvalOwner">
+              <option value="">No approval needed</option>
+              <option>Maxwell</option>
+              <option>Joe</option>
+              <option>Erik</option>
+              <option>Client</option>
+            </select>
+          </label>
           <label class="toggle-label">
             <input name="blocker" type="checkbox" />
             <span>Visible blocker</span>
+          </label>
+          <label class="wide">
+            <span>Depends on</span>
+            <input name="dependency" placeholder="Task, decision, asset, or client response" />
           </label>
           <label class="wide">
             <span>Context / notes</span>
@@ -627,6 +643,6 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260907-premium-flow"></script>
+    <script src="portal.js?v=20260913-workflow-intelligence"></script>
   </body>
 </html>

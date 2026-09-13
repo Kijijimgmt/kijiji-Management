@@ -2816,3 +2816,105 @@ textarea {
     border-radius: 6px;
   }
 }
+
+/* Workflow intelligence: calm exception lanes and client health. */
+.my-work-board {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.my-work-board > .command-panel {
+  border-top: 2px solid rgba(237, 227, 208, 0.18);
+}
+
+.my-work-board > .command-panel:first-child {
+  border-top-color: var(--orange-hot);
+}
+
+.my-work-board > .command-panel:nth-child(2) {
+  border-top-color: #d8ad72;
+}
+
+.my-work-board > .command-panel:nth-child(3) {
+  border-top-color: #7da998;
+}
+
+.health-pill {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 9px;
+  color: var(--champagne);
+  font-size: 0.64rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.health-pill[data-tone="success"] {
+  border-color: rgba(128, 201, 137, 0.34);
+  background: rgba(128, 201, 137, 0.1);
+  color: #b7e2bd;
+}
+
+.health-pill[data-tone="waiting"] {
+  border-color: rgba(216, 173, 114, 0.36);
+  background: rgba(216, 173, 114, 0.1);
+  color: #e8cda7;
+}
+
+.health-pill[data-tone="warning"] {
+  border-color: rgba(255, 178, 94, 0.4);
+  background: rgba(201, 116, 42, 0.12);
+  color: var(--orange-hot);
+}
+
+.health-pill[data-tone="danger"] {
+  border-color: rgba(230, 92, 69, 0.4);
+  background: rgba(230, 92, 69, 0.11);
+  color: #ffb4a8;
+}
+
+.health-reason {
+  max-width: 46ch;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.workflow-context {
+  border-left: 2px solid rgba(216, 173, 114, 0.52);
+  padding-left: 8px;
+  color: #cbbba8 !important;
+}
+
+.workflow-context span {
+  color: #e8cda7;
+  font-weight: 800;
+}
+
+.item-meta span[data-state="waiting"] {
+  border-color: rgba(216, 173, 114, 0.4);
+  color: #e8cda7;
+}
+
+@media (max-width: 1100px) {
+  .my-work-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .my-work-board > .command-panel:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .my-work-board {
+    grid-template-columns: 1fr;
+  }
+
+  .my-work-board > .command-panel:first-child {
+    grid-column: auto;
+  }
+}

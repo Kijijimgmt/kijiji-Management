@@ -196,6 +196,16 @@ const assignProperty = (properties, schema, aliases, expectedType, valueFactory,
   properties[key] = propertyForType(schemaType, valueFactory, value);
 };
 
+const assignOptionalProperty = (properties, schema, aliases, expectedType, valueFactory, value) => {
+  const key = aliases.find((alias) => Object.prototype.hasOwnProperty.call(schema || {}, alias));
+
+  if (!key || Object.prototype.hasOwnProperty.call(properties, key)) {
+    return;
+  }
+
+  properties[key] = propertyForType(schema[key]?.type || expectedType, valueFactory, value);
+};
+
 const clientRelationAliases = [
   "Client / Initiative",
   "Client",
@@ -279,6 +289,10 @@ const mapPageToAction = (page) => {
     clientIds: clientRelation,
     clientName: plainText(propertyByAliases(properties, ["Client Name", "Client Text", "Client"])),
     blocker: blockerValue(propertyByAliases(properties, ["Blocker", "Blocked", "Is Blocker"])),
+    approvalOwner:
+      selectName(propertyByAliases(properties, ["Approver", "Approval Owner"])) ||
+      plainText(propertyByAliases(properties, ["Approver", "Approval Owner"])),
+    dependency: plainText(propertyByAliases(properties, ["Depends On", "Dependency", "Blocked By"])),
     notes: plainText(propertyByAliases(properties, ["Notes", "Details"])),
   };
 };
@@ -346,6 +360,8 @@ const normalizeActionInput = (body) => ({
   clientId: String(body.clientId || "").trim(),
   clientName: String(body.clientName || "").trim(),
   blocker: Boolean(body.blocker),
+  approvalOwner: String(body.approvalOwner || "").trim(),
+  dependency: String(body.dependency || "").trim(),
   notes: String(body.notes || "").trim(),
 });
 
@@ -414,6 +430,20 @@ const validateAction = (action) => {
     throw error;
   }
 
+  if (!["Maxwell", "Joe", "Erik", "Client", ""].includes(action.approvalOwner)) {
+    const error = new Error("Approver must be Maxwell, Joe, Erik, Client, or blank.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
+  if (action.dependency.length > 500) {
+    const error = new Error("Dependency must be 500 characters or fewer.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
   validateDate(action.dueDate, "Due date");
 };
 
@@ -477,6 +507,8 @@ const getSlackFields = (resource, input) => {
       `Priority: ${compact(input.priority || "Normal")}`,
       `Due: ${compact(input.dueDate)}`,
       `Client: ${compact(input.clientName)}`,
+      `Approver: ${compact(input.approvalOwner)}`,
+      `Depends on: ${compact(input.dependency)}`,
       `Next: ${compact(input.notes)}`,
     ];
   }
@@ -512,7 +544,7 @@ const notifySlack = async ({ resource, operation, input, saved }) => {
   const headline = `${isBlocker ? ":rotating_light: BLOCKER " : ""}${label} ${operation === "created" ? "created" : "updated"}: ${compact(getResourceTitle(resource, saved))}`;
   const fields = getSlackFields(resource, input)
     .filter((line) => !line.endsWith(": Not set"))
-    .slice(0, 6);
+    .slice(0, 8);
   const notionLine = saved.url ? `\nNotion: ${saved.url}` : "";
   const text = [`${headline}`, ...fields.map((line) => `- ${line}`)].join("\n") + notionLine;
 
@@ -645,6 +677,8 @@ const actionProperties = (action, schema) => {
   assignProperty(properties, schema, ["Priority", "Urgency"], "select", select, action.priority);
   assignProperty(properties, schema, ["Due Date", "Date", "Next Date"], "date", date, action.dueDate);
   assignProperty(properties, schema, ["Blocker", "Blocked", "Is Blocker"], "checkbox", checkbox, action.blocker);
+  assignOptionalProperty(properties, schema, ["Approver", "Approval Owner"], "select", select, action.approvalOwner);
+  assignOptionalProperty(properties, schema, ["Depends On", "Dependency", "Blocked By"], "rich_text", richText, action.dependency);
   assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, action.notes);
 
   assignClientRelation(properties, schema, action.clientId);

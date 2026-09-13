@@ -80,6 +80,18 @@ Approved emails and roles are enforced server-side:
 
 Joe and Erik receive only their assigned tasks, deals, events, and related clients from the API. Non-admin writes are limited to tasks, deals, and events already assigned to them, and new records are assigned to their verified owner automatically.
 
+### Workflow intelligence fields
+
+The portal calculates client health from existing due dates, blockers, task statuses, and client next moves. No additional Client Roster property is required.
+
+The shared **Actions** data source includes these workflow properties:
+
+- `Approver`: Select with `Maxwell`, `Joe`, `Erik`, and `Client`.
+- `Depends On`: Text for the task, decision, asset, or response that must happen first.
+- Add `Needs Approval` as an option in the existing `Status` property.
+
+If this portal is connected to a replacement Actions data source later, recreate these properties so approver and dependency values continue to persist.
+
 Supabase setup:
 
 1. In Supabase Auth, enable the Email provider and magic-link/OTP sign-in.

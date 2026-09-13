@@ -108,8 +108,10 @@ const getDaysUntil = (value) => {
   return Math.ceil((dueDate.getTime() - start.getTime()) / 86400000);
 };
 
-const isComplete = (item) => ["complete", "done", "closed"].includes(String(item.status || "").toLowerCase());
+const isComplete = (item) =>
+  ["complete", "completed", "done", "closed", "won", "lost"].includes(String(item.status || item.stage || "").toLowerCase());
 const isUrgent = (item) => ["urgent", "high"].includes(String(item.priority || item.focusLevel || "").toLowerCase());
+const isWaiting = (item) => ["waiting", "needs approval"].includes(String(item.status || "").toLowerCase());
 const isAdminUser = () => Boolean(state.teamUser?.isAdmin);
 const ownerKey = (value) => {
   const text = String(value || "").trim().toLowerCase();
@@ -145,6 +147,28 @@ const getClientName = (item) => {
 
 const getRelated = (collection, clientId) =>
   collection.filter((item) => item.clientIds?.includes(clientId) || item.clientName === getClient(clientId)?.name);
+
+const getClientHealth = (client) => {
+  const actions = getRelated(state.actions, client.id).filter((item) => !isComplete(item));
+  const opportunities = getRelated(state.opportunities, client.id).filter((item) => !isComplete(item));
+  const hasBlocker = [...actions, ...opportunities].some((item) => item.blocker);
+  const overdue = [...actions, ...opportunities].filter((item) => getDaysUntil(item.dueDate) < 0).length;
+  const waiting = actions.filter(isWaiting).length;
+
+  if (hasBlocker || overdue > 1) {
+    return { label: "At Risk", tone: "danger", reason: hasBlocker ? "Blocked work needs attention" : `${overdue} overdue next moves` };
+  }
+
+  if (overdue === 1 || !String(client.nextAction || "").trim()) {
+    return { label: "Needs Attention", tone: "warning", reason: overdue ? "One next move is overdue" : "Next move is missing" };
+  }
+
+  if (waiting) {
+    return { label: "Waiting", tone: "waiting", reason: `${waiting} item${waiting === 1 ? "" : "s"} awaiting input or approval` };
+  }
+
+  return { label: "On Track", tone: "success", reason: "No visible blockers or overdue work" };
+};
 
 const setSourceBadge = (mode, text) => {
   if (!els.sourceBadge) {
@@ -342,52 +366,72 @@ const getPersonalEvents = () => {
 
 const renderMyWork = () => {
   const userName = state.teamUser?.fullName || "Team member";
-  const personalActions = getPersonalActions().sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate)).slice(0, 6);
-  const personalDeals = getPersonalOpportunities()
-    .sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate))
-    .slice(0, 6);
-  const personalEvents = getPersonalEvents()
-    .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date))
-    .slice(0, 4);
+  const allPersonalActions = getPersonalActions();
+  const allPersonalDeals = getPersonalOpportunities();
+  const waitingAll = [
+    ...allPersonalActions.filter(isWaiting).map((item) => ({ kind: "action", item })),
+    ...allPersonalDeals.filter((item) => item.blocker).map((item) => ({ kind: "opportunity", item })),
+  ];
+  const waitingItems = waitingAll.slice(0, 6);
+  const needsActionAll = [
+    ...allPersonalActions
+      .filter((item) => !isWaiting(item))
+      .map((item) => ({ kind: "action", item, days: getDaysUntil(item.dueDate) })),
+    ...allPersonalDeals
+      .filter((item) => !item.blocker && (isUrgent(item) || getDaysUntil(item.dueDate) <= 7))
+      .map((item) => ({ kind: "opportunity", item, days: getDaysUntil(item.dueDate) })),
+  ]
+    .sort((a, b) => Number(Boolean(b.item.blocker)) - Number(Boolean(a.item.blocker)) || a.days - b.days);
+  const needsAction = needsActionAll.slice(0, 6);
+  const upcomingAll = [
+    ...getPersonalEvents().map((item) => ({ kind: "event", item, days: getDaysUntil(item.date) })),
+    ...allPersonalDeals
+      .filter((item) => !item.blocker && getDaysUntil(item.dueDate) > 7)
+      .map((item) => ({ kind: "opportunity", item, days: getDaysUntil(item.dueDate) })),
+  ]
+    .sort((a, b) => a.days - b.days);
+  const upcomingItems = upcomingAll.slice(0, 6);
   const personalBlockers = [
-    ...getPersonalActions()
+    ...allPersonalActions
       .filter((action) => action.blocker)
       .map((item) => ({ kind: "action", item })),
-    ...getPersonalOpportunities()
+    ...allPersonalDeals
       .filter((opportunity) => opportunity.blocker)
       .map((item) => ({ kind: "opportunity", item })),
-  ].slice(0, 4);
-  const watchItems = [...personalBlockers, ...personalEvents.map((item) => ({ kind: "event", item }))].slice(0, 6);
+  ];
 
-  els.myWorkTitle.textContent = `${userName}'s focus`;
-  els.myWorkSubtitle.textContent = "Start with the next move, then protect the dates that matter.";
-  els.userBadge.textContent = `${state.teamUser?.role === "admin" ? "Admin" : "Member"} / ${state.teamUser?.email || "Signed in"}`;
-  els.myWorkTasksMetric.textContent = String(getPersonalActions().length);
-  els.myWorkDealsMetric.textContent = String(getPersonalOpportunities().length);
-  els.myWorkEventsMetric.textContent = String(getPersonalEvents().length);
-  els.myWorkBlockersMetric.textContent = String(personalBlockers.length);
-
-  if (personalActions.length) {
-    els.myWorkActionList.innerHTML = personalActions.map(actionCard).join("");
-  } else {
-    renderEmptyList(els.myWorkActionList, "No assigned tasks", "Assigned open tasks will appear here.");
-  }
-
-  if (personalDeals.length) {
-    els.myWorkDealList.innerHTML = personalDeals.map(opportunityCard).join("");
-  } else {
-    renderEmptyList(els.myWorkDealList, "No assigned deals", "Assigned opportunities and partnership moves will appear here.");
-  }
-
-  if (watchItems.length) {
-    els.myWorkWatchList.innerHTML = watchItems
+  const renderLane = (items) =>
+    items
       .map(({ kind, item }) => {
         if (kind === "event") return eventCard(item);
         return kind === "opportunity" ? opportunityCard(item) : actionCard(item);
       })
       .join("");
+
+  els.myWorkTitle.textContent = `${userName}'s focus`;
+  els.myWorkSubtitle.textContent = "Move what is actionable, track what is waiting, and protect what is next.";
+  els.userBadge.textContent = `${state.teamUser?.role === "admin" ? "Admin" : "Member"} / ${state.teamUser?.email || "Signed in"}`;
+  els.myWorkTasksMetric.textContent = String(needsActionAll.length);
+  els.myWorkDealsMetric.textContent = String(waitingAll.length);
+  els.myWorkEventsMetric.textContent = String(upcomingAll.length);
+  els.myWorkBlockersMetric.textContent = String(personalBlockers.length);
+
+  if (needsAction.length) {
+    els.myWorkActionList.innerHTML = renderLane(needsAction);
   } else {
-    renderEmptyList(els.myWorkWatchList, "No blockers or dates", "Visible blockers and upcoming dates assigned to you will appear here.");
+    renderEmptyList(els.myWorkActionList, "Clear for now", "No urgent, overdue, or active next moves need you.");
+  }
+
+  if (waitingItems.length) {
+    els.myWorkDealList.innerHTML = renderLane(waitingItems);
+  } else {
+    renderEmptyList(els.myWorkDealList, "Nothing waiting", "Approvals, client replies, and blocked deal moves will appear here.");
+  }
+
+  if (upcomingItems.length) {
+    els.myWorkWatchList.innerHTML = renderLane(upcomingItems);
+  } else {
+    renderEmptyList(els.myWorkWatchList, "No upcoming dates", "Assigned events, releases, and future deal moves will appear here.");
   }
 };
 
@@ -407,9 +451,12 @@ const actionCard = (action) => `
       <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
     </header>
     <p title="${escapeHtml(action.notes || getClientName(action))}">${escapeHtml(action.notes || getClientName(action))}</p>
+    ${action.dependency ? `<p class="workflow-context"><span>Waiting on</span> ${escapeHtml(action.dependency)}</p>` : ""}
     <div class="item-meta">
+      <span data-state="${isWaiting(action) ? "waiting" : "active"}">${escapeHtml(action.status || "Open")}</span>
       <span>${escapeHtml(action.owner || "Unassigned")}</span>
       <span>${escapeHtml(action.priority || "Normal")}</span>
+      ${action.approvalOwner ? `<span>Approver: ${escapeHtml(action.approvalOwner)}</span>` : ""}
       ${action.blocker ? "<span>Blocker</span>" : ""}
     </div>
     <button class="text-action" type="button">Edit Task</button>
@@ -491,7 +538,7 @@ const renderRows = () => {
   if (!filtered.length) {
     els.rows.innerHTML = `
       <tr>
-        <td colspan="6">
+        <td colspan="7">
           <div class="empty-state">
             <p class="eyebrow">No matches</p>
             <h2>No clients found</h2>
@@ -505,6 +552,7 @@ const renderRows = () => {
   els.rows.innerHTML = filtered
     .map((client) => {
       const progress = getProgressEstimate(client);
+      const health = getClientHealth(client);
 
       return `
         <tr data-client-id="${escapeHtml(client.id)}" class="${client.id === state.selectedClientId ? "is-selected" : ""}" tabindex="0">
@@ -517,6 +565,7 @@ const renderRows = () => {
           <td><span class="status-pill" data-status="${escapeHtml(client.status)}">${escapeHtml(client.status)}</span></td>
           <td>${escapeHtml(client.owner || "Unassigned")}</td>
           <td><span class="focus-pill" data-focus="${escapeHtml(client.focusLevel)}">${escapeHtml(client.focusLevel || "Normal")}</span></td>
+          <td><span class="health-pill" data-tone="${health.tone}" title="${escapeHtml(health.reason)}">${escapeHtml(health.label)}</span></td>
           <td>${escapeHtml(client.nextAction || "Add next move in Notion")}</td>
           <td>
             <div class="client-name">
@@ -619,6 +668,7 @@ const renderDetail = () => {
   const progress = getProgressEstimate(client);
   const currentPhase = Math.min(roadmapPhases.length - 1, Math.floor(progress / 25));
   const milestones = getRoadmapMilestones(client.id);
+  const health = getClientHealth(client);
 
   els.detail.innerHTML = `
     <div class="client-detail-head">
@@ -628,7 +678,9 @@ const renderDetail = () => {
         <div class="pill-row">
           <span class="status-pill" data-status="${escapeHtml(client.status)}">${escapeHtml(client.status)}</span>
           <span class="focus-pill" data-focus="${escapeHtml(client.focusLevel)}">${escapeHtml(client.focusLevel || "Normal")}</span>
+          <span class="health-pill" data-tone="${health.tone}">${escapeHtml(health.label)}</span>
         </div>
+        <p class="health-reason">${escapeHtml(health.reason)}</p>
       </div>
       ${isAdminUser() ? `<button class="button button-secondary" type="button" data-edit-client="${escapeHtml(client.id)}">Edit Client</button>` : ""}
     </div>
@@ -805,7 +857,7 @@ const setLoadingState = () => {
   els.myWorkBlockersMetric.textContent = "-";
   els.rows.innerHTML = `
     <tr>
-      <td colspan="6">
+      <td colspan="7">
         <div class="empty-state">
           <p class="eyebrow">Loading Notion</p>
           <h2>Syncing the operating system</h2>
@@ -850,7 +902,7 @@ const setErrorState = () => {
   els.myWorkBlockersMetric.textContent = "0";
   els.rows.innerHTML = `
     <tr>
-      <td colspan="6">
+      <td colspan="7">
         <div class="empty-state">
           <p class="eyebrow">Shared data unavailable</p>
           <h2>Connect Notion to use the team portal</h2>
@@ -1054,7 +1106,9 @@ const openActionForm = (action = null, clientId = "") => {
   setSelectValue(els.actionForm.elements.priority, action?.priority || "Normal");
   els.actionForm.elements.dueDate.value = action?.dueDate || todayISO;
   els.actionForm.elements.clientId.value = action?.clientIds?.[0] || clientId;
+  setSelectValue(els.actionForm.elements.approvalOwner, action?.approvalOwner || "");
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
+  els.actionForm.elements.dependency.value = action?.dependency || "";
   els.actionForm.elements.notes.value = action?.notes || "";
   applyOwnerFieldPolicy(els.actionForm.elements.owner);
   openDialog(els.actionDialog);
@@ -1169,7 +1223,9 @@ const handleActionSubmit = async (event) => {
     dueDate: String(formData.get("dueDate") || "").trim(),
     clientId: client?.id || "",
     clientName: client?.name || "",
+    approvalOwner: String(formData.get("approvalOwner") || "").trim(),
     blocker: formData.get("blocker") === "on",
+    dependency: String(formData.get("dependency") || "").trim(),
     notes: String(formData.get("notes") || "").trim(),
   };
   const submit = els.actionForm.querySelector('[type="submit"]');
@@ -1410,7 +1466,7 @@ els.actionList.addEventListener("click", (event) => {
   }
 });
 
-[els.todayList, els.priorityList, els.blockerList].forEach((target) => {
+[els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList].forEach((target) => {
   target.addEventListener("click", (event) => {
     const actionCardEl = event.target.closest("[data-action-id]");
     const opportunityCardEl = event.target.closest("[data-opportunity-id]");
