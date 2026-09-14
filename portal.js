@@ -61,6 +61,7 @@ const els = {
   eventFormTitle: $("[data-event-form-title]"),
   eventClientSelect: $("[data-event-client-select]"),
   clientsMetric: $("[data-metric-clients]"),
+  clientCount: $("[data-client-count]"),
   todayMetric: $("[data-metric-today]"),
   overdueMetric: $("[data-metric-overdue]"),
   blockersMetric: $("[data-metric-blockers]"),
@@ -675,17 +676,15 @@ const renderFocusLists = () => {
 
 const renderRows = () => {
   const filtered = getFilteredClients();
+  els.clientCount.textContent = `${filtered.length} ${filtered.length === 1 ? "client" : "clients"}`;
 
   if (!filtered.length) {
     els.rows.innerHTML = `
-      <tr>
-        <td colspan="7">
-          <div class="empty-state">
-            <p class="eyebrow">No matches</p>
-            <h2>No clients found</h2>
-          </div>
-        </td>
-      </tr>
+      <div class="empty-state client-roster-empty">
+        <p class="eyebrow">No matches</p>
+        <h2>No clients found</h2>
+        <p>Try a different name, owner, focus, or status.</p>
+      </div>
     `;
     return;
   }
@@ -694,29 +693,42 @@ const renderRows = () => {
     .map((client) => {
       const progress = getProgressEstimate(client);
       const health = getClientHealth(client);
+      const selected = client.id === state.selectedClientId;
 
       return `
-        <tr data-client-id="${escapeHtml(client.id)}" class="${client.id === state.selectedClientId ? "is-selected" : ""}" tabindex="0">
-          <td>
+        <article
+          class="client-card${selected ? " is-selected" : ""}"
+          data-client-id="${escapeHtml(client.id)}"
+          role="option"
+          aria-selected="${selected}"
+          tabindex="0"
+        >
+          <div class="client-card-head">
             <div class="client-name">
               <strong>${escapeHtml(client.name || "Untitled client")}</strong>
               <span>${escapeHtml(client.category || "Type not set")}</span>
             </div>
-          </td>
-          <td><span class="status-pill" data-status="${escapeHtml(client.status)}">${escapeHtml(client.status)}</span></td>
-          <td>${escapeHtml(client.owner || "Unassigned")}</td>
-          <td><span class="focus-pill" data-focus="${escapeHtml(client.focusLevel)}">${escapeHtml(client.focusLevel || "Normal")}</span></td>
-          <td><span class="health-pill" data-tone="${health.tone}" title="${escapeHtml(health.reason)}">${escapeHtml(health.label)}</span></td>
-          <td>${escapeHtml(client.nextAction || "Add next move in Notion")}</td>
-          <td>
-            <div class="client-name">
-              <div class="progress-track" aria-label="${progress} percent complete">
+            <span class="health-pill" data-tone="${health.tone}" title="${escapeHtml(health.reason)}">${escapeHtml(health.label)}</span>
+          </div>
+          <div class="client-card-pills">
+            <span class="status-pill" data-status="${escapeHtml(client.status)}">${escapeHtml(client.status)}</span>
+            <span class="focus-pill" data-focus="${escapeHtml(client.focusLevel)}">${escapeHtml(client.focusLevel || "Normal")}</span>
+          </div>
+          <div class="client-card-next">
+            <span>Next move</span>
+            <strong>${escapeHtml(client.nextAction || "Add a clear next move")}</strong>
+          </div>
+          <div class="client-card-footer">
+            <span class="client-card-owner">${escapeHtml(client.owner || "Unassigned")}</span>
+            <div class="client-card-progress">
+              <div class="progress-track" role="progressbar" aria-label="${progress} percent complete" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}">
                 <span style="width:${progress}%"></span>
               </div>
-              <span>${progress}%</span>
+              <strong>${progress}%</strong>
             </div>
-          </td>
-        </tr>
+          </div>
+          <span class="client-card-open" aria-hidden="true">Open roadmap <b>→</b></span>
+        </article>
       `;
     })
     .join("");

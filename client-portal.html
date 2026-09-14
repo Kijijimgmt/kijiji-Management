@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260914-calendar" />
+    <link rel="stylesheet" href="portal.css?v=20260914-clients" />
   </head>
   <body>
     <div class="portal-shell">
@@ -220,6 +220,7 @@
               <div>
                 <p class="eyebrow">Clients</p>
                 <h2 id="clients-title">Roster, next moves, and focus</h2>
+                <p class="section-support"><span data-client-count>0 clients</span> · Select a client to open their roadmap.</p>
               </div>
               <div class="section-actions">
                 <button class="button button-secondary" type="button" data-open-client-form data-requires-access data-admin-only>Add Client</button>
@@ -243,22 +244,7 @@
               </div>
             </div>
 
-            <div class="client-table-wrap">
-              <table class="client-table">
-                <thead>
-                  <tr>
-                    <th>Client</th>
-                    <th>Status</th>
-                    <th>Owner</th>
-                    <th>Focus</th>
-                    <th>Health</th>
-                    <th>Next Move</th>
-                    <th>Progress</th>
-                  </tr>
-                </thead>
-                <tbody data-client-rows></tbody>
-              </table>
-            </div>
+            <div class="client-roster" data-client-rows role="listbox" aria-label="Client roster"></div>
           </section>
 
           <section class="detail-panel" aria-label="Client detail" data-portal-view="clients" data-client-detail>
@@ -718,6 +704,6 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260914-calendar"></script>
+    <script src="portal.js?v=20260914-clients"></script>
   </body>
 </html>
