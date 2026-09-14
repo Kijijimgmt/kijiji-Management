@@ -12,6 +12,7 @@ NOTION_CLIENT_ROSTER_DATA_SOURCE_ID=03c5f70c-fb49-4d09-9de8-7fb8a45a04c7
 NOTION_ACTIONS_DATA_SOURCE_ID=662c1c0d-d255-4fe9-8260-5dc4f293b051
 NOTION_OPPORTUNITIES_DATA_SOURCE_ID=8548a9d4-1ffe-4787-90fc-3eb0a0085531
 NOTION_EVENTS_DATA_SOURCE_ID=4bf7373c-c744-4fe3-854e-ff0470954497
+NOTION_DOCUMENTS_DATA_SOURCE_ID=8ba38a00-a408-44c9-befe-293359292f75
 SUPABASE_URL=https://your-active-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
 ALLOW_PORTAL_CODE_FALLBACK=false
@@ -27,6 +28,8 @@ HEALTH_CHECK_TOKEN=optional-health-token-if-not-using-cron-secret
 DISABLE_NOTION_WRITES=false
 ALLOW_PREVIEW_NOTION_WRITES=false
 ```
+
+Share the **Kijiji Document Library** database with the same Notion integration used by the portal. Its schema includes Document, Category, File, Description, Owner, Status, Client, Uploaded, and Last Updated. Portal uploads are limited to 3 MB and accept PDF, Office, text, JPG, and PNG files.
 
 The data source IDs are optional while the current Notion operating system stays the same, because the API has the current IDs as fallbacks. Set them anyway so future migrations are easier.
 

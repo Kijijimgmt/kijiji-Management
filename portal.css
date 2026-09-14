@@ -4144,3 +4144,135 @@ textarea {
     transition: none;
   }
 }
+
+/* Document library */
+.document-library {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #151412;
+}
+
+.document-library .section-header {
+  padding: 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.document-actions {
+  align-items: end;
+}
+
+.document-actions label {
+  min-width: 190px;
+}
+
+.document-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.document-summary strong {
+  color: var(--champagne);
+}
+
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 12px;
+  padding: 16px 22px 22px;
+}
+
+.document-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 15px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  background: #1a1917;
+}
+
+.document-icon {
+  display: grid;
+  width: 54px;
+  height: 64px;
+  place-items: center;
+  border: 1px solid rgba(226, 154, 88, 0.35);
+  border-radius: 6px;
+  background: #241c16;
+  color: var(--orange-hot);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.document-copy {
+  min-width: 0;
+}
+
+.document-copy > span,
+.document-copy small {
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.document-copy h3 {
+  margin: 4px 0 7px;
+  color: var(--white);
+  font-size: 1rem;
+}
+
+.document-copy p {
+  margin: 0 0 10px;
+  color: var(--champagne);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.document-card-actions {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+}
+
+@media (max-width: 720px) {
+  .document-library .section-header,
+  .document-summary {
+    padding-inline: 16px;
+  }
+
+  .document-actions,
+  .document-summary {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .document-actions label {
+    min-width: 0;
+  }
+
+  .document-grid {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .document-card {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .document-icon {
+    width: 46px;
+    height: 54px;
+  }
+
+  .document-card-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+}

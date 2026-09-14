@@ -1,4 +1,5 @@
 const apiEndpoint = "/api/notion-clients";
+const documentsEndpoint = "/api/notion-documents";
 const authLinkEndpoint = "/api/auth-link";
 const authConfigEndpoint = "/api/auth-config";
 const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
@@ -29,6 +30,14 @@ const els = {
   calendarNext: $("[data-calendar-next]"),
   calendarToday: $("[data-calendar-today]"),
   calendarViewButtons: $$('[data-calendar-view]'),
+  documentList: $("[data-document-list]"),
+  documentCount: $("[data-document-count]"),
+  documentSearch: $("[data-search-documents]"),
+  documentCategory: $("[data-document-category]"),
+  documentDialog: $("[data-document-dialog]"),
+  documentForm: $("[data-document-form]"),
+  documentClientSelect: $("[data-document-client-select]"),
+  documentMessage: $("[data-document-message]"),
   myWorkActionList: $("[data-my-work-action-list]"),
   myWorkDealList: $("[data-my-work-deal-list]"),
   myWorkWatchList: $("[data-my-work-watch-list]"),
@@ -83,6 +92,7 @@ let state = {
   actions: [],
   opportunities: [],
   events: [],
+  documents: [],
   selectedClientId: "",
   isLoading: true,
   portalError: "",
@@ -272,6 +282,7 @@ const viewTitles = {
   clients: "Clients",
   work: "Work",
   calendar: "Calendar",
+  documents: "Documents",
   guidance: "Playbook",
 };
 
@@ -1067,6 +1078,30 @@ const renderCalendar = () => {
   els.calendarList.innerHTML = upcoming.map(eventCard).join("");
 };
 
+const renderDocuments = () => {
+  if (!els.documentList) return;
+  const query = String(els.documentSearch?.value || "").trim().toLowerCase();
+  const category = els.documentCategory?.value || "all";
+  const documents = state.documents.filter((document) => {
+    const matchesCategory = category === "all" || document.category === category;
+    const haystack = `${document.name} ${document.description} ${document.owner} ${document.category}`.toLowerCase();
+    return matchesCategory && (!query || haystack.includes(query));
+  });
+  els.documentCount.textContent = `${documents.length} ${documents.length === 1 ? "file" : "files"}`;
+  if (!documents.length) {
+    renderEmptyList(els.documentList, "No documents found", state.documents.length ? "Try another search or category." : "Upload the first contract, template, or team resource.");
+    return;
+  }
+  els.documentList.innerHTML = documents.map((document) => {
+    const client = document.clientIds?.length ? getClient(document.clientIds[0]) : null;
+    return `<article class="document-card">
+      <div class="document-icon" aria-hidden="true">${escapeHtml((document.fileName || document.name).split(".").pop().slice(0, 4).toUpperCase())}</div>
+      <div class="document-copy"><span>${escapeHtml(document.category)}${client ? ` / ${escapeHtml(client.name)}` : ""}</span><h3>${escapeHtml(document.name)}</h3><p>${escapeHtml(document.description || "Shared Kijiji resource")}</p><small>${escapeHtml(document.owner)} · Updated ${formatDate(String(document.updatedAt || "").slice(0, 10))}</small></div>
+      <div class="document-card-actions">${document.fileUrl ? `<a class="button button-primary" href="${escapeHtml(document.fileUrl)}" target="_blank" rel="noreferrer">Download</a>` : ""}<a class="text-action" href="${escapeHtml(document.notionUrl)}" target="_blank" rel="noreferrer">Open in Notion</a></div>
+    </article>`;
+  }).join("");
+};
+
 const renderClientOptions = (selectEl) => {
   if (!selectEl) {
     return;
@@ -1205,7 +1240,9 @@ const renderPortal = () => {
   renderActions();
   renderPipeline();
   renderCalendar();
+  renderDocuments();
   renderActionClientOptions();
+  renderClientOptions(els.documentClientSelect);
 };
 
 const loadDashboard = async ({ fromAuth = false } = {}) => {
@@ -1239,6 +1276,13 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     state.actions = Array.isArray(data.actions) ? data.actions : [];
     state.opportunities = Array.isArray(data.opportunities) ? data.opportunities : [];
     state.events = Array.isArray(data.events) ? data.events : [];
+    try {
+      const documentsResponse = await fetch(documentsEndpoint, { headers: getRequestHeaders() });
+      const documentsData = await documentsResponse.json();
+      state.documents = documentsResponse.ok && Array.isArray(documentsData.documents) ? documentsData.documents : [];
+    } catch {
+      state.documents = [];
+    }
     state.selectedClientId = state.selectedClientId || state.clients[0]?.id || "";
     state.isLoading = false;
     setSourceBadge("ready", state.teamUser?.fullName ? `${state.teamUser.fullName} / Notion synced` : "Synced with Notion");
@@ -1395,6 +1439,13 @@ const openEventForm = (eventItem = null, clientId = "", eventDate = todayISO) =>
   els.eventForm.elements.notes.value = eventItem?.notes || "";
   applyOwnerFieldPolicy(els.eventForm.elements.owner);
   openDialog(els.eventDialog);
+};
+
+const openDocumentForm = () => {
+  els.documentForm.reset();
+  els.documentMessage.textContent = "";
+  renderClientOptions(els.documentClientSelect);
+  openDialog(els.documentDialog);
 };
 
 const saveResource = async (payload) => {
@@ -1563,6 +1614,40 @@ const handleEventSubmit = async (event) => {
   }
 };
 
+const handleDocumentSubmit = async (event) => {
+  event.preventDefault();
+  const formData = new FormData(els.documentForm);
+  const file = formData.get("file");
+  const submit = els.documentForm.querySelector('[type="submit"]');
+  if (!(file instanceof File) || !file.size) return;
+  if (file.size > 3 * 1024 * 1024) {
+    els.documentMessage.textContent = "Choose a file smaller than 3 MB.";
+    return;
+  }
+  submit.disabled = true;
+  submit.textContent = "Uploading...";
+  els.documentMessage.textContent = "Securely uploading to the Kijiji Notion workspace...";
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const response = await fetch(documentsEndpoint, { method: "POST", headers: getRequestHeaders(), body: JSON.stringify({ name: String(formData.get("name") || "").trim(), category: formData.get("category"), clientId: formData.get("clientId"), description: String(formData.get("description") || "").trim(), filename: file.name, contentType: file.type, base64 }) });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Unable to upload the document.");
+    closeDialog(els.documentDialog);
+    await loadDashboard();
+    window.location.hash = "documents";
+  } catch (error) {
+    els.documentMessage.textContent = error.message;
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "Upload File";
+  }
+};
+
 const handleAccessSubmit = async (event) => {
   event.preventDefault();
   const email = els.accessInput.value.trim().toLowerCase();
@@ -1627,6 +1712,7 @@ async function logoutPortal() {
     actions: [],
     opportunities: [],
     events: [],
+    documents: [],
     selectedClientId: "",
     isLoading: false,
     portalError: "",
@@ -1902,6 +1988,7 @@ $$("[data-open-action-form]").forEach((button) => button.addEventListener("click
 $$("[data-open-client-form]").forEach((button) => button.addEventListener("click", () => openClientForm()));
 $$("[data-open-opportunity-form]").forEach((button) => button.addEventListener("click", () => openOpportunityForm()));
 $$("[data-open-event-form]").forEach((button) => button.addEventListener("click", () => openEventForm()));
+$$("[data-open-document-form]").forEach((button) => button.addEventListener("click", openDocumentForm));
 $$(".create-menu [data-open-action-form], .create-menu [data-open-client-form], .create-menu [data-open-opportunity-form], .create-menu [data-open-event-form]").forEach((button) =>
   button.addEventListener("click", () => button.closest("details")?.removeAttribute("open")),
 );
@@ -1909,6 +1996,7 @@ $$("[data-close-action-form]").forEach((button) => button.addEventListener("clic
 $$("[data-close-client-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.clientDialog)));
 $$("[data-close-opportunity-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.opportunityDialog)));
 $$("[data-close-event-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.eventDialog)));
+$$("[data-close-document-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.documentDialog)));
 $("[data-refresh-dashboard]").addEventListener("click", () => loadDashboard());
 els.logout?.addEventListener("click", logoutPortal);
 els.accessForm.addEventListener("submit", handleAccessSubmit);
@@ -1916,6 +2004,9 @@ els.clientForm.addEventListener("submit", handleClientSubmit);
 els.actionForm.addEventListener("submit", handleActionSubmit);
 els.opportunityForm.addEventListener("submit", handleOpportunitySubmit);
 els.eventForm.addEventListener("submit", handleEventSubmit);
+els.documentForm.addEventListener("submit", handleDocumentSubmit);
+els.documentSearch.addEventListener("input", renderDocuments);
+els.documentCategory.addEventListener("change", renderDocuments);
 els.search.addEventListener("input", renderRows);
 els.statusFilter.addEventListener("change", renderRows);
 window.addEventListener("hashchange", setActiveView);

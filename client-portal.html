@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260914-clients" />
+    <link rel="stylesheet" href="portal.css?v=20260914-documents" />
   </head>
   <body>
     <div class="portal-shell">
@@ -26,6 +26,7 @@
           <a href="#clients">Clients</a>
           <a href="#work">Work</a>
           <a href="#calendar">Calendar</a>
+          <a href="#documents">Documents</a>
           <details class="nav-more">
             <summary>More</summary>
             <div>
@@ -343,6 +344,19 @@
                 <div class="calendar-list" data-calendar-list></div>
               </aside>
             </div>
+          </section>
+
+          <section class="portal-section document-library" id="documents" aria-labelledby="documents-title" data-portal-view="documents">
+            <div class="section-header">
+              <div><p class="eyebrow">Team Resources</p><h2 id="documents-title">Document Library</h2><p class="section-note">Contracts, templates, briefs, and reusable files in one secure place.</p></div>
+              <div class="section-actions document-actions">
+                <label><span>Search</span><input type="search" data-search-documents placeholder="Find a document" /></label>
+                <label><span>Category</span><select data-document-category><option value="all">All categories</option><option>Contract</option><option>Template</option><option>Brief</option><option>Brand Asset</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
+                <button class="button button-primary" type="button" data-open-document-form data-requires-access>Upload Document</button>
+              </div>
+            </div>
+            <div class="document-summary"><strong data-document-count>0 files</strong><span>Available to signed-in Kijiji team members</span></div>
+            <div class="document-grid" data-document-list></div>
           </section>
 
           <section class="portal-section guidance-section" id="guidance" aria-labelledby="guidance-title" data-portal-view="guidance">
@@ -703,7 +717,22 @@
       </form>
     </dialog>
 
+    <dialog class="client-dialog" data-document-dialog>
+      <form method="dialog" class="client-form" data-document-form>
+        <div class="dialog-head"><div><p class="eyebrow">Team file</p><h2>Upload document</h2></div><button class="icon-button" type="button" data-close-document-form aria-label="Close form">x</button></div>
+        <div class="form-grid">
+          <label class="wide"><span>Document name</span><input name="name" required placeholder="Example: Artist management agreement" /></label>
+          <label><span>Category</span><select name="category"><option>Contract</option><option>Template</option><option>Brief</option><option>Brand Asset</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
+          <label><span>Client (optional)</span><select name="clientId" data-document-client-select><option value="">Shared resource</option></select></label>
+          <label class="wide"><span>File (3 MB maximum)</span><input name="file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.jpg,.jpeg,.png" required /></label>
+          <label class="wide"><span>Description</span><textarea name="description" rows="3" placeholder="When and how the team should use this file"></textarea></label>
+        </div>
+        <p class="access-message" data-document-message role="status" aria-live="polite"></p>
+        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-document-form>Cancel</button><button class="button button-primary" type="submit">Upload File</button></div>
+      </form>
+    </dialog>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260914-clients"></script>
+    <script src="portal.js?v=20260914-documents"></script>
   </body>
 </html>
