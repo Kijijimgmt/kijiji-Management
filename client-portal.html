@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260913-command-center" />
+    <link rel="stylesheet" href="portal.css?v=20260914-calendar" />
   </head>
   <body>
     <div class="portal-shell">
@@ -327,7 +327,36 @@
                 <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
               </div>
             </div>
-            <div class="calendar-list" data-calendar-list></div>
+            <div class="calendar-toolbar">
+              <div class="calendar-navigation">
+                <button class="icon-button calendar-arrow" type="button" data-calendar-previous aria-label="Previous period" title="Previous period">&larr;</button>
+                <h3 data-calendar-period>Month</h3>
+                <button class="icon-button calendar-arrow" type="button" data-calendar-next aria-label="Next period" title="Next period">&rarr;</button>
+                <button class="button button-secondary" type="button" data-calendar-today>Today</button>
+              </div>
+              <div class="calendar-view-switch" role="group" aria-label="Calendar view">
+                <button class="is-active" type="button" data-calendar-view="month" aria-pressed="true">Month</button>
+                <button type="button" data-calendar-view="week" aria-pressed="false">Week</button>
+              </div>
+            </div>
+            <div class="calendar-workspace">
+              <div class="calendar-grid-wrap">
+                <div class="calendar-weekdays" aria-hidden="true">
+                  <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+                <div class="calendar-grid" data-calendar-grid data-view="month"></div>
+              </div>
+              <aside class="calendar-agenda" aria-labelledby="calendar-agenda-title">
+                <div class="calendar-agenda-head">
+                  <div>
+                    <p class="eyebrow">Agenda</p>
+                    <h3 id="calendar-agenda-title">Next up</h3>
+                  </div>
+                  <span data-calendar-upcoming-count>0 dates</span>
+                </div>
+                <div class="calendar-list" data-calendar-list></div>
+              </aside>
+            </div>
           </section>
 
           <section class="portal-section guidance-section" id="guidance" aria-labelledby="guidance-title" data-portal-view="guidance">
@@ -689,6 +718,6 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260913-command-center"></script>
+    <script src="portal.js?v=20260914-calendar"></script>
   </body>
 </html>

@@ -4,7 +4,11 @@ const authConfigEndpoint = "/api/auth-config";
 const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
 let supabaseClient = null;
 const today = new Date();
-const todayISO = today.toISOString().slice(0, 10);
+const todayISO = [
+  today.getFullYear(),
+  String(today.getMonth() + 1).padStart(2, "0"),
+  String(today.getDate()).padStart(2, "0"),
+].join("-");
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => document.querySelectorAll(selector);
@@ -18,6 +22,13 @@ const els = {
   blockerList: $("[data-blocker-list]"),
   pipelineGrid: $("[data-pipeline-grid]"),
   calendarList: $("[data-calendar-list]"),
+  calendarGrid: $("[data-calendar-grid]"),
+  calendarPeriod: $("[data-calendar-period]"),
+  calendarUpcomingCount: $("[data-calendar-upcoming-count]"),
+  calendarPrevious: $("[data-calendar-previous]"),
+  calendarNext: $("[data-calendar-next]"),
+  calendarToday: $("[data-calendar-today]"),
+  calendarViewButtons: $$('[data-calendar-view]'),
   myWorkActionList: $("[data-my-work-action-list]"),
   myWorkDealList: $("[data-my-work-deal-list]"),
   myWorkWatchList: $("[data-my-work-watch-list]"),
@@ -78,6 +89,9 @@ let state = {
   teamUser: null,
 };
 
+let calendarView = "month";
+let calendarCursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
 const escapeHtml = (value) =>
   String(value || "")
     .replaceAll("&", "&amp;")
@@ -110,6 +124,31 @@ const getDaysUntil = (value) => {
   const dueDate = new Date(`${value}T00:00:00`);
   const start = new Date(`${todayISO}T00:00:00`);
   return Math.ceil((dueDate.getTime() - start.getTime()) / 86400000);
+};
+
+const toLocalISODate = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const addDays = (date, amount) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+};
+
+const startOfWeek = (date) => addDays(date, -date.getDay());
+
+const formatCountdown = (value) => {
+  const days = getDaysUntil(value);
+  if (!Number.isFinite(days)) return "Date needed";
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  if (days > 1) return `${days} days away`;
+  if (days === -1) return "1 day ago";
+  return `${Math.abs(days)} days ago`;
 };
 
 const isComplete = (item) =>
@@ -584,7 +623,7 @@ const opportunityCard = (opportunity) => `
 
 const eventCard = (event) => `
   <article class="calendar-item editable-card" data-event-id="${escapeHtml(event.id)}" tabindex="0">
-    <span>${formatDate(event.date)}</span>
+    <span>${formatDate(event.date)} <small>${escapeHtml(formatCountdown(event.date))}</small></span>
     <strong>${escapeHtml(event.name)}</strong>
     <em>${escapeHtml(getClientName(event))}${event.type ? ` / ${escapeHtml(event.type)}` : ""}</em>
     <button class="text-action" type="button">Edit Event</button>
@@ -944,10 +983,69 @@ const renderPipeline = () => {
 };
 
 const renderCalendar = () => {
-  const upcoming = [...state.events]
+  const upcomingAll = [...state.events]
     .filter((event) => getDaysUntil(event.date) >= 0)
-    .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date))
-    .slice(0, 8);
+    .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date));
+  const upcoming = upcomingAll.slice(0, 10);
+
+  const firstDate = calendarView === "week"
+    ? startOfWeek(calendarCursor)
+    : startOfWeek(new Date(calendarCursor.getFullYear(), calendarCursor.getMonth(), 1));
+  const dayCount = calendarView === "week" ? 7 : 42;
+  const dates = Array.from({ length: dayCount }, (_, index) => addDays(firstDate, index));
+  const currentMonth = calendarCursor.getMonth();
+  const eventsByDate = new Map();
+
+  state.events.forEach((event) => {
+    if (!event.date) return;
+    const dateEvents = eventsByDate.get(event.date) || [];
+    dateEvents.push(event);
+    eventsByDate.set(event.date, dateEvents);
+  });
+
+  if (calendarView === "week") {
+    const weekEnd = addDays(firstDate, 6);
+    const startLabel = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(firstDate);
+    const endLabel = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(weekEnd);
+    els.calendarPeriod.textContent = `${startLabel} - ${endLabel}`;
+  } else {
+    els.calendarPeriod.textContent = new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(calendarCursor);
+  }
+
+  els.calendarGrid.dataset.view = calendarView;
+  els.calendarGrid.innerHTML = dates
+    .map((date) => {
+      const dateKey = toLocalISODate(date);
+      const events = eventsByDate.get(dateKey) || [];
+      const outsideMonth = calendarView === "month" && date.getMonth() !== currentMonth;
+      const visibleEvents = events.slice(0, calendarView === "week" ? 5 : 3);
+      return `
+        <div class="calendar-day${outsideMonth ? " is-outside" : ""}${dateKey === todayISO ? " is-today" : ""}">
+          <button class="calendar-day-number" type="button" data-calendar-date="${dateKey}" aria-label="Add event on ${escapeHtml(formatDate(dateKey))}">${date.getDate()}</button>
+          <div class="calendar-day-events">
+            ${visibleEvents
+              .map(
+                (event) => `
+                  <button class="calendar-event-pill" type="button" data-event-id="${escapeHtml(event.id)}" title="${escapeHtml(event.name)} - ${escapeHtml(formatCountdown(event.date))}" aria-label="Open ${escapeHtml(event.name)}">
+                    <span>${escapeHtml(event.name)}</span>
+                    <small>${escapeHtml(getClientName(event))}</small>
+                  </button>
+                `,
+              )
+              .join("")}
+            ${events.length > visibleEvents.length ? `<span class="calendar-more">+${events.length - visibleEvents.length} more</span>` : ""}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  els.calendarViewButtons.forEach((button) => {
+    const active = button.dataset.calendarView === calendarView;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  els.calendarUpcomingCount.textContent = `${upcomingAll.length} upcoming`;
 
   if (!upcoming.length) {
     renderEmptyList(els.calendarList, "No upcoming releases", "Events and release dates will appear here once they are added in Notion.");
@@ -1011,6 +1109,7 @@ const setLoadingState = () => {
     [els.approvalList, "Approvals", "Checking what needs a decision."],
     [els.actionList, "Tasks", "Loading open team actions."],
     [els.pipelineGrid, "Pipeline", "Loading opportunities by stage."],
+    [els.calendarGrid, "Calendar", "Building the team calendar."],
     [els.calendarList, "Calendar", "Loading upcoming releases and events."],
   ].forEach(([target, title, text]) => {
     if (target) {
@@ -1062,6 +1161,7 @@ const setErrorState = () => {
     [els.approvalList, "No approval data", "Approval items will appear here when the shared dashboard loads."],
     [els.actionList, "No actions available", "Task editing will unlock once the shared Actions database is reachable."],
     [els.pipelineGrid, "No pipeline available", "Opportunity stages will unlock once the shared Opportunities database is reachable."],
+    [els.calendarGrid, "No calendar available", "The calendar will return once the shared Events database is reachable."],
     [els.calendarList, "No calendar available", "Events and releases will unlock once the shared Events database is reachable."],
   ].forEach(([target, title, text]) => {
     if (target) {
@@ -1269,7 +1369,7 @@ const openOpportunityForm = (opportunity = null) => {
   openDialog(els.opportunityDialog);
 };
 
-const openEventForm = (eventItem = null, clientId = "") => {
+const openEventForm = (eventItem = null, clientId = "", eventDate = todayISO) => {
   els.eventForm.reset();
   renderClientOptions(els.eventClientSelect);
   els.eventFormTitle.textContent = eventItem ? "Edit event" : "Add event";
@@ -1278,7 +1378,7 @@ const openEventForm = (eventItem = null, clientId = "") => {
   setSelectValue(els.eventForm.elements.type, eventItem?.type || "Release");
   setSelectValue(els.eventForm.elements.status, eventItem?.status || "Planned");
   setSelectValue(els.eventForm.elements.owner, eventItem?.owner || "Unassigned");
-  els.eventForm.elements.date.value = eventItem?.date || todayISO;
+  els.eventForm.elements.date.value = eventItem?.date || eventDate;
   els.eventForm.elements.clientId.value = eventItem?.clientIds?.[0] || clientId;
   els.eventForm.elements.notes.value = eventItem?.notes || "";
   applyOwnerFieldPolicy(els.eventForm.elements.owner);
@@ -1719,6 +1819,46 @@ els.pipelineGrid.addEventListener("keydown", (event) => {
       openOpportunityForm(opportunity);
     }
   }
+});
+
+els.calendarGrid.addEventListener("click", (event) => {
+  const eventButton = event.target.closest("[data-event-id]");
+  if (eventButton) {
+    const eventItem = state.events.find((item) => item.id === eventButton.dataset.eventId);
+    if (eventItem) openEventForm(eventItem);
+    return;
+  }
+
+  const dayButton = event.target.closest("[data-calendar-date]");
+  if (dayButton) {
+    openEventForm(null, "", dayButton.dataset.calendarDate);
+  }
+});
+
+els.calendarPrevious.addEventListener("click", () => {
+  calendarCursor = calendarView === "week"
+    ? addDays(calendarCursor, -7)
+    : new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+  renderCalendar();
+});
+
+els.calendarNext.addEventListener("click", () => {
+  calendarCursor = calendarView === "week"
+    ? addDays(calendarCursor, 7)
+    : new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+  renderCalendar();
+});
+
+els.calendarToday.addEventListener("click", () => {
+  calendarCursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  renderCalendar();
+});
+
+els.calendarViewButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    calendarView = button.dataset.calendarView === "week" ? "week" : "month";
+    renderCalendar();
+  });
 });
 
 els.calendarList.addEventListener("click", (event) => {

@@ -511,6 +511,7 @@ const getResourceTitle = (resource, item) => {
 };
 
 const getSlackResourceLabel = (resource) => {
+  if (resource === "client") return "Client";
   if (resource === "action") return "Task";
   if (resource === "opportunity") return "Deal";
   if (resource === "event") return "Event";
@@ -518,6 +519,17 @@ const getSlackResourceLabel = (resource) => {
 };
 
 const getSlackFields = (resource, input) => {
+  if (resource === "client") {
+    return [
+      `Status: ${compact(input.status)}`,
+      `Owner: ${compact(input.owner || "Unassigned")}`,
+      `Focus: ${compact(input.focusLevel || "Normal")}`,
+      `Next move: ${compact(input.nextMove)}`,
+      `Next move date: ${compact(input.nextMoveDate)}`,
+      `Progress: ${compact(input.progress)}`,
+    ];
+  }
+
   if (resource === "action") {
     return [
       `Status: ${compact(input.status)}`,
@@ -553,7 +565,7 @@ const getSlackFields = (resource, input) => {
   ];
 };
 
-const notifySlack = async ({ resource, operation, input, saved }) => {
+const notifySlack = async ({ resource, operation, input, saved, identity }) => {
   if (!isSlackConfigured()) {
     return;
   }
@@ -561,11 +573,14 @@ const notifySlack = async ({ resource, operation, input, saved }) => {
   const label = getSlackResourceLabel(resource);
   const isBlocker = Boolean(input.blocker);
   const headline = `${isBlocker ? ":rotating_light: BLOCKER " : ""}${label} ${operation === "created" ? "created" : "updated"}: ${compact(getResourceTitle(resource, saved))}`;
+  const actor = identity?.fullName && identity?.email
+    ? `${identity.fullName} (${identity.email})`
+    : compact(identity?.email, "Kijiji team member");
   const fields = getSlackFields(resource, input)
     .filter((line) => !line.endsWith(": Not set"))
     .slice(0, 9);
   const notionLine = saved.url ? `\nNotion: ${saved.url}` : "";
-  const text = [`${headline}`, ...fields.map((line) => `- ${line}`)].join("\n") + notionLine;
+  const text = [`${headline}`, `- Updated by: ${actor}`, ...fields.map((line) => `- ${line}`)].join("\n") + notionLine;
 
   let timeout;
   try {
@@ -1002,6 +1017,7 @@ module.exports = async (request, response) => {
           operation,
           input: action,
           saved: savedAction,
+          identity,
         });
         if (actionResult.recurringCreated && actionResult.recurringAction) {
           await auditWrite({
@@ -1016,6 +1032,7 @@ module.exports = async (request, response) => {
             operation: "created",
             input: actionResult.recurringAction,
             saved: actionResult.recurringAction,
+            identity,
           });
         }
         json(response, 200, { action: savedAction, recurringAction: actionResult.recurringAction });
@@ -1027,6 +1044,13 @@ module.exports = async (request, response) => {
         await enforceTeamWriteScope(resource, client, identity, request.method);
         const savedClient = request.method === "POST" ? await createClient(client) : await updateClient(client);
         await auditWrite({ resource, operation, input: client, saved: savedClient, identity });
+        await notifySlack({
+          resource,
+          operation,
+          input: client,
+          saved: savedClient,
+          identity,
+        });
         json(response, 200, { client: savedClient });
         return;
       }
@@ -1041,6 +1065,7 @@ module.exports = async (request, response) => {
           operation,
           input: opportunity,
           saved: savedOpportunity,
+          identity,
         });
         json(response, 200, { opportunity: savedOpportunity });
         return;
@@ -1056,6 +1081,7 @@ module.exports = async (request, response) => {
           operation,
           input: event,
           saved: savedEvent,
+          identity,
         });
         json(response, 200, { event: savedEvent });
         return;

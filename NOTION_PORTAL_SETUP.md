@@ -116,9 +116,12 @@ The portal includes a **Log Out** button. It clears the browser's Supabase sessi
 The portal API can send concise internal alerts to Slack channel `#kijiji-ops` after successful Notion saves for:
 
 - Website leads: new strategy session requests from `kijijimgmt.com`.
+- Clients: create/update, including owner, focus, progress, and next move.
 - Tasks: create/update, including owner, priority, due date, client, next step, and blocker state.
 - Opportunities & Deals: create/update, including stage, owner, priority, next action date, client, next step, and blocker state.
 - Events & Releases: create/update, including type, status, owner, date, client, and notes.
+
+Portal alerts identify the signed-in team member who made the change. Everyone who should receive these updates must be a member of `#kijiji-ops` and enable the channel notification level they prefer in Slack.
 
 To enable this:
 
