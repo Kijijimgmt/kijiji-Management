@@ -21,6 +21,10 @@ const els = {
   myWorkActionList: $("[data-my-work-action-list]"),
   myWorkDealList: $("[data-my-work-deal-list]"),
   myWorkWatchList: $("[data-my-work-watch-list]"),
+  dailyPriority: $("[data-daily-priority]"),
+  clientHealthStrip: $("[data-client-health-strip]"),
+  approvalList: $("[data-approval-list]"),
+  approvalCount: $("[data-approval-count]"),
   myWorkTitle: $("[data-my-work-title]"),
   myWorkSubtitle: $("[data-my-work-subtitle]"),
   myWorkTasksMetric: $("[data-my-work-tasks]"),
@@ -226,14 +230,19 @@ const viewTitles = {
   "my-work": "Today",
   overview: "Team pulse",
   clients: "Clients",
-  actions: "Tasks",
-  opportunities: "Deals",
+  work: "Work",
   calendar: "Calendar",
   guidance: "Playbook",
 };
 
+const viewAliases = {
+  actions: "work",
+  opportunities: "work",
+};
+
 const setActiveView = () => {
-  const requestedView = window.location.hash.slice(1) || "my-work";
+  const requestedHash = window.location.hash.slice(1) || "my-work";
+  const requestedView = viewAliases[requestedHash] || requestedHash;
   const isAdminView = requestedView === "overview";
   const activeView = viewTitles[requestedView] && (!isAdminView || isAdminUser()) ? requestedView : "my-work";
 
@@ -245,6 +254,10 @@ const setActiveView = () => {
   els.navLinks.forEach((link) => {
     const isActive = link.getAttribute("href") === `#${activeView}`;
     link.classList.toggle("is-active", isActive);
+    const secondaryMenu = link.closest(".nav-more");
+    if (isActive && secondaryMenu) {
+      secondaryMenu.open = true;
+    }
     if (isActive) {
       link.setAttribute("aria-current", "page");
     } else {
@@ -256,8 +269,8 @@ const setActiveView = () => {
     els.workspaceTitle.textContent = viewTitles[activeView];
   }
 
-  if (activeView !== requestedView) {
-    window.history.replaceState(null, "", "#my-work");
+  if (activeView !== requestedHash) {
+    window.history.replaceState(null, "", `#${activeView}`);
   }
 };
 
@@ -416,6 +429,34 @@ const renderMyWork = () => {
   els.myWorkEventsMetric.textContent = String(upcomingAll.length);
   els.myWorkBlockersMetric.textContent = String(personalBlockers.length);
 
+  const priority = needsActionAll[0];
+  if (priority) {
+    const item = priority.item;
+    const title = priority.kind === "opportunity" ? item.name : item.title;
+    const context = item.nextStep || item.notes || getClientName(item);
+    const recordAttribute = priority.kind === "opportunity" ? "data-opportunity-id" : "data-action-id";
+    els.dailyPriority.innerHTML = `
+      <div>
+        <p class="eyebrow">Your next move</p>
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(context)}</span>
+      </div>
+      <div class="daily-priority-meta">
+        <span class="date-chip" data-tone="${priority.days < 0 ? "danger" : ""}">${formatDate(item.dueDate)}</span>
+        <button class="button button-primary" type="button" ${recordAttribute}="${escapeHtml(item.id)}">Open</button>
+      </div>
+    `;
+  } else {
+    els.dailyPriority.innerHTML = `
+      <div>
+        <p class="eyebrow">Your next move</p>
+        <strong>You are clear for now.</strong>
+        <span>No urgent or overdue work needs your attention.</span>
+      </div>
+      <button class="button button-secondary" type="button" data-open-action-form>Add a task</button>
+    `;
+  }
+
   if (needsAction.length) {
     els.myWorkActionList.innerHTML = renderLane(needsAction);
   } else {
@@ -433,6 +474,66 @@ const renderMyWork = () => {
   } else {
     renderEmptyList(els.myWorkWatchList, "No upcoming dates", "Assigned events, releases, and future deal moves will appear here.");
   }
+};
+
+const renderClientHealthStrip = () => {
+  const toneRank = { danger: 0, warning: 1, waiting: 2, success: 3 };
+  const clients = state.clients
+    .map((client) => ({ client, health: getClientHealth(client) }))
+    .sort((a, b) => toneRank[a.health.tone] - toneRank[b.health.tone])
+    .slice(0, 5);
+
+  if (!clients.length) {
+    renderEmptyList(els.clientHealthStrip, "No clients yet", "Client health will appear as the roster grows.");
+    return;
+  }
+
+  els.clientHealthStrip.innerHTML = clients
+    .map(
+      ({ client, health }) => `
+        <button class="client-health-item" type="button" data-health-client-id="${escapeHtml(client.id)}">
+          <span class="health-dot" data-tone="${escapeHtml(health.tone)}" aria-hidden="true"></span>
+          <span>
+            <strong>${escapeHtml(client.name)}</strong>
+            <small>${escapeHtml(health.reason)}</small>
+          </span>
+          <em>${escapeHtml(health.label)}</em>
+        </button>
+      `,
+    )
+    .join("");
+};
+
+const renderApprovals = () => {
+  const approvals = state.actions
+    .filter((action) => String(action.status || "").toLowerCase() === "needs approval")
+    .filter((action) => isAdminUser() || !action.approvalOwner || ownerMatches(action.approvalOwner, state.teamUser?.owner))
+    .sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate));
+
+  els.approvalCount.textContent = `${approvals.length} pending`;
+  if (!approvals.length) {
+    renderEmptyList(els.approvalList, "Inbox clear", "Tasks marked Needs Approval will appear here for review.");
+    return;
+  }
+
+  els.approvalList.innerHTML = approvals
+    .map(
+      (action) => `
+        <article class="approval-item editable-card" data-action-id="${escapeHtml(action.id)}" tabindex="0">
+          <div>
+            <span>${escapeHtml(getClientName(action))}</span>
+            <strong>${escapeHtml(action.title)}</strong>
+            <p>${escapeHtml(action.dependency || action.notes || "Review and record the decision.")}</p>
+          </div>
+          <div class="approval-meta">
+            <span>${escapeHtml(action.approvalOwner || "Team approval")}</span>
+            <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
+            <button class="button button-secondary" type="button">Review</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
 };
 
 const renderEmptyList = (target, title, text) => {
@@ -877,6 +978,10 @@ const setLoadingState = () => {
   els.myWorkDealsMetric.textContent = "-";
   els.myWorkEventsMetric.textContent = "-";
   els.myWorkBlockersMetric.textContent = "-";
+  if (els.approvalCount) els.approvalCount.textContent = "Checking";
+  if (els.dailyPriority) {
+    els.dailyPriority.innerHTML = `<div><p class="eyebrow">Your next move</p><strong>Finding your focus...</strong><span>Checking priorities, dates, and blockers.</span></div>`;
+  }
   els.rows.innerHTML = `
     <tr>
       <td colspan="7">
@@ -902,6 +1007,8 @@ const setLoadingState = () => {
     [els.myWorkActionList, "My Tasks", "Loading your assigned tasks."],
     [els.myWorkDealList, "My Deals", "Loading your assigned opportunities."],
     [els.myWorkWatchList, "Watch List", "Loading your blockers and dates."],
+    [els.clientHealthStrip, "Client pulse", "Checking relationship health."],
+    [els.approvalList, "Approvals", "Checking what needs a decision."],
     [els.actionList, "Tasks", "Loading open team actions."],
     [els.pipelineGrid, "Pipeline", "Loading opportunities by stage."],
     [els.calendarList, "Calendar", "Loading upcoming releases and events."],
@@ -922,6 +1029,10 @@ const setErrorState = () => {
   els.myWorkDealsMetric.textContent = "0";
   els.myWorkEventsMetric.textContent = "0";
   els.myWorkBlockersMetric.textContent = "0";
+  if (els.approvalCount) els.approvalCount.textContent = "0 pending";
+  if (els.dailyPriority) {
+    els.dailyPriority.innerHTML = `<div><p class="eyebrow">Your next move</p><strong>Shared data unavailable</strong><span>Reconnect Notion to restore your daily focus.</span></div>`;
+  }
   els.rows.innerHTML = `
     <tr>
       <td colspan="7">
@@ -947,6 +1058,8 @@ const setErrorState = () => {
     [els.myWorkActionList, "No task data", "Your assigned tasks will appear here when the shared dashboard loads."],
     [els.myWorkDealList, "No deal data", "Your assigned deals will appear here when the shared dashboard loads."],
     [els.myWorkWatchList, "No watch data", "Your blockers and dates will appear here when the shared dashboard loads."],
+    [els.clientHealthStrip, "No client data", "Client health will appear here when the shared dashboard loads."],
+    [els.approvalList, "No approval data", "Approval items will appear here when the shared dashboard loads."],
     [els.actionList, "No actions available", "Task editing will unlock once the shared Actions database is reachable."],
     [els.pipelineGrid, "No pipeline available", "Opportunity stages will unlock once the shared Opportunities database is reachable."],
     [els.calendarList, "No calendar available", "Events and releases will unlock once the shared Events database is reachable."],
@@ -972,6 +1085,8 @@ const renderPortal = () => {
 
   renderMetrics();
   renderMyWork();
+  renderClientHealthStrip();
+  renderApprovals();
   renderFocusLists();
   renderRows();
   renderDetail();
@@ -1490,11 +1605,17 @@ els.actionList.addEventListener("click", (event) => {
   }
 });
 
-[els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList].forEach((target) => {
+[els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList, els.dailyPriority, els.approvalList].forEach((target) => {
   target.addEventListener("click", (event) => {
+    const createActionButton = event.target.closest("[data-open-action-form]");
     const actionCardEl = event.target.closest("[data-action-id]");
     const opportunityCardEl = event.target.closest("[data-opportunity-id]");
     const eventCardEl = event.target.closest("[data-event-id]");
+    if (createActionButton && !actionCardEl) {
+      openActionForm();
+      return;
+    }
+
     if (actionCardEl) {
       const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
       if (action) {
@@ -1549,6 +1670,15 @@ els.actionList.addEventListener("click", (event) => {
       }
     }
   });
+});
+
+els.clientHealthStrip.addEventListener("click", (event) => {
+  const clientButton = event.target.closest("[data-health-client-id]");
+  if (!clientButton) return;
+  state.selectedClientId = clientButton.dataset.healthClientId;
+  window.location.hash = "clients";
+  renderRows();
+  renderDetail();
 });
 
 els.actionList.addEventListener("keydown", (event) => {

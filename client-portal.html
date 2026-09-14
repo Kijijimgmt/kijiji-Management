@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260913-roadmaps-recurring" />
+    <link rel="stylesheet" href="portal.css?v=20260913-command-center" />
   </head>
   <body>
     <div class="portal-shell">
@@ -23,12 +23,16 @@
         </a>
         <nav class="portal-nav">
           <a class="is-active" href="#my-work" aria-current="page">Today</a>
-          <a href="#overview" data-admin-only>Team Pulse</a>
           <a href="#clients">Clients</a>
-          <a href="#actions">Tasks</a>
-          <a href="#opportunities">Deals</a>
+          <a href="#work">Work</a>
           <a href="#calendar">Calendar</a>
-          <a href="#guidance">Playbook</a>
+          <details class="nav-more">
+            <summary>More</summary>
+            <div>
+              <a href="#overview" data-admin-only>Team Pulse</a>
+              <a href="#guidance">Playbook</a>
+            </div>
+          </details>
         </nav>
         <div class="sidebar-note">
           <span>Operating OS</span>
@@ -84,6 +88,7 @@
               </div>
               <span class="user-badge" data-user-badge>Signed in</span>
             </div>
+            <section class="daily-priority" data-daily-priority aria-live="polite"></section>
             <div class="personal-metrics">
               <article>
                 <span>Needs Action</span>
@@ -134,6 +139,16 @@
                 <div class="stack-list" data-my-work-watch-list></div>
               </article>
             </div>
+            <section class="client-health-overview" aria-labelledby="client-health-title">
+              <div class="section-header compact">
+                <div>
+                  <p class="eyebrow">Client Pulse</p>
+                  <h2 id="client-health-title">Relationships at a glance</h2>
+                </div>
+                <a class="text-action" href="#clients">View all clients</a>
+              </div>
+              <div class="client-health-strip" data-client-health-strip></div>
+            </section>
           </section>
 
           <section class="overview-grid" id="overview" aria-label="Operating overview" data-admin-only data-portal-view="overview">
@@ -254,11 +269,31 @@
             </div>
           </section>
 
-          <section class="action-panel" id="actions" aria-labelledby="actions-title" data-portal-view="actions">
+          <section class="work-intro" id="work" aria-labelledby="work-title" data-portal-view="work">
+            <div>
+              <p class="eyebrow">Work Center</p>
+              <h2 id="work-title">Decide, move, deliver.</h2>
+            </div>
+            <p>Review approvals first, then move team tasks and opportunities forward.</p>
+          </section>
+
+          <section class="approval-panel" aria-labelledby="approval-title" data-portal-view="work">
+            <div class="section-header compact">
+              <div>
+                <p class="eyebrow">Approval Inbox</p>
+                <h2 id="approval-title">Ready for a decision</h2>
+              </div>
+              <span class="approval-count" data-approval-count>0 pending</span>
+            </div>
+            <div class="approval-list" data-approval-list></div>
+          </section>
+
+          <div class="work-grid" data-portal-view="work">
+          <section class="action-panel" id="actions" aria-labelledby="actions-title">
               <div class="section-header compact">
                 <div>
-                  <p class="eyebrow">Actions</p>
-                  <h2 id="actions-title">Team action queue</h2>
+                  <p class="eyebrow">Tasks</p>
+                  <h2 id="actions-title">Team queue</h2>
                   <p class="section-note">Select any task to update status, owner, due date, next step, or blocker state.</p>
                 </div>
                 <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
@@ -266,7 +301,7 @@
               <div class="action-list" data-action-list></div>
           </section>
 
-          <section class="portal-section" id="opportunities" aria-labelledby="opportunities-title" data-portal-view="opportunities">
+          <section class="portal-section" id="opportunities" aria-labelledby="opportunities-title">
             <div class="section-header">
               <div>
                 <p class="eyebrow">Opportunities</p>
@@ -279,6 +314,7 @@
             </div>
             <div class="pipeline-grid" data-pipeline-grid></div>
           </section>
+          </div>
 
           <section class="portal-section" id="calendar" aria-labelledby="calendar-title" data-portal-view="calendar">
             <div class="section-header">
@@ -653,6 +689,6 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260913-roadmaps-recurring"></script>
+    <script src="portal.js?v=20260913-command-center"></script>
   </body>
 </html>
