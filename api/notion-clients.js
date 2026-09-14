@@ -129,6 +129,7 @@ const blockerValue = (property) => checkboxValue(property) || Boolean(plainText(
 const emailValue = (property) => property?.email || "";
 const phoneValue = (property) => property?.phone_number || "";
 const relationIds = (property) => property?.relation?.map((item) => item.id) || [];
+const recurringRules = ["", "Weekly", "Every 2 Weeks", "Monthly", "Quarterly"];
 
 const richText = (value) => ({
   rich_text: value ? [{ text: { content: String(value).slice(0, 2000) } }] : [],
@@ -293,6 +294,8 @@ const mapPageToAction = (page) => {
       selectName(propertyByAliases(properties, ["Approver", "Approval Owner"])) ||
       plainText(propertyByAliases(properties, ["Approver", "Approval Owner"])),
     dependency: plainText(propertyByAliases(properties, ["Depends On", "Dependency", "Blocked By"])),
+    recurrence: selectName(propertyByAliases(properties, ["Recurrence", "Repeat", "Frequency"])),
+    recurringSource: plainText(propertyByAliases(properties, ["Recurring Source", "Recurring Parent"])),
     notes: plainText(propertyByAliases(properties, ["Notes", "Details"])),
   };
 };
@@ -362,6 +365,7 @@ const normalizeActionInput = (body) => ({
   blocker: Boolean(body.blocker),
   approvalOwner: String(body.approvalOwner || "").trim(),
   dependency: String(body.dependency || "").trim(),
+  recurrence: String(body.recurrence || "").trim(),
   notes: String(body.notes || "").trim(),
 });
 
@@ -444,6 +448,20 @@ const validateAction = (action) => {
     throw error;
   }
 
+  if (!recurringRules.includes(action.recurrence)) {
+    const error = new Error("Repeat must be Weekly, Every 2 Weeks, Monthly, Quarterly, or blank.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
+  if (action.recurrence && !action.dueDate) {
+    const error = new Error("A due date is required for a repeating task.");
+    error.statusCode = 400;
+    error.code = "validation_error";
+    throw error;
+  }
+
   validateDate(action.dueDate, "Due date");
 };
 
@@ -509,6 +527,7 @@ const getSlackFields = (resource, input) => {
       `Client: ${compact(input.clientName)}`,
       `Approver: ${compact(input.approvalOwner)}`,
       `Depends on: ${compact(input.dependency)}`,
+      `Repeats: ${compact(input.recurrence)}`,
       `Next: ${compact(input.notes)}`,
     ];
   }
@@ -544,7 +563,7 @@ const notifySlack = async ({ resource, operation, input, saved }) => {
   const headline = `${isBlocker ? ":rotating_light: BLOCKER " : ""}${label} ${operation === "created" ? "created" : "updated"}: ${compact(getResourceTitle(resource, saved))}`;
   const fields = getSlackFields(resource, input)
     .filter((line) => !line.endsWith(": Not set"))
-    .slice(0, 8);
+    .slice(0, 9);
   const notionLine = saved.url ? `\nNotion: ${saved.url}` : "";
   const text = [`${headline}`, ...fields.map((line) => `- ${line}`)].join("\n") + notionLine;
 
@@ -679,6 +698,8 @@ const actionProperties = (action, schema) => {
   assignProperty(properties, schema, ["Blocker", "Blocked", "Is Blocker"], "checkbox", checkbox, action.blocker);
   assignOptionalProperty(properties, schema, ["Approver", "Approval Owner"], "select", select, action.approvalOwner);
   assignOptionalProperty(properties, schema, ["Depends On", "Dependency", "Blocked By"], "rich_text", richText, action.dependency);
+  assignOptionalProperty(properties, schema, ["Recurrence", "Repeat", "Frequency"], "select", select, action.recurrence);
+  assignOptionalProperty(properties, schema, ["Recurring Source", "Recurring Parent"], "rich_text", richText, action.recurringSource);
   assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, action.notes);
 
   assignClientRelation(properties, schema, action.clientId);
@@ -792,6 +813,58 @@ const createAction = async (action) => {
   return mapPageToAction(data);
 };
 
+const isCompletedStatus = (value) => ["complete", "completed", "done", "closed"].includes(String(value || "").toLowerCase());
+
+const advanceRecurringDate = (value, recurrence) => {
+  const next = new Date(`${value}T12:00:00Z`);
+
+  if (recurrence === "Weekly" || recurrence === "Every 2 Weeks") {
+    next.setUTCDate(next.getUTCDate() + (recurrence === "Weekly" ? 7 : 14));
+  } else {
+    const originalDay = next.getUTCDate();
+    const months = recurrence === "Quarterly" ? 3 : 1;
+    next.setUTCDate(1);
+    next.setUTCMonth(next.getUTCMonth() + months);
+    const lastDay = new Date(Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)).getUTCDate();
+    next.setUTCDate(Math.min(originalDay, lastDay));
+  }
+
+  return next.toISOString().slice(0, 10);
+};
+
+const createNextRecurringAction = async (action, schema) => {
+  if (!action.recurrence || !action.dueDate) {
+    return null;
+  }
+
+  const pages = await queryDataSource(dataSources.actions);
+  const existingSuccessor = pages.map(mapPageToAction).find((item) => item.recurringSource === action.id);
+  if (existingSuccessor) {
+    return { action: existingSuccessor, created: false };
+  }
+
+  const nextAction = {
+    ...action,
+    id: "",
+    url: "",
+    clientId: action.clientIds?.[0] || "",
+    status: "Open",
+    dueDate: advanceRecurringDate(action.dueDate, action.recurrence),
+    blocker: false,
+    dependency: "",
+    recurringSource: action.id,
+  };
+  const data = await notionRequest("/pages", {
+    method: "POST",
+    body: JSON.stringify({
+      parent: { type: "data_source_id", data_source_id: dataSources.actions },
+      properties: actionProperties(nextAction, schema),
+    }),
+  });
+
+  return { action: mapPageToAction(data), created: true };
+};
+
 const updateAction = async (action) => {
   if (!action.id) {
     const error = new Error("Action id is required.");
@@ -801,7 +874,12 @@ const updateAction = async (action) => {
   }
 
   validateAction(action);
-  const schema = await getSourceSchema(dataSources.actions);
+  const [schema, existingData] = await Promise.all([
+    getSourceSchema(dataSources.actions),
+    notionRequest(`/pages/${action.id}`),
+  ]);
+  const existingAction = mapPageToAction(existingData);
+  action.recurringSource = existingAction.recurringSource;
   const data = await notionRequest(`/pages/${action.id}`, {
     method: "PATCH",
     body: JSON.stringify({
@@ -809,7 +887,16 @@ const updateAction = async (action) => {
     }),
   });
 
-  return mapPageToAction(data);
+  const savedAction = mapPageToAction(data);
+  const recurringResult = !isCompletedStatus(existingAction.status) && isCompletedStatus(savedAction.status)
+    ? await createNextRecurringAction(savedAction, schema)
+    : null;
+
+  return {
+    action: savedAction,
+    recurringAction: recurringResult?.action || null,
+    recurringCreated: Boolean(recurringResult?.created),
+  };
 };
 
 const createOpportunity = async (opportunity) => {
@@ -905,7 +992,10 @@ module.exports = async (request, response) => {
       if (resource === "action") {
         const action = normalizeActionInput(body);
         await enforceTeamWriteScope(resource, action, identity, request.method);
-        const savedAction = request.method === "POST" ? await createAction(action) : await updateAction(action);
+        const actionResult = request.method === "POST"
+          ? { action: await createAction(action), recurringAction: null, recurringCreated: false }
+          : await updateAction(action);
+        const savedAction = actionResult.action;
         await auditWrite({ resource, operation, input: action, saved: savedAction, identity });
         await notifySlack({
           resource,
@@ -913,7 +1003,22 @@ module.exports = async (request, response) => {
           input: action,
           saved: savedAction,
         });
-        json(response, 200, { action: savedAction });
+        if (actionResult.recurringCreated && actionResult.recurringAction) {
+          await auditWrite({
+            resource,
+            operation: "created",
+            input: actionResult.recurringAction,
+            saved: actionResult.recurringAction,
+            identity,
+          });
+          await notifySlack({
+            resource,
+            operation: "created",
+            input: actionResult.recurringAction,
+            saved: actionResult.recurringAction,
+          });
+        }
+        json(response, 200, { action: savedAction, recurringAction: actionResult.recurringAction });
         return;
       }
 

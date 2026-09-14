@@ -457,6 +457,7 @@ const actionCard = (action) => `
       <span>${escapeHtml(action.owner || "Unassigned")}</span>
       <span>${escapeHtml(action.priority || "Normal")}</span>
       ${action.approvalOwner ? `<span>Approver: ${escapeHtml(action.approvalOwner)}</span>` : ""}
+      ${action.recurrence ? `<span>Repeats: ${escapeHtml(action.recurrence)}</span>` : ""}
       ${action.blocker ? "<span>Blocker</span>" : ""}
     </div>
     <button class="text-action" type="button">Edit Task</button>
@@ -610,7 +611,7 @@ const getRoadmapMilestones = (clientId) => {
       status: item.stage || "New",
       owner: item.owner,
       blocker: item.blocker,
-      complete: ["Won", "Closed", "Complete"].includes(item.stage),
+      complete: isComplete(item),
     })),
     ...getRelated(state.events, clientId).map((item) => ({
       id: item.id,
@@ -621,7 +622,7 @@ const getRoadmapMilestones = (clientId) => {
       status: item.status || "Planned",
       owner: item.owner,
       blocker: item.status === "Delayed",
-      complete: ["Complete", "Completed"].includes(item.status),
+      complete: isComplete(item),
     })),
   ];
 
@@ -651,6 +652,19 @@ const renderRoadmapMilestone = (item) => `
   </button>
 `;
 
+const getRoadmapSnapshot = (milestones, currentPhase) => {
+  const open = milestones.filter((item) => !item.complete);
+  const overdue = open.filter((item) => getDaysUntil(item.date) < 0).length;
+  const next = open.find((item) => item.date && getDaysUntil(item.date) >= 0);
+
+  return {
+    phase: roadmapPhases[currentPhase]?.name || roadmapPhases[0].name,
+    open: open.length,
+    overdue,
+    nextDate: next?.date || "",
+  };
+};
+
 const renderDetail = () => {
   const client = getClient(state.selectedClientId);
 
@@ -666,9 +680,10 @@ const renderDetail = () => {
   }
 
   const progress = getProgressEstimate(client);
-  const currentPhase = Math.min(roadmapPhases.length - 1, Math.floor(progress / 25));
+  const currentPhase = Math.min(roadmapPhases.length - 1, Math.floor(Math.min(progress, 99) / 25));
   const milestones = getRoadmapMilestones(client.id);
   const health = getClientHealth(client);
+  const roadmapSnapshot = getRoadmapSnapshot(milestones, currentPhase);
 
   els.detail.innerHTML = `
     <div class="client-detail-head">
@@ -701,8 +716,8 @@ const renderDetail = () => {
         ${roadmapPhases
           .map(
             (phase, index) => `
-              <div class="roadmap-phase ${index < currentPhase ? "is-complete" : ""} ${index === currentPhase ? "is-current" : ""}">
-                <span class="roadmap-phase-marker">${index < currentPhase ? "&#10003;" : index + 1}</span>
+              <div class="roadmap-phase ${progress === 100 || index < currentPhase ? "is-complete" : ""} ${progress < 100 && index === currentPhase ? "is-current" : ""}">
+                <span class="roadmap-phase-marker">${progress === 100 || index < currentPhase ? "&#10003;" : index + 1}</span>
                 <strong>${phase.name}</strong>
                 <small>${phase.detail}</small>
               </div>
@@ -715,6 +730,13 @@ const renderDetail = () => {
         <span>Current focus</span>
         <strong>${escapeHtml(client.nextAction || "Add the next move")}</strong>
         <small>${progress}% complete / ${escapeHtml(client.owner || "Unassigned")}</small>
+      </div>
+
+      <div class="roadmap-snapshot" aria-label="Roadmap summary">
+        <div><span>Phase</span><strong>${escapeHtml(roadmapSnapshot.phase)}</strong></div>
+        <div><span>Open items</span><strong>${roadmapSnapshot.open}</strong></div>
+        <div><span>Next date</span><strong>${formatDate(roadmapSnapshot.nextDate)}</strong></div>
+        <div data-tone="${roadmapSnapshot.overdue ? "danger" : "calm"}"><span>Overdue</span><strong>${roadmapSnapshot.overdue}</strong></div>
       </div>
 
       <div class="roadmap-milestones">
@@ -1107,6 +1129,7 @@ const openActionForm = (action = null, clientId = "") => {
   els.actionForm.elements.dueDate.value = action?.dueDate || todayISO;
   els.actionForm.elements.clientId.value = action?.clientIds?.[0] || clientId;
   setSelectValue(els.actionForm.elements.approvalOwner, action?.approvalOwner || "");
+  setSelectValue(els.actionForm.elements.recurrence, action?.recurrence || "");
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
   els.actionForm.elements.dependency.value = action?.dependency || "";
   els.actionForm.elements.notes.value = action?.notes || "";
@@ -1224,6 +1247,7 @@ const handleActionSubmit = async (event) => {
     clientId: client?.id || "",
     clientName: client?.name || "",
     approvalOwner: String(formData.get("approvalOwner") || "").trim(),
+    recurrence: String(formData.get("recurrence") || "").trim(),
     blocker: formData.get("blocker") === "on",
     dependency: String(formData.get("dependency") || "").trim(),
     notes: String(formData.get("notes") || "").trim(),

@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260913-workflow-intelligence" />
+    <link rel="stylesheet" href="portal.css?v=20260913-roadmaps-recurring" />
   </head>
   <body>
     <div class="portal-shell">
@@ -436,7 +436,7 @@
               <option>In Progress</option>
               <option>Waiting</option>
               <option>Needs Approval</option>
-              <option>Complete</option>
+              <option>Done</option>
             </select>
           </label>
           <label>
@@ -475,6 +475,16 @@
               <option>Joe</option>
               <option>Erik</option>
               <option>Client</option>
+            </select>
+          </label>
+          <label>
+            <span>Repeat</span>
+            <select name="recurrence">
+              <option value="">Does not repeat</option>
+              <option>Weekly</option>
+              <option>Every 2 Weeks</option>
+              <option>Monthly</option>
+              <option>Quarterly</option>
             </select>
           </label>
           <label class="toggle-label">
@@ -643,6 +653,6 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260913-workflow-intelligence"></script>
+    <script src="portal.js?v=20260913-roadmaps-recurring"></script>
   </body>
 </html>

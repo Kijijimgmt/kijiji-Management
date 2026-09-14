@@ -88,6 +88,8 @@ The shared **Actions** data source includes these workflow properties:
 
 - `Approver`: Select with `Maxwell`, `Joe`, `Erik`, and `Client`.
 - `Depends On`: Text for the task, decision, asset, or response that must happen first.
+- `Recurrence`: Select with `Weekly`, `Every 2 Weeks`, `Monthly`, and `Quarterly`.
+- `Recurring Source`: Text used internally to prevent duplicate recurring tasks.
 - Add `Needs Approval` as an option in the existing `Status` property.
 
 If this portal is connected to a replacement Actions data source later, recreate these properties so approver and dependency values continue to persist.
@@ -190,6 +192,10 @@ Each client profile includes an operational roadmap with four phases: **Align**,
 - **Add Milestone** creates a dated record in Events & Releases with the client relationship already selected.
 
 Maxwell can edit client-level progress and next move. Joe and Erik can view roadmaps for the clients returned by their secure team access and update their assigned linked work.
+
+## Recurring Work
+
+Choose a repeat schedule when creating or editing a task. When that task is marked **Done** or **Complete**, the portal creates the next occurrence in Notion with the same title, owner, client, priority, approver, notes, and repeat schedule. Weekly, every-two-weeks, monthly, and quarterly schedules are supported. A repeating task requires a due date, and the portal checks its recurring source before creating a successor so repeated edits do not create duplicates.
 
 ## Organization Guidance
 
