@@ -45,6 +45,9 @@ const els = {
   clientHealthStrip: $("[data-client-health-strip]"),
   approvalList: $("[data-approval-list]"),
   approvalCount: $("[data-approval-count]"),
+  workOpenCount: $("[data-work-open-count]"),
+  workBlockedCount: $("[data-work-blocked-count]"),
+  workDealCount: $("[data-work-deal-count]"),
   myWorkTitle: $("[data-my-work-title]"),
   myWorkSubtitle: $("[data-my-work-subtitle]"),
   myWorkTasksMetric: $("[data-my-work-tasks]"),
@@ -385,7 +388,8 @@ const getFilteredClients = () => {
       .join(" ")
       .toLowerCase();
 
-    return (!query || searchable.includes(query)) && (status === "all" || client.status === status);
+    const matchesStatus = status === "all" ? client.status !== "Archived" : client.status === status;
+    return (!query || searchable.includes(query)) && matchesStatus;
   });
 };
 
@@ -585,6 +589,16 @@ const renderApprovals = () => {
       `,
     )
     .join("");
+};
+
+const renderWorkSummary = () => {
+  const openActions = getOpenActions();
+  const openOpportunities = getOpenOpportunities();
+  if (els.workOpenCount) els.workOpenCount.textContent = openActions.length;
+  if (els.workBlockedCount) {
+    els.workBlockedCount.textContent = [...openActions, ...openOpportunities].filter((item) => item.blocker).length;
+  }
+  if (els.workDealCount) els.workDealCount.textContent = openOpportunities.length;
 };
 
 const renderEmptyList = (target, title, text) => {
@@ -1233,6 +1247,7 @@ const renderPortal = () => {
   renderMetrics();
   renderMyWork();
   renderClientHealthStrip();
+  renderWorkSummary();
   renderApprovals();
   renderFocusLists();
   renderRows();

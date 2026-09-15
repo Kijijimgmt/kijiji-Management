@@ -233,7 +233,7 @@
                   <label>
                     <span>Status</span>
                     <select data-status-filter>
-                      <option value="all">All status</option>
+                      <option value="all">Current clients</option>
                       <option>Prospect</option>
                       <option>Active</option>
                       <option>Onboarding</option>
@@ -259,9 +259,14 @@
           <section class="work-intro" id="work" aria-labelledby="work-title" data-portal-view="work">
             <div>
               <p class="eyebrow">Work Center</p>
-              <h2 id="work-title">Decide, move, deliver.</h2>
+              <h2 id="work-title">Team work, clearly organized.</h2>
+              <p class="work-intro-copy">Review what needs a decision, then move active tasks and opportunities forward.</p>
             </div>
-            <p>Review approvals first, then move team tasks and opportunities forward.</p>
+            <div class="work-summary" aria-label="Work summary">
+              <div><strong data-work-open-count>0</strong><span>Open tasks</span></div>
+              <div><strong data-work-blocked-count>0</strong><span>Blocked</span></div>
+              <div><strong data-work-deal-count>0</strong><span>Active deals</span></div>
+            </div>
           </section>
 
           <section class="approval-panel" aria-labelledby="approval-title" data-portal-view="work">
