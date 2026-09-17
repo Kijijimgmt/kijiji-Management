@@ -4459,3 +4459,279 @@ textarea {
     align-items: center;
   }
 }
+
+/* Partner notifications */
+.notification-center { position: relative; }
+
+.notification-center > summary { list-style: none; }
+.notification-center > summary::-webkit-details-marker { display: none; }
+
+.notification-trigger {
+  position: relative;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: #11100e;
+  color: var(--champagne);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.notification-trigger:hover,
+.notification-trigger:focus-visible {
+  border-color: rgba(226, 154, 88, 0.6);
+  outline: none;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 19px;
+  min-height: 19px;
+  border: 2px solid #090807;
+  border-radius: 999px;
+  padding: 1px 5px;
+  background: var(--orange-hot);
+  color: #120d08;
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.notification-popover {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(420px, calc(100vw - 28px));
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #11100e;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.58);
+}
+
+.notification-popover > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  background: #171512;
+}
+
+.notification-popover h2 { margin-top: 3px; font-size: 1rem; }
+.notification-popover .text-action { opacity: 1; white-space: nowrap; }
+
+.notification-list {
+  max-height: min(520px, calc(100vh - 150px));
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 11px;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+}
+
+.notification-item:last-child { border-bottom: 0; }
+.notification-item:hover,
+.notification-item:focus-visible { background: #1a1815; outline: none; }
+.notification-item.is-unread { background: rgba(226, 154, 88, 0.055); }
+
+.notification-dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.notification-item.is-unread .notification-dot { background: var(--orange-hot); }
+
+.notification-copy { display: grid; gap: 4px; min-width: 0; }
+.notification-copy strong { color: var(--white); font-size: 0.78rem; }
+.notification-copy > span { color: var(--champagne); font-size: 0.74rem; }
+.notification-copy small { color: var(--muted); font-size: 0.66rem; line-height: 1.4; }
+
+@media (max-width: 720px) {
+  .topbar-actions { grid-template-columns: minmax(0, 1fr) auto auto auto; }
+  .notification-trigger { width: 38px; height: 38px; }
+  .notification-popover { position: fixed; top: 66px; right: 14px; left: 14px; width: auto; }
+}
+
+/* Dashboard guidance and accessibility */
+[hidden] { display: none !important; }
+
+.skip-link {
+  position: fixed;
+  z-index: 200;
+  top: 10px;
+  left: 10px;
+  transform: translateY(-160%);
+  border-radius: 6px;
+  padding: 10px 14px;
+  background: var(--orange-hot);
+  color: #100b07;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+.form-feedback {
+  margin: 4px 0 0;
+  border-left: 3px solid #e97966;
+  padding: 10px 12px;
+  color: #ffb4a8;
+}
+
+.form-feedback:focus { outline: 2px solid var(--orange-hot); outline-offset: 3px; }
+
+.nav-more > div button {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 12px;
+  background: transparent;
+  color: #a39b93;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+.nav-more > div button:hover,
+.nav-more > div button:focus-visible {
+  background: rgba(201, 116, 42, 0.1);
+  color: var(--white);
+  outline: 2px solid var(--orange-hot);
+  outline-offset: 2px;
+}
+
+.nav-more summary.is-active {
+  border-color: rgba(255, 178, 94, 0.18);
+  background: rgba(201, 116, 42, 0.1);
+  color: var(--white);
+}
+
+button.client-card {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.tour-overlay {
+  position: fixed;
+  z-index: 120;
+  inset: 0;
+}
+
+.tour-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 3, 2, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.tour-card {
+  position: fixed;
+  z-index: 122;
+  right: 24px;
+  bottom: 24px;
+  width: min(440px, calc(100vw - 32px));
+  border: 1px solid rgba(226, 154, 88, 0.46);
+  border-radius: 12px;
+  padding: 22px;
+  background: #171512;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.7);
+}
+
+.tour-progress,
+.tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tour-progress {
+  margin-bottom: 22px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.tour-card h2 {
+  margin: 7px 0 10px;
+  color: var(--white);
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+.tour-card > p:last-of-type {
+  margin: 0 0 22px;
+  color: var(--champagne);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.tour-actions { justify-content: flex-end; }
+.tour-actions .button { min-width: 92px; }
+
+.tour-highlight {
+  position: relative;
+  z-index: 121 !important;
+  border-radius: 8px;
+  outline: 3px solid var(--orange-hot) !important;
+  outline-offset: 6px;
+  box-shadow: 0 0 0 9px rgba(226, 154, 88, 0.16), 0 14px 42px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.tour-open { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-highlight { scroll-behavior: auto; }
+}
+
+@media (max-width: 720px) {
+  .portal-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+  .portal-nav > a,
+  .nav-more summary { padding-inline: 3px; font-size: 0.62rem; }
+
+  .portal-topbar > div:first-child {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tour-card {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+    padding: 18px;
+  }
+
+  .tour-card h2 { font-size: 1.18rem; }
+}

@@ -15,6 +15,9 @@ NOTION_EVENTS_DATA_SOURCE_ID=4bf7373c-c744-4fe3-854e-ff0470954497
 NOTION_DOCUMENTS_DATA_SOURCE_ID=8ba38a00-a408-44c9-befe-293359292f75
 SUPABASE_URL=https://your-active-project-ref.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+SUPABASE_SERVICE_ROLE_KEY=your_server_only_service_role_key
+RESEND_API_KEY=your_resend_api_key
+PORTAL_NOTIFICATION_FROM=Kijiji Team Portal <notifications@notify.kijijimgmt.com>
 ALLOW_PORTAL_CODE_FALLBACK=false
 PORTAL_ACCESS_CODE=optional-private-team-code-only-if-fallback-is-enabled
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/your/kijiji/ops-webhook
@@ -34,6 +37,19 @@ Share the **Kijiji Document Library** database with the same Notion integration 
 The data source IDs are optional while the current Notion operating system stays the same, because the API has the current IDs as fallbacks. Set them anyway so future migrations are easier.
 
 `SLACK_WEBHOOK_URL` is optional, but should be added in **Vercel Production** when the team wants internal alerts in Slack. Keep it server-side only. Do not add the webhook URL to browser JavaScript, HTML, or any public client-side config.
+
+## Partner Dashboard and Email Notifications
+
+The portal sends a private dashboard notification and an individual email to the other approved partners whenever Maxwell, Joe, or Erik creates or updates a client, task, opportunity, or event. The person making the update is excluded from the recipient list. Alerts identify the editor, record, new status/stage, owner, blocker state, and a link back to the relevant dashboard section.
+
+To enable partner notifications:
+
+1. Run the `portal_notifications` section of `supabase-schema.sql` in the Supabase SQL editor.
+2. Add `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, and `PORTAL_NOTIFICATION_FROM` to Vercel Production.
+3. Confirm the sender domain in `PORTAL_NOTIFICATION_FROM` is verified in Resend.
+4. Redeploy Production and make a test update while signed in as one partner.
+
+`SUPABASE_SERVICE_ROLE_KEY` and `RESEND_API_KEY` are server-only secrets. Never place them in `portal.js`, HTML, or any variable whose name begins with `NEXT_PUBLIC_`, `VITE_`, or `PUBLIC_`. Notification failures are logged but never prevent a successful Notion save.
 
 `SLACK_SIGNING_SECRET` is required for Slack slash commands. The allowlist values are optional but recommended:
 

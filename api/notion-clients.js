@@ -1,4 +1,5 @@
 const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
+const { notifyPartners } = require("./lib/partner-notifications");
 const {
   assertCanManageClient,
   assertCanManageOwnedRecord,
@@ -1019,6 +1020,7 @@ module.exports = async (request, response) => {
           saved: savedAction,
           identity,
         });
+        await notifyPartners({ resource, operation, input: action, saved: savedAction, identity });
         if (actionResult.recurringCreated && actionResult.recurringAction) {
           await auditWrite({
             resource,
@@ -1051,6 +1053,7 @@ module.exports = async (request, response) => {
           saved: savedClient,
           identity,
         });
+        await notifyPartners({ resource, operation, input: client, saved: savedClient, identity });
         json(response, 200, { client: savedClient });
         return;
       }
@@ -1067,6 +1070,7 @@ module.exports = async (request, response) => {
           saved: savedOpportunity,
           identity,
         });
+        await notifyPartners({ resource, operation, input: opportunity, saved: savedOpportunity, identity });
         json(response, 200, { opportunity: savedOpportunity });
         return;
       }
@@ -1083,6 +1087,7 @@ module.exports = async (request, response) => {
           saved: savedEvent,
           identity,
         });
+        await notifyPartners({ resource, operation, input: event, saved: savedEvent, identity });
         json(response, 200, { event: savedEvent });
         return;
       }

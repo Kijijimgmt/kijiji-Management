@@ -13,9 +13,10 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260914-documents" />
+    <link rel="stylesheet" href="portal.css?v=20260917-audit" />
   </head>
   <body>
+    <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
     <div class="portal-shell">
       <aside class="portal-sidebar" aria-label="Team portal navigation">
         <a class="portal-brand" href="client-portal.html" aria-label="Kijiji team portal home">
@@ -28,10 +29,11 @@
           <a href="#calendar">Calendar</a>
           <a href="#documents">Documents</a>
           <details class="nav-more">
-            <summary>More</summary>
+            <summary role="button" aria-haspopup="true" aria-expanded="false">More</summary>
             <div>
               <a href="#overview" data-admin-only>Team Pulse</a>
               <a href="#guidance">Playbook</a>
+              <button type="button" data-start-tour data-requires-access>Take Dashboard Tour</button>
             </div>
           </details>
         </nav>
@@ -41,16 +43,31 @@
         </div>
       </aside>
 
-      <main class="portal-main">
+      <main class="portal-main" id="portal-main" tabindex="-1">
         <header class="portal-topbar">
           <div>
             <p class="eyebrow">Kijiji Team Portal</p>
-            <h1 data-workspace-title>My work</h1>
+            <h1 data-workspace-title tabindex="-1">My work</h1>
           </div>
           <div class="topbar-actions">
             <span class="source-badge" data-source-badge data-state="loading">Syncing Notion</span>
+            <details class="notification-center" data-notification-center>
+              <summary class="notification-trigger" role="button" aria-haspopup="true" aria-expanded="false" aria-label="Open notifications" title="Notifications">
+                <span aria-hidden="true">&#128276;</span>
+                <span class="notification-badge" data-notification-count hidden>0</span>
+              </summary>
+              <div class="notification-popover">
+                <header>
+                  <div><p class="eyebrow">Team activity</p><h2>Notifications</h2></div>
+                  <button class="text-action" type="button" data-mark-notifications-read>Mark all read</button>
+                </header>
+                <div class="notification-list" data-notification-list>
+                  <div class="mini-empty"><strong>All caught up</strong><p>Partner updates will appear here.</p></div>
+                </div>
+              </div>
+            </details>
             <details class="create-menu">
-              <summary class="button button-primary">+ New</summary>
+              <summary class="button button-primary" role="button" aria-haspopup="true" aria-expanded="false">+ New</summary>
               <div class="create-menu-popover" aria-label="Create new record">
                 <button type="button" data-open-action-form data-requires-access>Task</button>
                 <button type="button" data-open-opportunity-form data-requires-access>Deal</button>
@@ -245,7 +262,7 @@
               </div>
             </div>
 
-            <div class="client-roster" data-client-rows role="listbox" aria-label="Client roster"></div>
+            <div class="client-roster" data-client-rows aria-label="Client roster"></div>
           </section>
 
           <section class="detail-panel" aria-label="Client detail" data-portal-view="clients" data-client-detail>
@@ -390,12 +407,12 @@
       </main>
     </div>
 
-    <dialog class="client-dialog" data-client-dialog>
+    <dialog class="client-dialog" data-client-dialog aria-labelledby="client-dialog-title">
       <form method="dialog" class="client-form" data-client-form>
         <div class="dialog-head">
           <div>
             <p class="eyebrow">Client record</p>
-            <h2 data-form-title>Add client</h2>
+            <h2 id="client-dialog-title" data-form-title>Add client</h2>
           </div>
           <button class="icon-button" type="button" data-close-client-form aria-label="Close form">x</button>
         </div>
@@ -482,12 +499,12 @@
       </form>
     </dialog>
 
-    <dialog class="client-dialog" data-action-dialog>
+    <dialog class="client-dialog" data-action-dialog aria-labelledby="action-dialog-title">
       <form method="dialog" class="client-form" data-action-form>
         <div class="dialog-head">
           <div>
             <p class="eyebrow">Team action</p>
-            <h2 data-action-form-title>Add task</h2>
+            <h2 id="action-dialog-title" data-action-form-title>Add task</h2>
           </div>
           <button class="icon-button" type="button" data-close-action-form aria-label="Close form">x</button>
         </div>
@@ -578,12 +595,12 @@
       </form>
     </dialog>
 
-    <dialog class="client-dialog" data-opportunity-dialog>
+    <dialog class="client-dialog" data-opportunity-dialog aria-labelledby="opportunity-dialog-title">
       <form method="dialog" class="client-form" data-opportunity-form>
         <div class="dialog-head">
           <div>
             <p class="eyebrow">Opportunity</p>
-            <h2 data-opportunity-form-title>Add opportunity</h2>
+            <h2 id="opportunity-dialog-title" data-opportunity-form-title>Add opportunity</h2>
           </div>
           <button class="icon-button" type="button" data-close-opportunity-form aria-label="Close form">x</button>
         </div>
@@ -652,12 +669,12 @@
       </form>
     </dialog>
 
-    <dialog class="client-dialog" data-event-dialog>
+    <dialog class="client-dialog" data-event-dialog aria-labelledby="event-dialog-title">
       <form method="dialog" class="client-form" data-event-form>
         <div class="dialog-head">
           <div>
             <p class="eyebrow">Event / release</p>
-            <h2 data-event-form-title>Add event</h2>
+            <h2 id="event-dialog-title" data-event-form-title>Add event</h2>
           </div>
           <button class="icon-button" type="button" data-close-event-form aria-label="Close form">x</button>
         </div>
@@ -722,9 +739,9 @@
       </form>
     </dialog>
 
-    <dialog class="client-dialog" data-document-dialog>
+    <dialog class="client-dialog" data-document-dialog aria-labelledby="document-dialog-title">
       <form method="dialog" class="client-form" data-document-form>
-        <div class="dialog-head"><div><p class="eyebrow">Team file</p><h2>Upload document</h2></div><button class="icon-button" type="button" data-close-document-form aria-label="Close form">x</button></div>
+        <div class="dialog-head"><div><p class="eyebrow">Team file</p><h2 id="document-dialog-title">Upload document</h2></div><button class="icon-button" type="button" data-close-document-form aria-label="Close form">x</button></div>
         <div class="form-grid">
           <label class="wide"><span>Document name</span><input name="name" required placeholder="Example: Artist management agreement" /></label>
           <label><span>Category</span><select name="category"><option>Contract</option><option>Template</option><option>Brief</option><option>Brand Asset</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
@@ -737,7 +754,21 @@
       </form>
     </dialog>
 
+    <div class="tour-overlay" data-tour-overlay hidden>
+      <div class="tour-scrim" aria-hidden="true"></div>
+      <section class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description">
+        <div class="tour-progress"><span data-tour-progress>1 of 8</span><button type="button" class="text-action" data-tour-skip>Skip tour</button></div>
+        <p class="eyebrow" data-tour-eyebrow>Welcome</p>
+        <h2 id="tour-title" data-tour-title>Learn the dashboard in two minutes</h2>
+        <p id="tour-description" data-tour-description>This quick tour shows where work lives and how the team hands it off.</p>
+        <div class="tour-actions">
+          <button class="button button-secondary" type="button" data-tour-back>Back</button>
+          <button class="button button-primary" type="button" data-tour-next>Start tour</button>
+        </div>
+      </section>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260914-documents"></script>
+    <script src="portal.js?v=20260917-audit"></script>
   </body>
 </html>

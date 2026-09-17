@@ -50,3 +50,27 @@ grant all on public.strategy_session_leads to service_role;
 -- Ask PostgREST to refresh its schema cache so the table is available through
 -- the Supabase REST API immediately after running this script.
 notify pgrst, 'reload schema';
+
+-- Private partner notifications. Only server-side service-role requests can
+-- read or write this table; the browser always goes through the authenticated API.
+create table if not exists public.portal_notifications (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  recipient_email text not null,
+  actor_email text not null,
+  actor_name text not null,
+  resource_type text not null,
+  resource_id text,
+  resource_title text not null,
+  operation text not null,
+  summary text,
+  portal_url text
+);
+
+create index if not exists portal_notifications_recipient_created_idx
+on public.portal_notifications (recipient_email, created_at desc);
+
+alter table public.portal_notifications enable row level security;
+grant all on public.portal_notifications to service_role;
+notify pgrst, 'reload schema';

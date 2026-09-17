@@ -1,5 +1,6 @@
 const apiEndpoint = "/api/notion-clients";
 const documentsEndpoint = "/api/notion-documents";
+const notificationsEndpoint = "/api/notifications";
 const authLinkEndpoint = "/api/auth-link";
 const authConfigEndpoint = "/api/auth-config";
 const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
@@ -38,6 +39,10 @@ const els = {
   documentForm: $("[data-document-form]"),
   documentClientSelect: $("[data-document-client-select]"),
   documentMessage: $("[data-document-message]"),
+  notificationCenter: $("[data-notification-center]"),
+  notificationList: $("[data-notification-list]"),
+  notificationCount: $("[data-notification-count]"),
+  markNotificationsRead: $("[data-mark-notifications-read]"),
   myWorkActionList: $("[data-my-work-action-list]"),
   myWorkDealList: $("[data-my-work-deal-list]"),
   myWorkWatchList: $("[data-my-work-watch-list]"),
@@ -88,6 +93,15 @@ const els = {
   workspaceTitle: $("[data-workspace-title]"),
   navLinks: $$(".portal-nav a[href^='#']"),
   portalViews: $$("[data-portal-view]"),
+  tourOverlay: $("[data-tour-overlay]"),
+  tourProgress: $("[data-tour-progress]"),
+  tourEyebrow: $("[data-tour-eyebrow]"),
+  tourTitle: $("[data-tour-title]"),
+  tourDescription: $("[data-tour-description]"),
+  tourBack: $("[data-tour-back]"),
+  tourNext: $("[data-tour-next]"),
+  tourSkip: $("[data-tour-skip]"),
+  tourTriggers: $$("[data-start-tour]"),
 };
 
 let state = {
@@ -96,6 +110,7 @@ let state = {
   opportunities: [],
   events: [],
   documents: [],
+  notifications: [],
   selectedClientId: "",
   isLoading: true,
   portalError: "",
@@ -105,6 +120,8 @@ let state = {
 
 let calendarView = "month";
 let calendarCursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+let tourIndex = 0;
+let tourReturnFocus = null;
 
 const escapeHtml = (value) =>
   String(value || "")
@@ -130,6 +147,16 @@ const formatDate = (value) => {
   }).format(date);
 };
 
+const formatNotificationTime = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h ago`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+};
+
 const getDaysUntil = (value) => {
   if (!value) {
     return Number.POSITIVE_INFINITY;
@@ -137,6 +164,7 @@ const getDaysUntil = (value) => {
 
   const dueDate = new Date(`${value}T00:00:00`);
   const start = new Date(`${todayISO}T00:00:00`);
+  if (Number.isNaN(dueDate.getTime())) return Number.POSITIVE_INFINITY;
   return Math.ceil((dueDate.getTime() - start.getTime()) / 86400000);
 };
 
@@ -294,7 +322,7 @@ const viewAliases = {
   opportunities: "work",
 };
 
-const setActiveView = () => {
+const setActiveView = ({ focusTitle = false } = {}) => {
   const requestedHash = window.location.hash.slice(1) || "my-work";
   const requestedView = viewAliases[requestedHash] || requestedHash;
   const isAdminView = requestedView === "overview";
@@ -308,10 +336,6 @@ const setActiveView = () => {
   els.navLinks.forEach((link) => {
     const isActive = link.getAttribute("href") === `#${activeView}`;
     link.classList.toggle("is-active", isActive);
-    const secondaryMenu = link.closest(".nav-more");
-    if (isActive && secondaryMenu) {
-      secondaryMenu.open = true;
-    }
     if (isActive) {
       link.setAttribute("aria-current", "page");
     } else {
@@ -319,9 +343,18 @@ const setActiveView = () => {
     }
   });
 
+  $$(".nav-more").forEach((menu) => {
+    const hasActiveLink = Boolean(menu.querySelector("a.is-active"));
+    menu.querySelector(":scope > summary")?.classList.toggle("is-active", hasActiveLink);
+    if (focusTitle) menu.open = false;
+  });
+
   if (els.workspaceTitle) {
     els.workspaceTitle.textContent = viewTitles[activeView];
+    if (focusTitle) els.workspaceTitle.focus({ preventScroll: true });
   }
+
+  document.title = `${viewTitles[activeView]} | Kijiji Team Portal`;
 
   if (activeView !== requestedHash) {
     window.history.replaceState(null, "", `#${activeView}`);
@@ -338,6 +371,21 @@ const getRequestHeaders = () => {
   }
 
   return headers;
+};
+
+const parseJsonResponse = async (response) => {
+  const body = await response.text();
+  if (!body) return {};
+  try {
+    return JSON.parse(body);
+  } catch {
+    return {
+      error: "invalid_response",
+      message: response.ok
+        ? "The dashboard service returned an unexpected response. Refresh and try again."
+        : "The dashboard service is temporarily unavailable. Try again from the live secure portal.",
+    };
+  }
 };
 
 const getPortalErrorMessage = (response, data) => {
@@ -574,7 +622,7 @@ const renderApprovals = () => {
   els.approvalList.innerHTML = approvals
     .map(
       (action) => `
-        <article class="approval-item editable-card" data-action-id="${escapeHtml(action.id)}" tabindex="0">
+        <article class="approval-item editable-card" data-action-id="${escapeHtml(action.id)}" role="button" tabindex="0" aria-label="Review ${escapeHtml(action.title)}">
           <div>
             <span>${escapeHtml(getClientName(action))}</span>
             <strong>${escapeHtml(action.title)}</strong>
@@ -583,7 +631,7 @@ const renderApprovals = () => {
           <div class="approval-meta">
             <span>${escapeHtml(action.approvalOwner || "Team approval")}</span>
             <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
-            <button class="button button-secondary" type="button">Review</button>
+            <span class="button button-secondary" aria-hidden="true">Review</span>
           </div>
         </article>
       `,
@@ -611,7 +659,7 @@ const renderEmptyList = (target, title, text) => {
 };
 
 const actionCard = (action) => `
-  <article class="action-item editable-card" data-action-id="${escapeHtml(action.id)}" tabindex="0">
+  <article class="action-item editable-card" data-action-id="${escapeHtml(action.id)}" role="button" tabindex="0" aria-label="Edit task: ${escapeHtml(action.title)}">
     <header>
       <strong>${escapeHtml(action.title)}</strong>
       <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
@@ -626,12 +674,12 @@ const actionCard = (action) => `
       ${action.recurrence ? `<span>Repeats: ${escapeHtml(action.recurrence)}</span>` : ""}
       ${action.blocker ? "<span>Blocker</span>" : ""}
     </div>
-    <button class="text-action" type="button">Edit Task</button>
+    <span class="text-action" aria-hidden="true">Edit Task</span>
   </article>
 `;
 
 const opportunityCard = (opportunity) => `
-  <article class="action-item editable-card" data-opportunity-id="${escapeHtml(opportunity.id)}" tabindex="0">
+  <article class="action-item editable-card" data-opportunity-id="${escapeHtml(opportunity.id)}" role="button" tabindex="0" aria-label="Edit opportunity: ${escapeHtml(opportunity.name)}">
     <header>
       <strong>${escapeHtml(opportunity.name)}</strong>
       <span class="date-chip" data-tone="${getDaysUntil(opportunity.dueDate) < 0 ? "danger" : ""}">${formatDate(opportunity.dueDate)}</span>
@@ -643,16 +691,16 @@ const opportunityCard = (opportunity) => `
       ${opportunity.priority ? `<span>${escapeHtml(opportunity.priority)}</span>` : ""}
       ${opportunity.blocker ? "<span>Blocker</span>" : ""}
     </div>
-    <button class="text-action" type="button">Edit Opportunity</button>
+    <span class="text-action" aria-hidden="true">Edit Opportunity</span>
   </article>
 `;
 
 const eventCard = (event) => `
-  <article class="calendar-item editable-card" data-event-id="${escapeHtml(event.id)}" tabindex="0">
+  <article class="calendar-item editable-card" data-event-id="${escapeHtml(event.id)}" role="button" tabindex="0" aria-label="Edit event: ${escapeHtml(event.name)}">
     <span>${formatDate(event.date)} <small>${escapeHtml(formatCountdown(event.date))}</small></span>
     <strong>${escapeHtml(event.name)}</strong>
     <em>${escapeHtml(getClientName(event))}${event.type ? ` / ${escapeHtml(event.type)}` : ""}</em>
-    <button class="text-action" type="button">Edit Event</button>
+    <span class="text-action" aria-hidden="true">Edit Event</span>
   </article>
 `;
 
@@ -721,12 +769,12 @@ const renderRows = () => {
       const selected = client.id === state.selectedClientId;
 
       return `
-        <article
+        <button
+          type="button"
           class="client-card${selected ? " is-selected" : ""}"
           data-client-id="${escapeHtml(client.id)}"
-          role="option"
-          aria-selected="${selected}"
-          tabindex="0"
+          aria-pressed="${selected}"
+          aria-label="Open ${escapeHtml(client.name || "Untitled client")} client roadmap"
         >
           <div class="client-card-head">
             <div class="client-name">
@@ -753,7 +801,7 @@ const renderRows = () => {
             </div>
           </div>
           <span class="client-card-open" aria-hidden="true">Open roadmap <b>→</b></span>
-        </article>
+        </button>
       `;
     })
     .join("");
@@ -1111,7 +1159,7 @@ const renderDocuments = () => {
     return `<article class="document-card">
       <div class="document-icon" aria-hidden="true">${escapeHtml((document.fileName || document.name).split(".").pop().slice(0, 4).toUpperCase())}</div>
       <div class="document-copy"><span>${escapeHtml(document.category)}${client ? ` / ${escapeHtml(client.name)}` : ""}</span><h3>${escapeHtml(document.name)}</h3><p>${escapeHtml(document.description || "Shared Kijiji resource")}</p><small>${escapeHtml(document.owner)} · Updated ${formatDate(String(document.updatedAt || "").slice(0, 10))}</small></div>
-      <div class="document-card-actions">${document.fileUrl ? `<a class="button button-primary" href="${escapeHtml(document.fileUrl)}" target="_blank" rel="noreferrer">Download</a>` : ""}<a class="text-action" href="${escapeHtml(document.notionUrl)}" target="_blank" rel="noreferrer">Open in Notion</a></div>
+      <div class="document-card-actions">${document.fileUrl ? `<a class="button button-primary" href="${escapeHtml(document.fileUrl)}" target="_blank" rel="noreferrer">Download</a>` : ""}${document.notionUrl ? `<a class="text-action" href="${escapeHtml(document.notionUrl)}" target="_blank" rel="noreferrer">Open in Notion</a>` : ""}</div>
     </article>`;
   }).join("");
 };
@@ -1142,15 +1190,11 @@ const setLoadingState = () => {
     els.dailyPriority.innerHTML = `<div><p class="eyebrow">Your next move</p><strong>Finding your focus...</strong><span>Checking priorities, dates, and blockers.</span></div>`;
   }
   els.rows.innerHTML = `
-    <tr>
-      <td colspan="7">
-        <div class="empty-state">
-          <p class="eyebrow">Loading Notion</p>
-          <h2>Syncing the operating system</h2>
-          <p>Pulling clients, tasks, opportunities, and key dates from the shared Kijiji workspace.</p>
-        </div>
-      </td>
-    </tr>
+    <div class="empty-state client-roster-empty">
+      <p class="eyebrow">Loading Notion</p>
+      <h2>Syncing the operating system</h2>
+      <p>Pulling clients, tasks, opportunities, and key dates from the shared Kijiji workspace.</p>
+    </div>
   `;
   els.detail.innerHTML = `
     <div class="empty-state">
@@ -1194,15 +1238,11 @@ const setErrorState = () => {
     els.dailyPriority.innerHTML = `<div><p class="eyebrow">Your next move</p><strong>Shared data unavailable</strong><span>Reconnect Notion to restore your daily focus.</span></div>`;
   }
   els.rows.innerHTML = `
-    <tr>
-      <td colspan="7">
-        <div class="empty-state">
-          <p class="eyebrow">Shared data unavailable</p>
-          <h2>Connect Notion to use the team portal</h2>
-          <p>${escapeHtml(state.portalError || "The portal could not reach the shared Kijiji operating system.")}</p>
-        </div>
-      </td>
-    </tr>
+    <div class="empty-state client-roster-empty">
+      <p class="eyebrow">Shared data unavailable</p>
+      <h2>Connect Notion to use the team portal</h2>
+      <p>${escapeHtml(state.portalError || "The portal could not reach the shared Kijiji operating system.")}</p>
+    </div>
   `;
   els.detail.innerHTML = `
     <div class="empty-state">
@@ -1260,6 +1300,182 @@ const renderPortal = () => {
   renderClientOptions(els.documentClientSelect);
 };
 
+const renderNotifications = () => {
+  if (!els.notificationList || !els.notificationCount) return;
+  const unread = state.notifications.filter((item) => !item.read_at).length;
+  els.notificationCount.textContent = unread > 99 ? "99+" : String(unread);
+  els.notificationCount.hidden = unread === 0;
+
+  if (!state.notifications.length) {
+    renderEmptyList(els.notificationList, "All caught up", "Partner updates will appear here.");
+    return;
+  }
+
+  els.notificationList.innerHTML = state.notifications.map((item) => `
+    <a class="notification-item${item.read_at ? "" : " is-unread"}" href="${escapeHtml(item.portal_url || "#my-work")}" data-notification-id="${escapeHtml(item.id)}">
+      <span class="notification-dot" aria-hidden="true"></span>
+      <span class="notification-copy">
+        <strong>${escapeHtml(item.actor_name)} ${escapeHtml(item.operation)} ${escapeHtml(item.resource_type.toLowerCase())}</strong>
+        <span>${escapeHtml(item.resource_title)}</span>
+        <small>${escapeHtml(item.summary || "Open the dashboard for details.")} · ${escapeHtml(formatNotificationTime(item.created_at))}</small>
+      </span>
+    </a>
+  `).join("");
+};
+
+const tourSteps = [
+  {
+    eyebrow: "Welcome",
+    title: "Learn the dashboard in two minutes",
+    description: "This quick tour shows where work lives and how the team hands it off.",
+    selector: ".portal-topbar",
+    hash: "my-work",
+  },
+  {
+    eyebrow: "Today",
+    title: "Start with your operating lane",
+    description: "Today collects your assigned tasks, deals, upcoming dates, and blockers so you know what needs attention first.",
+    selector: "[data-my-work-title]",
+    hash: "my-work",
+  },
+  {
+    eyebrow: "Clients",
+    title: "Keep the client truth in one place",
+    description: "Use Clients to review health, ownership, progress, next moves, and the full roadmap for each relationship.",
+    selector: "#clients-title",
+    hash: "clients",
+  },
+  {
+    eyebrow: "Work",
+    title: "Move tasks and opportunities forward",
+    description: "Work combines approvals, the team task queue, and deals by stage. Open any card to update it or hand it to another partner.",
+    selector: "#work-title",
+    hash: "work",
+  },
+  {
+    eyebrow: "Calendar",
+    title: "Plan launches and important dates",
+    description: "Switch between month and week views, see countdowns, and keep releases, meetings, and milestones visible.",
+    selector: "#calendar-title",
+    hash: "calendar",
+  },
+  {
+    eyebrow: "Documents",
+    title: "Find shared files quickly",
+    description: "Contracts, templates, briefs, and brand assets live in the Document Library and can be filtered by category.",
+    selector: "#documents-title",
+    hash: "documents",
+  },
+  {
+    eyebrow: "Create and hand off",
+    title: "Add work from anywhere",
+    description: "Use + New to create a task, deal, event, or client. Assigning an owner makes the handoff clear to the team.",
+    selector: ".create-menu",
+    hash: "my-work",
+  },
+  {
+    eyebrow: "Stay aligned",
+    title: "Partner updates come to you",
+    description: "The notification bell shows changes made by other partners. You can restart this tour anytime from More → Take Dashboard Tour.",
+    selector: ".notification-trigger",
+    hash: "my-work",
+  },
+];
+
+const getTourStorageKey = () => `kijiji-dashboard-tour-v1:${state.teamUser?.email || "team"}`;
+
+const setTourComplete = () => {
+  try {
+    window.localStorage.setItem(getTourStorageKey(), "complete");
+  } catch {
+    // The tour still works when storage is unavailable; it simply cannot remember completion.
+  }
+};
+
+const clearTourHighlight = () => {
+  document.querySelector(".tour-highlight")?.classList.remove("tour-highlight");
+};
+
+const renderTourStep = () => {
+  const step = tourSteps[tourIndex];
+  if (!step || !els.tourOverlay) return;
+  clearTourHighlight();
+  window.location.hash = step.hash;
+  els.tourProgress.textContent = `${tourIndex + 1} of ${tourSteps.length}`;
+  els.tourEyebrow.textContent = step.eyebrow;
+  els.tourTitle.textContent = step.title;
+  els.tourDescription.textContent = step.description;
+  els.tourBack.hidden = tourIndex === 0;
+  els.tourNext.textContent = tourIndex === tourSteps.length - 1 ? "Finish" : tourIndex === 0 ? "Start tour" : "Next";
+
+  window.requestAnimationFrame(() => {
+    const target = document.querySelector(step.selector);
+    if (target && !target.closest("[hidden]")) {
+      target.classList.add("tour-highlight");
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+};
+
+const closeTour = ({ completed = true } = {}) => {
+  if (!els.tourOverlay) return;
+  if (completed) setTourComplete();
+  clearTourHighlight();
+  els.tourOverlay.hidden = true;
+  document.body.classList.remove("tour-open");
+  tourReturnFocus?.focus?.();
+};
+
+const startTour = (trigger = null) => {
+  if (!els.tourOverlay || els.dashboard.hidden) return;
+  tourReturnFocus = trigger || document.activeElement;
+  tourIndex = 0;
+  els.tourOverlay.hidden = false;
+  document.body.classList.add("tour-open");
+  renderTourStep();
+  els.tourNext.focus();
+};
+
+const maybeStartTour = () => {
+  if (!state.teamUser?.email || !els.tourOverlay) return;
+  if (!els.tourOverlay.hidden) return;
+  let completed = false;
+  try {
+    completed = window.localStorage.getItem(getTourStorageKey()) === "complete";
+  } catch {
+    completed = false;
+  }
+  if (!completed) window.setTimeout(() => startTour(), 450);
+};
+
+const loadNotifications = async () => {
+  if (!state.authSession?.access_token) return;
+  try {
+    const response = await fetch(notificationsEndpoint, { headers: getRequestHeaders(), cache: "no-store" });
+    const data = await parseJsonResponse(response);
+    state.notifications = response.ok && Array.isArray(data.notifications) ? data.notifications : [];
+  } catch {
+    state.notifications = [];
+  }
+  renderNotifications();
+};
+
+const markNotificationsRead = async (id = "") => {
+  try {
+    const response = await fetch(notificationsEndpoint, {
+      method: "PATCH",
+      headers: getRequestHeaders(),
+      body: JSON.stringify(id ? { id } : {}),
+    });
+    if (!response.ok) return;
+    const readAt = new Date().toISOString();
+    state.notifications = state.notifications.map((item) => (!id || item.id === id ? { ...item, read_at: readAt } : item));
+    renderNotifications();
+  } catch {
+    // Notification availability should never interrupt dashboard navigation.
+  }
+};
+
 const loadDashboard = async ({ fromAuth = false } = {}) => {
   state.isLoading = true;
   state.portalError = "";
@@ -1277,7 +1493,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     const response = await fetch(apiEndpoint, {
       headers: getRequestHeaders(),
     });
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
 
     if (!response.ok) {
       const error = new Error(getPortalErrorMessage(response, data));
@@ -1293,7 +1509,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     state.events = Array.isArray(data.events) ? data.events : [];
     try {
       const documentsResponse = await fetch(documentsEndpoint, { headers: getRequestHeaders() });
-      const documentsData = await documentsResponse.json();
+      const documentsData = await parseJsonResponse(documentsResponse);
       state.documents = documentsResponse.ok && Array.isArray(documentsData.documents) ? documentsData.documents : [];
     } catch {
       state.documents = [];
@@ -1304,6 +1520,8 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     setAccessMessage("");
     showDashboard();
     renderPortal();
+    await loadNotifications();
+    maybeStartTour();
     return true;
   } catch (error) {
     state.clients = [];
@@ -1348,6 +1566,26 @@ const openDialog = (dialog) => {
   } else {
     dialog.setAttribute("open", "");
   }
+  window.requestAnimationFrame(() => {
+    const primaryField = dialog.querySelector("input:not([type='hidden']):not(:disabled), select:not(:disabled), textarea:not(:disabled)");
+    (primaryField || dialog.querySelector("button:not(:disabled)"))?.focus();
+  });
+};
+
+const setFormError = (form, message = "") => {
+  if (!form) return;
+  let feedback = form.querySelector("[data-form-feedback]");
+  if (!feedback) {
+    feedback = document.createElement("p");
+    feedback.className = "access-message form-feedback";
+    feedback.dataset.formFeedback = "";
+    feedback.setAttribute("role", "alert");
+    feedback.tabIndex = -1;
+    form.querySelector(".dialog-actions")?.before(feedback);
+  }
+  feedback.textContent = message;
+  feedback.hidden = !message;
+  if (message) feedback.focus();
 };
 
 const closeDialog = (dialog) => {
@@ -1385,6 +1623,7 @@ const getFormOwnerValue = (form, formData) =>
 
 const openClientForm = (client = null) => {
   els.clientForm.reset();
+  setFormError(els.clientForm);
   els.clientFormTitle.textContent = client ? "Edit client" : "Add client";
   els.clientForm.elements.id.value = client?.id || "";
   els.clientForm.elements.name.value = client?.name || "";
@@ -1405,6 +1644,7 @@ const openClientForm = (client = null) => {
 
 const openActionForm = (action = null, clientId = "") => {
   els.actionForm.reset();
+  setFormError(els.actionForm);
   renderClientOptions(els.actionClientSelect);
   els.actionFormTitle.textContent = action ? "Edit task" : "Add task";
   els.actionForm.elements.id.value = action?.id || "";
@@ -1425,6 +1665,7 @@ const openActionForm = (action = null, clientId = "") => {
 
 const openOpportunityForm = (opportunity = null) => {
   els.opportunityForm.reset();
+  setFormError(els.opportunityForm);
   renderClientOptions(els.opportunityClientSelect);
   els.opportunityFormTitle.textContent = opportunity ? "Edit opportunity" : "Add opportunity";
   els.opportunityForm.elements.id.value = opportunity?.id || "";
@@ -1442,6 +1683,7 @@ const openOpportunityForm = (opportunity = null) => {
 
 const openEventForm = (eventItem = null, clientId = "", eventDate = todayISO) => {
   els.eventForm.reset();
+  setFormError(els.eventForm);
   renderClientOptions(els.eventClientSelect);
   els.eventFormTitle.textContent = eventItem ? "Edit event" : "Add event";
   els.eventForm.elements.id.value = eventItem?.id || "";
@@ -1469,7 +1711,7 @@ const saveResource = async (payload) => {
     headers: getRequestHeaders(),
     body: JSON.stringify(payload),
   });
-  const data = await response.json();
+  const data = await parseJsonResponse(response);
 
   if (response.status === 401) {
     logoutPortal();
@@ -1518,7 +1760,7 @@ const handleClientSubmit = async (event) => {
     closeDialog(els.clientDialog);
     await loadDashboard();
   } catch (error) {
-    alert(error.message);
+    setFormError(els.clientForm, error.message);
   } finally {
     submit.disabled = false;
     submit.textContent = "Save Client";
@@ -1555,7 +1797,7 @@ const handleActionSubmit = async (event) => {
     closeDialog(els.actionDialog);
     await loadDashboard();
   } catch (error) {
-    alert(error.message);
+    setFormError(els.actionForm, error.message);
   } finally {
     submit.disabled = false;
     submit.textContent = "Save Task";
@@ -1589,7 +1831,7 @@ const handleOpportunitySubmit = async (event) => {
     closeDialog(els.opportunityDialog);
     await loadDashboard();
   } catch (error) {
-    alert(error.message);
+    setFormError(els.opportunityForm, error.message);
   } finally {
     submit.disabled = false;
     submit.textContent = "Save Opportunity";
@@ -1622,7 +1864,7 @@ const handleEventSubmit = async (event) => {
     closeDialog(els.eventDialog);
     await loadDashboard();
   } catch (error) {
-    alert(error.message);
+    setFormError(els.eventForm, error.message);
   } finally {
     submit.disabled = false;
     submit.textContent = "Save Event";
@@ -1650,7 +1892,7 @@ const handleDocumentSubmit = async (event) => {
       reader.readAsDataURL(file);
     });
     const response = await fetch(documentsEndpoint, { method: "POST", headers: getRequestHeaders(), body: JSON.stringify({ name: String(formData.get("name") || "").trim(), category: formData.get("category"), clientId: formData.get("clientId"), description: String(formData.get("description") || "").trim(), filename: file.name, contentType: file.type, base64 }) });
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
     if (!response.ok) throw new Error(data.message || "Unable to upload the document.");
     closeDialog(els.documentDialog);
     await loadDashboard();
@@ -1697,7 +1939,7 @@ const handleAccessSubmit = async (event) => {
       }),
     });
 
-    data = await response.json();
+    data = await parseJsonResponse(response);
 
     if (!response.ok) {
       error = new Error(data.message || "Unable to send a sign-in link.");
@@ -1728,6 +1970,7 @@ async function logoutPortal() {
     opportunities: [],
     events: [],
     documents: [],
+    notifications: [],
     selectedClientId: "",
     isLoading: false,
     portalError: "",
@@ -2007,6 +2250,9 @@ $$("[data-open-document-form]").forEach((button) => button.addEventListener("cli
 $$(".create-menu [data-open-action-form], .create-menu [data-open-client-form], .create-menu [data-open-opportunity-form], .create-menu [data-open-event-form]").forEach((button) =>
   button.addEventListener("click", () => button.closest("details")?.removeAttribute("open")),
 );
+$$("details").forEach((details) => details.addEventListener("toggle", () => {
+  details.querySelector(":scope > summary")?.setAttribute("aria-expanded", String(details.open));
+}));
 $$("[data-close-action-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.actionDialog)));
 $$("[data-close-client-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.clientDialog)));
 $$("[data-close-opportunity-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.opportunityDialog)));
@@ -2024,7 +2270,50 @@ els.documentSearch.addEventListener("input", renderDocuments);
 els.documentCategory.addEventListener("change", renderDocuments);
 els.search.addEventListener("input", renderRows);
 els.statusFilter.addEventListener("change", renderRows);
-window.addEventListener("hashchange", setActiveView);
+els.tourTriggers.forEach((trigger) => trigger.addEventListener("click", () => {
+  trigger.closest("details")?.removeAttribute("open");
+  startTour(trigger);
+}));
+els.tourNext?.addEventListener("click", () => {
+  if (tourIndex >= tourSteps.length - 1) {
+    closeTour();
+    return;
+  }
+  tourIndex += 1;
+  renderTourStep();
+});
+els.tourBack?.addEventListener("click", () => {
+  tourIndex = Math.max(0, tourIndex - 1);
+  renderTourStep();
+});
+els.tourSkip?.addEventListener("click", () => closeTour());
+els.tourOverlay?.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeTour();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const focusable = [els.tourSkip, els.tourBack, els.tourNext].filter((item) => item && !item.hidden);
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+els.markNotificationsRead?.addEventListener("click", (event) => {
+  event.preventDefault();
+  markNotificationsRead();
+});
+els.notificationList?.addEventListener("click", (event) => {
+  const item = event.target.closest("[data-notification-id]");
+  if (item) markNotificationsRead(item.dataset.notificationId);
+});
+window.addEventListener("hashchange", () => setActiveView({ focusTitle: !document.body.classList.contains("tour-open") }));
 
 const initializeAuth = async () => {
   if (!supabaseClient) {
@@ -2077,7 +2366,7 @@ const bootstrapAuth = async () => {
 
   try {
     const response = await fetch(authConfigEndpoint, { cache: "no-store" });
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
 
     if (!response.ok) {
       throw new Error(data.message || "Supabase Auth is not configured in Vercel yet.");
