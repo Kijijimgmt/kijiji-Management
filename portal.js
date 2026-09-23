@@ -4,6 +4,8 @@ const notificationsEndpoint = "/api/notifications";
 const authLinkEndpoint = "/api/auth-link";
 const authConfigEndpoint = "/api/auth-config";
 const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
+const themeStorageKey = "kijiji-dashboard-theme";
+const systemTheme = window.matchMedia("(prefers-color-scheme: light)");
 let supabaseClient = null;
 const today = new Date();
 const todayISO = [
@@ -102,7 +104,33 @@ const els = {
   tourNext: $("[data-tour-next]"),
   tourSkip: $("[data-tour-skip]"),
   tourTriggers: $$("[data-start-tour]"),
+  themeButtons: $$('[data-theme-option]'),
 };
+
+const applyThemePreference = (preference, { save = false } = {}) => {
+  const safePreference = ["light", "dark", "system"].includes(preference) ? preference : "system";
+  const effectiveTheme = safePreference === "system" ? (systemTheme.matches ? "light" : "dark") : safePreference;
+
+  document.documentElement.dataset.theme = effectiveTheme;
+  document.documentElement.dataset.themePreference = safePreference;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", effectiveTheme === "light" ? "#f6f2eb" : "#060504");
+  els.themeButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.themeOption === safePreference));
+  });
+
+  if (save) {
+    try {
+      window.localStorage.setItem(themeStorageKey, safePreference);
+    } catch (error) {
+      // The visual preference still applies when browser storage is unavailable.
+    }
+  }
+};
+
+applyThemePreference(document.documentElement.dataset.themePreference || "system");
+systemTheme.addEventListener?.("change", () => {
+  if (document.documentElement.dataset.themePreference === "system") applyThemePreference("system");
+});
 
 let state = {
   clients: [],
@@ -203,6 +231,7 @@ const ownerKey = (value) => {
   if (text === "max" || text === "maxwell") return "maxwell";
   if (text === "joe") return "joe";
   if (text === "erik") return "erik";
+  if (text === "emad") return "emad";
   return text;
 };
 const ownerMatches = (value, owner) => ownerKey(value) === ownerKey(owner);
@@ -2273,6 +2302,9 @@ els.statusFilter.addEventListener("change", renderRows);
 els.tourTriggers.forEach((trigger) => trigger.addEventListener("click", () => {
   trigger.closest("details")?.removeAttribute("open");
   startTour(trigger);
+}));
+els.themeButtons.forEach((button) => button.addEventListener("click", () => {
+  applyThemePreference(button.dataset.themeOption, { save: true });
 }));
 els.tourNext?.addEventListener("click", () => {
   if (tourIndex >= tourSteps.length - 1) {

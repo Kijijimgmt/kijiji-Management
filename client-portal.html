@@ -13,7 +13,23 @@
       rel="stylesheet"
     />
     <link rel="icon" href="assets/kijiji-logo.png" />
-    <link rel="stylesheet" href="portal.css?v=20260917-audit" />
+    <script>
+      (() => {
+        const key = "kijiji-dashboard-theme";
+        let preference = "system";
+        try {
+          const saved = window.localStorage.getItem(key);
+          if (["dark", "light", "system"].includes(saved)) preference = saved;
+        } catch (error) {}
+        const theme = preference === "system"
+          ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+          : preference;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.themePreference = preference;
+        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
+      })();
+    </script>
+    <link rel="stylesheet" href="portal.css?v=20260917-theme" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -34,6 +50,14 @@
               <a href="#overview" data-admin-only>Team Pulse</a>
               <a href="#guidance">Playbook</a>
               <button type="button" data-start-tour data-requires-access>Take Dashboard Tour</button>
+              <div class="theme-picker" role="group" aria-label="Dashboard appearance">
+                <span>Appearance</span>
+                <div>
+                  <button type="button" data-theme-option="light" aria-pressed="false" title="Use light appearance">Light</button>
+                  <button type="button" data-theme-option="dark" aria-pressed="false" title="Use dark appearance">Dark</button>
+                  <button type="button" data-theme-option="system" aria-pressed="false" title="Match this device">Auto</button>
+                </div>
+              </div>
             </div>
           </details>
         </nav>
@@ -440,7 +464,7 @@
           </label>
           <label>
             <span>Assigned owner</span>
-            <input name="owner" placeholder="Maxwell, Joe, Erik" />
+            <input name="owner" placeholder="Maxwell, Joe, Erik, Emad" />
           </label>
           <label>
             <span>Focus level</span>
@@ -769,6 +793,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260917-audit"></script>
+    <script src="portal.js?v=20260917-theme"></script>
   </body>
 </html>

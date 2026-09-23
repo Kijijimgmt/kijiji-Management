@@ -21,6 +21,12 @@ const TEAM_MEMBERS = {
     owner: "Erik",
     role: "member",
   },
+  "emad@kijijimgmt.com": {
+    email: "emad@kijijimgmt.com",
+    fullName: "Emad",
+    owner: "Emad",
+    role: "member",
+  },
 };
 
 const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
@@ -30,6 +36,7 @@ const ownerKey = (value) => {
   if (text === "max" || text === "maxwell") return "maxwell";
   if (text === "joe") return "joe";
   if (text === "erik") return "erik";
+  if (text === "emad") return "emad";
   return text;
 };
 
@@ -176,7 +183,7 @@ const forbiddenScope = (message) => authError(403, "team_scope_forbidden", messa
 
 const assertCanManageClient = (identity) => {
   if (!identity.isAdmin) {
-    throw forbiddenScope("Client roster edits are limited to Max. Joe and Erik can manage their assigned tasks, deals, and events.");
+    throw forbiddenScope("Client roster edits are limited to Max. Team members can manage their assigned tasks, deals, and events.");
   }
 };
 

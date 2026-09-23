@@ -428,15 +428,15 @@ const validateAction = (action) => {
     throw error;
   }
 
-  if (!["Maxwell", "Max", "Joe", "Erik", "Unassigned", ""].includes(action.owner)) {
-    const error = new Error("Owner must be Maxwell, Joe, Erik, or Unassigned.");
+  if (!["Maxwell", "Max", "Joe", "Erik", "Emad", "Unassigned", ""].includes(action.owner)) {
+    const error = new Error("Owner must be Maxwell, Joe, Erik, Emad, or Unassigned.");
     error.statusCode = 400;
     error.code = "validation_error";
     throw error;
   }
 
-  if (!["Maxwell", "Joe", "Erik", "Client", ""].includes(action.approvalOwner)) {
-    const error = new Error("Approver must be Maxwell, Joe, Erik, Client, or blank.");
+  if (!["Maxwell", "Joe", "Erik", "Emad", "Client", ""].includes(action.approvalOwner)) {
+    const error = new Error("Approver must be Maxwell, Joe, Erik, Emad, Client, or blank.");
     error.statusCode = 400;
     error.code = "validation_error";
     throw error;
@@ -467,8 +467,8 @@ const validateAction = (action) => {
 };
 
 const validateOwner = (owner) => {
-  if (!["Maxwell", "Max", "Joe", "Erik", "Unassigned", ""].includes(owner)) {
-    const error = new Error("Owner must be Maxwell, Joe, Erik, or Unassigned.");
+  if (!["Maxwell", "Max", "Joe", "Erik", "Emad", "Unassigned", ""].includes(owner)) {
+    const error = new Error("Owner must be Maxwell, Joe, Erik, Emad, or Unassigned.");
     error.statusCode = 400;
     error.code = "validation_error";
     throw error;

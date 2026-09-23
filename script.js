@@ -18,10 +18,39 @@ const cinemaSteps = Array.from(document.querySelectorAll(".cinema-step"));
 const mapNodes = Array.from(document.querySelectorAll(".map-node"));
 const partnerPhotos = Array.from(document.querySelectorAll(".partner-photo"));
 const partnerArticles = Array.from(document.querySelectorAll(".partner-list article"));
+const rosterCards = Array.from(document.querySelectorAll("[data-roster-card]"));
+const rosterStatus = document.querySelector("[data-roster-status]");
 const systemRows = Array.from(document.querySelectorAll(".system-list div"));
 const scrollFilmCanvas = document.querySelector(".scroll-film-canvas");
 const scrollFilmContext = scrollFilmCanvas?.getContext("2d");
 const canScrubScrollFilm = Boolean(scrollFilmCanvas && scrollFilmContext && !reduceMotion);
+
+const selectRosterCard = (selectedCard, { focus = false } = {}) => {
+  if (!selectedCard) return;
+  rosterCards.forEach((card) => {
+    const isSelected = card === selectedCard;
+    card.classList.toggle("is-active", isSelected);
+    card.setAttribute("aria-pressed", String(isSelected));
+  });
+  const name = selectedCard.querySelector("strong")?.textContent?.trim() || "Client";
+  const discipline = selectedCard.querySelector("small")?.textContent?.trim() || "Kijiji roster";
+  if (rosterStatus) rosterStatus.textContent = `${name} · ${discipline}`;
+  if (focus) selectedCard.focus();
+};
+
+rosterCards.forEach((card, index) => {
+  card.addEventListener("click", () => selectRosterCard(card));
+  card.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    let nextIndex = index;
+    if (event.key === "ArrowLeft") nextIndex = (index - 1 + rosterCards.length) % rosterCards.length;
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % rosterCards.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = rosterCards.length - 1;
+    selectRosterCard(rosterCards[nextIndex], { focus: true });
+  });
+});
 // Lead submissions go through the server-side endpoint so Notion, Slack, Resend,
 // and any archive writes can stay protected behind Vercel environment variables.
 const supabaseConfig = {

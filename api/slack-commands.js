@@ -209,8 +209,8 @@ const validateDate = (value, label) => {
 };
 
 const validateOwner = (owner) => {
-  if (!["Maxwell", "Max", "Joe", "Erik", "Unassigned", ""].includes(owner)) {
-    const error = new Error("owner must be Maxwell, Joe, Erik, or Unassigned.");
+  if (!["Maxwell", "Max", "Joe", "Erik", "Emad", "Unassigned", ""].includes(owner)) {
+    const error = new Error("owner must be Maxwell, Joe, Erik, Emad, or Unassigned.");
     error.statusCode = 400;
     throw error;
   }

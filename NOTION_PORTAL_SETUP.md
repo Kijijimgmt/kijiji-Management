@@ -40,7 +40,7 @@ The data source IDs are optional while the current Notion operating system stays
 
 ## Partner Dashboard and Email Notifications
 
-The portal sends a private dashboard notification and an individual email to the other approved partners whenever Maxwell, Joe, or Erik creates or updates a client, task, opportunity, or event. The person making the update is excluded from the recipient list. Alerts identify the editor, record, new status/stage, owner, blocker state, and a link back to the relevant dashboard section.
+The portal sends a private dashboard notification and an individual email to the other approved partners whenever Maxwell, Joe, Erik, or Emad creates or updates a client, task, opportunity, or event. The person making the update is excluded from the recipient list. Alerts identify the editor, record, new status/stage, owner, blocker state, and a link back to the relevant dashboard section.
 
 To enable partner notifications:
 
@@ -96,8 +96,9 @@ Approved emails and roles are enforced server-side:
 - `max@kijijimgmt.com`: admin/full command center
 - `joe@kijijimgmt.com`: member, defaults to assigned My Work
 - `erik@kijijimgmt.com`: member, defaults to assigned My Work
+- `emad@kijijimgmt.com`: member, defaults to assigned My Work
 
-Joe and Erik receive only their assigned tasks, deals, events, and related clients from the API. Non-admin writes are limited to tasks, deals, and events already assigned to them, and new records are assigned to their verified owner automatically.
+Joe, Erik, and Emad receive only their assigned tasks, deals, events, and related clients from the API. Non-admin writes are limited to tasks, deals, and events already assigned to them, and new records are assigned to their verified owner automatically.
 
 ### Workflow intelligence fields
 
@@ -105,7 +106,7 @@ The portal calculates client health from existing due dates, blockers, task stat
 
 The shared **Actions** data source includes these workflow properties:
 
-- `Approver`: Select with `Maxwell`, `Joe`, `Erik`, and `Client`.
+- `Approver`: Select with `Maxwell`, `Joe`, `Erik`, `Emad`, and `Client`.
 - `Depends On`: Text for the task, decision, asset, or response that must happen first.
 - `Recurrence`: Select with `Weekly`, `Every 2 Weeks`, `Monthly`, and `Quarterly`.
 - `Recurring Source`: Text used internally to prevent duplicate recurring tasks.
@@ -213,7 +214,7 @@ Each client profile includes an operational roadmap with four phases: **Align**,
 - **Add Task** creates a task with the client relationship already selected.
 - **Add Milestone** creates a dated record in Events & Releases with the client relationship already selected.
 
-Maxwell can edit client-level progress and next move. Joe and Erik can view roadmaps for the clients returned by their secure team access and update their assigned linked work.
+Maxwell can edit client-level progress and next move. Joe, Erik, and Emad can view roadmaps for the clients returned by their secure team access and update their assigned linked work.
 
 ## Recurring Work
 

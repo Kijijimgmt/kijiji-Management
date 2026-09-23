@@ -3030,6 +3030,55 @@ textarea {
   gap: 2px;
 }
 
+.theme-picker {
+  display: grid;
+  gap: 7px;
+  margin-top: 7px;
+  border-top: 1px solid var(--line);
+  padding: 12px;
+}
+
+.theme-picker > span {
+  color: #837c75;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.theme-picker > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid rgba(237, 227, 208, 0.16);
+  border-radius: 6px;
+}
+
+.theme-picker button {
+  min-height: 34px;
+  border: 0;
+  border-right: 1px solid rgba(237, 227, 208, 0.12);
+  background: transparent;
+  color: #a39b93;
+  font-size: 0.64rem;
+  font-weight: 750;
+}
+
+.theme-picker button:last-child {
+  border-right: 0;
+}
+
+.theme-picker button:hover,
+.theme-picker button:focus-visible {
+  background: rgba(255, 248, 237, 0.08);
+  color: #fff8ed;
+}
+
+.theme-picker button[aria-pressed="true"] {
+  background: rgba(201, 116, 42, 0.24);
+  color: #ffbd78;
+}
+
 .my-work-hero {
   min-height: 0;
   padding: 18px 0 22px;
@@ -4734,4 +4783,147 @@ body.tour-open { overflow: hidden; }
   }
 
   .tour-card h2 { font-size: 1.18rem; }
+}
+
+/* User-selectable light appearance */
+html[data-theme="light"] {
+  color-scheme: light;
+  --black: #f6f2eb;
+  --espresso: #fffdf9;
+  --espresso-2: #eee6dc;
+  --panel: rgba(61, 48, 36, 0.055);
+  --panel-strong: rgba(61, 48, 36, 0.095);
+  --line: rgba(51, 42, 34, 0.14);
+  --line-strong: rgba(51, 42, 34, 0.25);
+  --champagne: #312b26;
+  --white: #171411;
+  --muted: #6e655d;
+  --orange: #b65f1e;
+  --orange-hot: #9a4b12;
+  --danger: #b7352a;
+  --success: #27753a;
+  --focus-ring: 0 0 0 3px rgba(182, 95, 30, 0.2);
+  --shadow-panel: 0 24px 70px rgba(53, 41, 29, 0.16);
+}
+
+html[data-theme="light"] body {
+  background: radial-gradient(circle at 82% 8%, rgba(201, 116, 42, 0.13), transparent 30rem), linear-gradient(180deg, #fbf8f3 0%, #f6f2eb 52%, #efe9e1 100%);
+}
+
+html[data-theme="light"] body::before {
+  opacity: 0.5;
+  background-image: linear-gradient(rgba(65, 52, 40, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(65, 52, 40, 0.035) 1px, transparent 1px);
+}
+
+/* The brand rail intentionally stays dark in both appearances. */
+html[data-theme="light"] .portal-sidebar {
+  --line: rgba(237, 227, 208, 0.14);
+  --line-strong: rgba(237, 227, 208, 0.24);
+  --champagne: #ede3d0;
+  --white: #fff8ed;
+  --muted: #b9ad9f;
+  --orange: #c9742a;
+  --orange-hot: #ffb25e;
+  --focus-ring: 0 0 0 3px rgba(255, 178, 94, 0.22);
+  border-color: rgba(37, 30, 24, 0.32);
+  background: #080706;
+}
+
+html[data-theme="light"] .portal-topbar { background: rgba(250, 247, 242, 0.92); }
+
+html[data-theme="light"] input,
+html[data-theme="light"] select,
+html[data-theme="light"] textarea { background: #fffdf9; }
+
+html[data-theme="light"] .client-dialog,
+html[data-theme="light"] .dialog-head,
+html[data-theme="light"] .notification-popover,
+html[data-theme="light"] .tour-card {
+  background: #fffdf9;
+  box-shadow: 0 30px 80px rgba(46, 35, 25, 0.24);
+}
+
+html[data-theme="light"] .notification-popover > header,
+html[data-theme="light"] .notification-trigger,
+html[data-theme="light"] .work-summary,
+html[data-theme="light"] .approval-panel,
+html[data-theme="light"] .work-grid > section,
+html[data-theme="light"] .personal-metrics,
+html[data-theme="light"] .personal-metrics article,
+html[data-theme="light"] .overview-grid,
+html[data-theme="light"] .my-work-board .command-panel,
+html[data-theme="light"] .client-table-wrap,
+html[data-theme="light"] .pipeline-grid,
+html[data-theme="light"] .calendar-list,
+html[data-theme="light"] #clients.portal-section,
+html[data-theme="light"] .detail-panel[data-portal-view="clients"],
+html[data-theme="light"] .document-library,
+html[data-theme="light"] .calendar-workspace { background: #fffdf9; }
+
+html[data-theme="light"] .approval-panel > .section-header,
+html[data-theme="light"] .work-grid > section > .section-header,
+html[data-theme="light"] .calendar-weekdays,
+html[data-theme="light"] .notification-popover > header { background: #f4eee7; }
+
+html[data-theme="light"] .client-card,
+html[data-theme="light"] .document-card,
+html[data-theme="light"] .calendar-day { background: #faf7f2; }
+
+html[data-theme="light"] .client-card:hover,
+html[data-theme="light"] .action-item:hover,
+html[data-theme="light"] .action-item:focus-visible,
+html[data-theme="light"] .calendar-item:hover,
+html[data-theme="light"] .calendar-item:focus-visible,
+html[data-theme="light"] .client-health-item:hover,
+html[data-theme="light"] .client-health-item:focus-visible,
+html[data-theme="light"] .approval-item:hover,
+html[data-theme="light"] .approval-item:focus-visible,
+html[data-theme="light"] .operating-flow a:hover,
+html[data-theme="light"] .operating-flow a:focus-visible,
+html[data-theme="light"] .roadmap-milestone:hover,
+html[data-theme="light"] .roadmap-milestone:focus-visible,
+html[data-theme="light"] .notification-item:hover,
+html[data-theme="light"] .notification-item:focus-visible,
+html[data-theme="light"] .work-grid .compact-card:hover,
+html[data-theme="light"] .work-grid .compact-card:focus-visible,
+html[data-theme="light"] .calendar-view-switch button:hover,
+html[data-theme="light"] .calendar-view-switch button:focus-visible { background: #f1e9df; }
+
+html[data-theme="light"] .client-card.is-selected,
+html[data-theme="light"] .client-table tbody tr:hover,
+html[data-theme="light"] .client-table tbody tr.is-selected,
+html[data-theme="light"] .roadmap-current,
+html[data-theme="light"] .calendar-view-switch button.is-active,
+html[data-theme="light"] .calendar-event-pill,
+html[data-theme="light"] .document-icon { background: #f5e5d5; }
+
+html[data-theme="light"] .calendar-event-pill:hover,
+html[data-theme="light"] .calendar-event-pill:focus-visible { background: #eed6c0; }
+
+html[data-theme="light"] .calendar-day.is-outside { background: #eee8e0; }
+html[data-theme="light"] .calendar-day.is-today { background: #f8ecdf; }
+
+html[data-theme="light"] .calendar-day-number:hover,
+html[data-theme="light"] .calendar-day-number:focus-visible,
+html[data-theme="light"] .is-today .calendar-day-number { color: #fffaf3; }
+
+html[data-theme="light"] .source-badge[data-state="ready"] { color: #216d34; }
+html[data-theme="light"] .source-badge[data-state="error"],
+html[data-theme="light"] .form-feedback { color: #a92f25; }
+html[data-theme="light"] .source-badge[data-state="signed-out"] { color: #5f574f; }
+html[data-theme="light"] .notification-badge { border-color: #faf7f2; }
+html[data-theme="light"] .create-menu-popover { background: #fffdf9; }
+html[data-theme="light"] .button-secondary:hover,
+html[data-theme="light"] .button-secondary:focus-visible { background: #eee6dc; }
+html[data-theme="light"] .daily-priority { background: #f8eee4; }
+html[data-theme="light"] .client-roadmap { background: transparent; }
+html[data-theme="light"] .roadmap-track::before { background: #d9d0c6; }
+html[data-theme="light"] .roadmap-phase-marker { border-color: #b9aea3; background: #fffdf9; }
+html[data-theme="light"] .roadmap-phase strong { color: #5d554e; }
+html[data-theme="light"] .roadmap-phase small,
+html[data-theme="light"] .calendar-weekdays span,
+html[data-theme="light"] .work-grid .action-item > p { color: #746b63; }
+
+@media (max-width: 720px) {
+  html[data-theme="light"] .nav-more > div { background: #171512; }
 }

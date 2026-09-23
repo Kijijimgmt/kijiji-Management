@@ -1079,6 +1079,179 @@ section[id] {
   transform: translateX(8px);
 }
 
+/* Public client roster */
+.roster {
+  padding: 126px 0 138px;
+}
+
+.roster-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.42fr);
+  align-items: end;
+  gap: clamp(32px, 7vw, 88px);
+}
+
+.roster-head h2 {
+  max-width: 850px;
+  font-size: clamp(2.8rem, 6vw, 6.4rem);
+}
+
+.roster-head > p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.roster-stage {
+  display: flex;
+  min-height: 510px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 52px;
+  padding: 34px 5vw 20px;
+  isolation: isolate;
+}
+
+.roster-card {
+  position: relative;
+  display: grid;
+  width: clamp(230px, 24vw, 330px);
+  min-width: 0;
+  aspect-ratio: 0.72;
+  align-content: space-between;
+  overflow: hidden;
+  margin-left: clamp(-92px, -6vw, -62px);
+  border: 1px solid rgba(237, 227, 208, 0.2);
+  border-radius: 12px;
+  padding: 22px;
+  background: #17100c;
+  background:
+    radial-gradient(circle at 74% 18%, color-mix(in srgb, var(--card-accent) 54%, transparent), transparent 36%),
+    linear-gradient(145deg, color-mix(in srgb, var(--card-accent) 34%, #17100c), #090706 70%);
+  color: var(--white);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.48);
+  text-align: left;
+  transform-origin: 50% 92%;
+  transition: transform 360ms cubic-bezier(0.2, 0.82, 0.24, 1), border-color 240ms ease, filter 240ms ease;
+}
+
+.roster-card:first-child { margin-left: 0; }
+.roster-card:nth-child(1) { transform: translateY(34px) rotate(-10.5deg); }
+.roster-card:nth-child(2) { transform: translateY(12px) rotate(-3.5deg); }
+.roster-card:nth-child(3) { transform: translateY(12px) rotate(3.5deg); }
+.roster-card:nth-child(4) { transform: translateY(34px) rotate(10.5deg); }
+
+.roster-card::before,
+.roster-card::after {
+  position: absolute;
+  pointer-events: none;
+  content: "";
+}
+
+.roster-card::before {
+  z-index: 2;
+  inset: 12px;
+  border: 1px solid rgba(255, 248, 237, 0.1);
+  border-radius: 7px;
+}
+
+.roster-card::after {
+  z-index: 0;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(6, 5, 4, 0.12) 22%, rgba(6, 5, 4, 0.32) 52%, rgba(6, 5, 4, 0.94) 100%),
+    linear-gradient(125deg, color-mix(in srgb, var(--card-accent) 24%, transparent), transparent 58%);
+}
+
+.roster-card-image {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.82) contrast(1.08) brightness(0.82);
+  transition: filter 280ms ease, transform 420ms ease;
+}
+
+.roster-card:nth-child(1) .roster-card-image { object-position: 58% 42%; }
+.roster-card:nth-child(2) .roster-card-image { object-position: 50% 38%; }
+.roster-card:nth-child(3) .roster-card-image { object-position: 50% 43%; }
+.roster-card:nth-child(4) .roster-card-image { object-position: 54% 38%; }
+
+.roster-card:hover,
+.roster-card:focus-visible,
+.roster-card.is-active {
+  z-index: 10;
+  border-color: rgba(255, 178, 94, 0.64);
+  filter: saturate(1.12) brightness(1.06);
+  transform: translateY(-26px) rotate(0deg) scale(1.045);
+  outline: none;
+}
+
+.roster-card:hover .roster-card-image,
+.roster-card:focus-visible .roster-card-image,
+.roster-card.is-active .roster-card-image {
+  filter: saturate(0.98) contrast(1.04) brightness(0.94);
+  transform: scale(1.035);
+}
+
+.roster-card:focus-visible { box-shadow: var(--shadow), 0 0 0 4px rgba(255, 178, 94, 0.24); }
+
+.roster-card-number,
+.roster-monogram,
+.roster-card-copy { position: relative; z-index: 1; }
+
+.roster-card-number {
+  color: rgba(255, 248, 237, 0.62);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.roster-monogram {
+  visibility: hidden;
+  align-self: center;
+  color: rgba(255, 248, 237, 0.14);
+  font-family: var(--serif);
+  font-size: clamp(5.5rem, 10vw, 9rem);
+  font-weight: 800;
+  letter-spacing: -0.09em;
+  line-height: 0.72;
+  text-align: center;
+}
+
+.roster-card-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.roster-card-copy small {
+  color: var(--orange-hot);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.roster-card-copy strong {
+  max-width: 9ch;
+  font-family: var(--serif);
+  font-size: clamp(1.6rem, 3vw, 2.7rem);
+  line-height: 0.92;
+}
+
+.roster-instruction {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 .partner-list span {
   color: var(--orange-hot);
   font-size: 0.84rem;
@@ -1582,7 +1755,8 @@ body.cursor-active .cursor-ring {
   }
 
   .hero-lower,
-  .section-head {
+  .section-head,
+  .roster-head {
     grid-template-columns: 1fr;
   }
 
@@ -1709,6 +1883,7 @@ body.cursor-active .cursor-ring {
 
   .cinema,
   .partner,
+  .roster,
   .system,
   .outcome,
   .invitation {
@@ -1736,6 +1911,34 @@ body.cursor-active .cursor-ring {
   .partner-photo-large figcaption strong {
     font-size: clamp(1.62rem, 8vw, 2.65rem);
   }
+
+  .roster-stage {
+    justify-content: flex-start;
+    min-height: 0;
+    margin: 34px -16px 0;
+    padding: 18px 16px 34px;
+    overflow-x: auto;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .roster-card,
+  .roster-card:first-child,
+  .roster-card:nth-child(1),
+  .roster-card:nth-child(2),
+  .roster-card:nth-child(3),
+  .roster-card:nth-child(4) {
+    width: min(78vw, 310px);
+    flex: 0 0 min(78vw, 310px);
+    margin-left: 12px;
+    scroll-snap-align: center;
+    transform: none;
+  }
+
+  .roster-card:first-child { margin-left: 0; }
+  .roster-card:hover,
+  .roster-card:focus-visible,
+  .roster-card.is-active { transform: translateY(-8px); }
 
   .structure-map {
     min-height: 390px;

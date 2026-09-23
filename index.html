@@ -69,9 +69,10 @@
         <li data-thread-node="0">Vision</li>
         <li data-thread-node="1">Structure</li>
         <li data-thread-node="2">Partner</li>
-        <li data-thread-node="3">System</li>
-        <li data-thread-node="4">Outcome</li>
-        <li data-thread-node="5">Book</li>
+        <li data-thread-node="3">Roster</li>
+        <li data-thread-node="4">System</li>
+        <li data-thread-node="5">Outcome</li>
+        <li data-thread-node="6">Book</li>
       </ol>
     </div>
 
@@ -88,6 +89,7 @@
       <nav class="primary-nav" id="primary-nav" aria-label="Primary navigation">
         <a href="#structure">Structure</a>
         <a href="#partner">Partner</a>
+        <a href="#roster">Roster</a>
         <a href="#system">System</a>
         <a href="#book">Book</a>
       </nav>
@@ -287,6 +289,44 @@
         </div>
       </section>
 
+      <section class="roster section-shell" id="roster" aria-labelledby="roster-title" data-scene="Roster">
+        <div class="roster-head" data-reveal>
+          <div>
+            <p class="eyebrow">The village</p>
+            <h2 id="roster-title">Built around people shaping culture.</h2>
+          </div>
+          <p>Kijiji represents a focused roster of artists, creators, founders, and cultural leaders building work with lasting reach.</p>
+        </div>
+
+        <div class="roster-stage" data-roster aria-label="Kijiji client roster">
+          <button class="roster-card is-active" type="button" data-roster-card aria-pressed="true" style="--card-index: 0; --card-accent: #c9742a;">
+            <img class="roster-card-image" src="assets/roster-jason-mendoza.jpg" alt="" loading="lazy" />
+            <span class="roster-card-number">01</span>
+            <span class="roster-monogram" aria-hidden="true">JM</span>
+            <span class="roster-card-copy"><small>Script Writer</small><strong>Jason Mendoza</strong></span>
+          </button>
+          <button class="roster-card" type="button" data-roster-card aria-pressed="false" style="--card-index: 1; --card-accent: #8f5130;">
+            <img class="roster-card-image" src="assets/roster-algee-smith.jpg" alt="" loading="lazy" />
+            <span class="roster-card-number">02</span>
+            <span class="roster-monogram" aria-hidden="true">AS</span>
+            <span class="roster-card-copy"><small>Actor · Musician</small><strong>Algee Smith</strong></span>
+          </button>
+          <button class="roster-card" type="button" data-roster-card aria-pressed="false" style="--card-index: 2; --card-accent: #b47a43;">
+            <img class="roster-card-image" src="assets/roster-bobby-outside.jpg" alt="" loading="lazy" />
+            <span class="roster-card-number">03</span>
+            <span class="roster-monogram" aria-hidden="true">BO</span>
+            <span class="roster-card-copy"><small>Artist · Personality</small><strong>Bobby Outside</strong></span>
+          </button>
+          <button class="roster-card" type="button" data-roster-card aria-pressed="false" style="--card-index: 3; --card-accent: #9d3d28;">
+            <img class="roster-card-image" src="assets/roster-chef-andra.jpg" alt="" loading="lazy" />
+            <span class="roster-card-number">04</span>
+            <span class="roster-monogram" aria-hidden="true">CA</span>
+            <span class="roster-card-copy"><small>Pastry Chef · Founder</small><strong>Chef Andra</strong></span>
+          </button>
+        </div>
+        <p class="roster-instruction" data-roster-status aria-live="polite">Jason Mendoza · Script Writer</p>
+      </section>
+
       <section class="system section-shell" id="system" aria-labelledby="system-title" data-scene="System">
         <div class="system-visual" data-reveal>
           <img
@@ -465,6 +505,7 @@
       <nav class="footer-links" aria-label="Footer navigation">
         <a href="#structure">Structure</a>
         <a href="#partner">Partner</a>
+        <a href="#roster">Roster</a>
         <a href="#system">System</a>
         <a href="#book">Book</a>
       </nav>
