@@ -29,7 +29,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20260925-task-delete" />
+    <link rel="stylesheet" href="portal.css?v=20260925-tour-v2" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -759,10 +759,10 @@
     <div class="tour-overlay" data-tour-overlay hidden>
       <div class="tour-scrim" aria-hidden="true"></div>
       <section class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description">
-        <div class="tour-progress"><span data-tour-progress>1 of 8</span><button type="button" class="text-action" data-tour-skip>Skip tour</button></div>
+        <div class="tour-progress"><span data-tour-progress>1 of 11</span><button type="button" class="text-action" data-tour-skip>Skip tour</button></div>
         <p class="eyebrow" data-tour-eyebrow>Welcome</p>
-        <h2 id="tour-title" data-tour-title>Learn the dashboard in two minutes</h2>
-        <p id="tour-description" data-tour-description>This quick tour shows where work lives and how the team hands it off.</p>
+        <h2 id="tour-title" data-tour-title>Your guide to the Kijiji dashboard</h2>
+        <p id="tour-description" data-tour-description>Learn what needs attention, where decisions happen, and how to keep your partners informed.</p>
         <div class="tour-actions">
           <button class="button button-secondary" type="button" data-tour-back>Back</button>
           <button class="button button-primary" type="button" data-tour-next>Start tour</button>
@@ -771,6 +771,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260925-task-delete"></script>
+    <script src="portal.js?v=20260925-tour-v2"></script>
   </body>
 </html>

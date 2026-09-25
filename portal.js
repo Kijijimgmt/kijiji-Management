@@ -1319,64 +1319,85 @@ const renderNotifications = () => {
 
 const tourSteps = [
   {
-    eyebrow: "Welcome",
-    title: "Learn the dashboard in two minutes",
-    description: "This quick tour shows where work lives and how the team hands it off.",
-    selector: ".portal-topbar",
-    hash: "my-work",
+    "eyebrow": "Welcome",
+    "title": "Your guide to the Kijiji dashboard",
+    "description": "Use your own sign-in. Your name appears beside the Notion sync status, and your permissions determine which records you can see and edit. This tour shows where to look and how to keep your partners informed.",
+    "selector": ".portal-topbar",
+    "hash": "my-work"
   },
   {
-    eyebrow: "Today",
-    title: "Start with the Founder Brief",
-    description: "Today brings together attention items, decisions, client health, guest bookings, dates, and shared files.",
-    selector: "[data-my-work-title]",
-    hash: "my-work",
+    "eyebrow": "Founder Brief",
+    "title": "Start with what matters today",
+    "description": "The four numbers summarize decisions waiting, items needing attention, remaining events this calendar week, and confirmed upcoming guests. Select a number to open the related area. These reflect the records available to your account.",
+    "selector": ".founder-metrics",
+    "hash": "my-work"
   },
   {
-    eyebrow: "Clients",
-    title: "Keep the client truth in one place",
-    description: "Use Clients to review health, ownership, progress, next moves, and the full roadmap for each relationship.",
-    selector: "#clients-title",
-    hash: "clients",
+    "eyebrow": "Needs Attention",
+    "title": "Unblock the next move",
+    "description": "Start here for blocked, overdue, due-today, or high-priority work. Each row names an owner. Open an item, update its next step or status, and keep the context clear enough for another partner to understand.",
+    "selector": "#attention",
+    "hash": "my-work"
   },
   {
-    eyebrow: "Work",
-    title: "Move tasks and opportunities forward",
-    description: "Team Work holds the task queue and deals by stage. Open any card to update it or hand it to another partner.",
-    selector: "#work-title",
-    hash: "work",
+    "eyebrow": "Decisions",
+    "title": "Make the call and record it",
+    "description": "Tasks marked Needs Approval appear here. Open a task, read the context, and update its status and notes after the decision. Choose an approver when a task needs a specific person’s review.",
+    "selector": "#decisions",
+    "hash": "decisions"
   },
   {
-    eyebrow: "Calendar",
-    title: "Plan launches and important dates",
-    description: "Switch between month and week views, see countdowns, and keep releases, meetings, and milestones visible.",
-    selector: "#calendar-title",
-    hash: "calendar",
+    "eyebrow": "Client Pulse",
+    "title": "Check the relationships",
+    "description": "Client Pulse gives you a quick health check. Select a client to open its existing profile, see the owner and next move, and review related work. Use Clients in the sidebar for the full roster.",
+    "selector": "[data-client-health-strip]",
+    "hash": "my-work"
   },
   {
-    eyebrow: "Files",
-    title: "Find shared files quickly",
-    description: "Contracts, templates, briefs, and brand assets live in the Files and can be filtered by category.",
-    selector: "#documents-title",
-    hash: "files",
+    "eyebrow": "Talent Bookings",
+    "title": "Track Bobby Outside Show guests",
+    "description": "This section is currently for Bobby Outside Show guests, not bookings for every client. Choose Add booking, enter the guest, assign an owner, and set a date. Use Confirmed only once the guest has agreed; link the booking to Bobby Outside.",
+    "selector": "#talent-bookings",
+    "hash": "talent-bookings"
   },
   {
-    eyebrow: "Create and hand off",
-    title: "Add work from anywhere",
-    description: "Use + New to create a task, deal, event, or client. Assigning an owner makes the handoff clear to the team.",
-    selector: ".create-menu",
-    hash: "my-work",
+    "eyebrow": "Calendar",
+    "title": "Protect the important dates",
+    "description": "Keep meetings, guest bookings, shoots, deadlines, and internal founder meetings here. Switch between month and week views, or open an event to update it. The upcoming schedule on Today is a short preview.",
+    "selector": "#calendar-title",
+    "hash": "calendar"
   },
   {
-    eyebrow: "Stay aligned",
-    title: "Partner updates come to you",
-    description: "The notification bell shows changes made by other partners. You can restart this tour anytime from More → Take Dashboard Tour.",
-    selector: ".notification-trigger",
-    hash: "my-work",
+    "eyebrow": "Files",
+    "title": "Keep shared resources easy to find",
+    "description": "Files replaces Documents. Upload briefs, contracts, templates, and founder resources here. A client link is optional. Search or filter the library; Today shows the most recently updated files.",
+    "selector": "#files",
+    "hash": "files"
   },
+  {
+    "eyebrow": "Create and assign",
+    "title": "Give each next move an owner",
+    "description": "Use + New to add a task, deal, or event. Give it a clear title, owner, date, and enough context to act. Client creation is available to admins. For a show guest, use Add booking in Talent Bookings.",
+    "selector": ".create-menu",
+    "hash": "my-work"
+  },
+  {
+    "eyebrow": "Team Work",
+    "title": "Update or remove a task",
+    "description": "Open More → Team Work to see tasks and deals. Select a task to edit it, mark it Done when finished, or choose Delete Task if it is no longer needed. Deletion asks for confirmation and moves the task to Notion trash; normal ownership permissions still apply.",
+    "selector": "#work-title",
+    "hash": "work"
+  },
+  {
+    "eyebrow": "Stay aligned",
+    "title": "Make this your daily check-in",
+    "description": "Check Needs Attention and Decisions first, then upcoming dates. The bell shows partner updates; the sync badge shows whether shared data loaded. You can replay this guide anytime from More → Take Dashboard Tour.",
+    "selector": ".notification-trigger",
+    "hash": "my-work"
+  }
 ];
 
-const getTourStorageKey = () => `kijiji-dashboard-tour-v1:${state.teamUser?.email || "team"}`;
+const getTourStorageKey = () => `kijiji-dashboard-tour-v2:${state.teamUser?.email || "team"}`;
 
 const setTourComplete = () => {
   try {
@@ -1395,6 +1416,7 @@ const renderTourStep = () => {
   if (!step || !els.tourOverlay) return;
   clearTourHighlight();
   window.location.hash = step.hash;
+  setActiveView();
   els.tourProgress.textContent = `${tourIndex + 1} of ${tourSteps.length}`;
   els.tourEyebrow.textContent = step.eyebrow;
   els.tourTitle.textContent = step.title;
@@ -1417,7 +1439,8 @@ const closeTour = ({ completed = true } = {}) => {
   clearTourHighlight();
   els.tourOverlay.hidden = true;
   document.body.classList.remove("tour-open");
-  tourReturnFocus?.focus?.();
+  const focusTarget = tourReturnFocus?.checkVisibility?.() ? tourReturnFocus : els.workspaceTitle;
+  focusTarget?.focus?.({ preventScroll: true });
 };
 
 const startTour = (trigger = null) => {
@@ -1439,7 +1462,9 @@ const maybeStartTour = () => {
   } catch {
     completed = false;
   }
-  if (!completed) window.setTimeout(() => startTour(), 450);
+  if (!completed) window.setTimeout(() => {
+    if (!state.isLoading && !state.portalError && els.tourOverlay.hidden) startTour();
+  }, 450);
 };
 
 const loadNotifications = async () => {
