@@ -29,7 +29,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20260917-theme" />
+    <link rel="stylesheet" href="portal.css?v=20260925-founder" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -41,13 +41,14 @@
         <nav class="portal-nav">
           <a class="is-active" href="#my-work" aria-current="page">Today</a>
           <a href="#clients">Clients</a>
-          <a href="#work">Work</a>
+          <a href="#talent-bookings">Talent Bookings</a>
           <a href="#calendar">Calendar</a>
-          <a href="#documents">Documents</a>
+          <a href="#decisions">Decisions</a>
+          <a href="#files">Files</a>
           <details class="nav-more">
             <summary role="button" aria-haspopup="true" aria-expanded="false">More</summary>
             <div>
-              <a href="#overview" data-admin-only>Team Pulse</a>
+              <a href="#work">Team Work</a>
               <a href="#guidance">Playbook</a>
               <button type="button" data-start-tour data-requires-access>Take Dashboard Tour</button>
               <div class="theme-picker" role="group" aria-label="Dashboard appearance">
@@ -71,7 +72,7 @@
         <header class="portal-topbar">
           <div>
             <p class="eyebrow">Kijiji Team Portal</p>
-            <h1 data-workspace-title tabindex="-1">My work</h1>
+            <h1 data-workspace-title tabindex="-1">Today</h1>
           </div>
           <div class="topbar-actions">
             <span class="source-badge" data-source-badge data-state="loading">Syncing Notion</span>
@@ -121,76 +122,48 @@
         </section>
 
         <div class="dashboard-content" data-dashboard-content hidden>
-          <section class="my-work-section" id="my-work" aria-labelledby="my-work-title" data-portal-view="my-work">
+          <section class="my-work-section founder-dashboard" id="my-work" aria-labelledby="my-work-title" data-portal-view="my-work">
             <div class="my-work-hero">
-              <div>
-                <p class="eyebrow">Today</p>
-                <h2 id="my-work-title" data-my-work-title>Your assigned operating lane</h2>
-                <p data-my-work-subtitle>Tasks, deals, dates, and blockers assigned to you.</p>
-              </div>
-              <span class="user-badge" data-user-badge>Signed in</span>
+              <div><p class="eyebrow">Founder Brief</p><h2 id="my-work-title" data-my-work-title>What matters today.</h2><p data-my-work-subtitle>One shared view for Maxwell, Joe, and Erik.</p></div>
+              <span class="user-badge" data-user-badge></span>
             </div>
-            <section class="daily-priority" data-daily-priority aria-live="polite"></section>
-            <div class="personal-metrics">
-              <article>
-                <span>Needs Action</span>
-                <strong data-my-work-tasks>0</strong>
-              </article>
-              <article>
-                <span>Waiting</span>
-                <strong data-my-work-deals>0</strong>
-              </article>
-              <article>
-                <span>Upcoming</span>
-                <strong data-my-work-events>0</strong>
-              </article>
-              <article>
-                <span>Blockers</span>
-                <strong data-my-work-blockers>0</strong>
-              </article>
+            <div data-daily-priority hidden></div>
+            <div class="personal-metrics founder-metrics">
+              <a href="#decisions"><span>Decisions Needed</span><strong data-my-work-deals>—</strong></a>
+              <a href="#attention"><span>Needs Attention</span><strong data-my-work-tasks>—</strong></a>
+              <a href="#calendar"><span>Upcoming This Week</span><strong data-my-work-events>—</strong></a>
+              <a href="#talent-bookings"><span>Confirmed Guests</span><strong data-my-work-blockers>—</strong></a>
             </div>
-            <div class="my-work-board">
-              <article class="command-panel">
-                <div class="section-header compact">
-                  <div>
-                    <p class="eyebrow">01 / Move</p>
-                    <h2>Needs action</h2>
-                  </div>
-                  <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
-                </div>
-                <div class="stack-list" data-my-work-action-list></div>
-              </article>
-              <article class="command-panel">
-                <div class="section-header compact">
-                  <div>
-                    <p class="eyebrow">02 / Hold</p>
-                    <h2>Waiting</h2>
-                  </div>
-                  <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
-                </div>
-                <div class="stack-list" data-my-work-deal-list></div>
-              </article>
-              <article class="command-panel">
-                <div class="section-header compact">
-                  <div>
-                    <p class="eyebrow">03 / Protect</p>
-                    <h2>Upcoming</h2>
-                  </div>
-                  <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
-                </div>
-                <div class="stack-list" data-my-work-watch-list></div>
-              </article>
-            </div>
-            <section class="client-health-overview" aria-labelledby="client-health-title">
-              <div class="section-header compact">
-                <div>
-                  <p class="eyebrow">Client Pulse</p>
-                  <h2 id="client-health-title">Relationships at a glance</h2>
-                </div>
-                <a class="text-action" href="#clients">View all clients</a>
-              </div>
+            <section class="command-panel founder-attention" id="attention" aria-labelledby="attention-title">
+              <div class="section-header compact"><div><p class="eyebrow">First priority</p><h2 id="attention-title">Needs Attention</h2><p class="section-note">Blocked, overdue, or urgent. An owner and a next move for each.</p></div><a class="text-action" href="#work">View team work →</a></div>
+              <div data-my-work-action-list></div>
+            </section>
+            <section class="command-panel" aria-labelledby="today-decisions-title">
+              <div class="section-header compact"><div><p class="eyebrow">Founder decisions</p><h2 id="today-decisions-title">Decisions</h2></div><a class="text-action" href="#decisions">Review all →</a></div>
+              <div data-my-work-deal-list></div>
+            </section>
+            <section class="command-panel" aria-labelledby="client-health-title">
+              <div class="section-header compact"><div><p class="eyebrow">Relationships</p><h2 id="client-health-title">Client Pulse</h2></div><a class="text-action" href="#clients">All clients →</a></div>
               <div class="client-health-strip" data-client-health-strip></div>
             </section>
+            <section class="command-panel" aria-labelledby="today-bookings-title">
+              <div class="section-header compact"><div><p class="eyebrow">Bobby Outside Show</p><h2 id="today-bookings-title">Talent Bookings</h2></div><a class="text-action" href="#talent-bookings">All bookings →</a></div>
+              <div data-booking-snapshot></div>
+            </section>
+            <div class="founder-bottom-grid">
+              <section class="command-panel" aria-labelledby="today-schedule-title">
+                <div class="section-header compact"><h2 id="today-schedule-title">Upcoming schedule</h2><a class="text-action" href="#calendar">Calendar →</a></div>
+                <div data-my-work-watch-list></div>
+              </section>
+              <section class="command-panel" aria-labelledby="today-files-title">
+                <div class="section-header compact"><h2 id="today-files-title">Recent shared Files</h2><a class="text-action" href="#files">All files →</a></div>
+                <div data-recent-files></div>
+              </section>
+            </div>
+          </section>
+          <section class="command-panel" id="talent-bookings" data-portal-view="talent-bookings" aria-labelledby="bookings-title">
+            <div class="section-header compact"><div><p class="eyebrow">Bobby Outside Show</p><h2 id="bookings-title">Talent Bookings</h2><p class="section-note">Guest bookings, confirmation status, dates, and owners.</p></div><button class="button button-primary" type="button" data-add-booking data-requires-access>Add booking</button></div>
+            <div data-booking-list></div>
           </section>
 
           <section class="overview-grid" id="overview" aria-label="Operating overview" data-admin-only data-portal-view="overview">
@@ -310,10 +283,10 @@
             </div>
           </section>
 
-          <section class="approval-panel" aria-labelledby="approval-title" data-portal-view="work">
+          <section class="approval-panel" id="decisions" aria-labelledby="approval-title" data-portal-view="decisions">
             <div class="section-header compact">
               <div>
-                <p class="eyebrow">Approval Inbox</p>
+                <p class="eyebrow">Decisions</p>
                 <h2 id="approval-title">Ready for a decision</h2>
               </div>
               <span class="approval-count" data-approval-count>0 pending</span>
@@ -392,13 +365,13 @@
             </div>
           </section>
 
-          <section class="portal-section document-library" id="documents" aria-labelledby="documents-title" data-portal-view="documents">
+          <section class="portal-section document-library" id="files" aria-labelledby="documents-title" data-portal-view="files">
             <div class="section-header">
-              <div><p class="eyebrow">Team Resources</p><h2 id="documents-title">Document Library</h2><p class="section-note">Contracts, templates, briefs, and reusable files in one secure place.</p></div>
+              <div><p class="eyebrow">Team Resources</p><h2 id="documents-title">Files</h2><p class="section-note">Contracts, templates, briefs, and reusable files in one secure place.</p></div>
               <div class="section-actions document-actions">
-                <label><span>Search</span><input type="search" data-search-documents placeholder="Find a document" /></label>
+                <label><span>Search</span><input type="search" data-search-documents placeholder="Find a file" /></label>
                 <label><span>Category</span><select data-document-category><option value="all">All categories</option><option>Contract</option><option>Template</option><option>Brief</option><option>Brand Asset</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
-                <button class="button button-primary" type="button" data-open-document-form data-requires-access>Upload Document</button>
+                <button class="button button-primary" type="button" data-open-document-form data-requires-access>Upload File</button>
               </div>
             </div>
             <div class="document-summary"><strong data-document-count>0 files</strong><span>Available to signed-in Kijiji team members</span></div>
@@ -718,6 +691,9 @@
               <option>Launch</option>
               <option>Meeting</option>
               <option>Session</option>
+              <option>Talent Booking</option>
+              <option>Shoot</option>
+              <option>Deadline</option>
               <option>Event</option>
             </select>
           </label>
@@ -729,6 +705,7 @@
               <option>Confirmed</option>
               <option>Complete</option>
               <option>Delayed</option>
+              <option>Cancelled</option>
             </select>
           </label>
           <label>
@@ -765,9 +742,9 @@
 
     <dialog class="client-dialog" data-document-dialog aria-labelledby="document-dialog-title">
       <form method="dialog" class="client-form" data-document-form>
-        <div class="dialog-head"><div><p class="eyebrow">Team file</p><h2 id="document-dialog-title">Upload document</h2></div><button class="icon-button" type="button" data-close-document-form aria-label="Close form">x</button></div>
+        <div class="dialog-head"><div><p class="eyebrow">Team file</p><h2 id="document-dialog-title">Upload file</h2></div><button class="icon-button" type="button" data-close-document-form aria-label="Close form">x</button></div>
         <div class="form-grid">
-          <label class="wide"><span>Document name</span><input name="name" required placeholder="Example: Artist management agreement" /></label>
+          <label class="wide"><span>File name</span><input name="name" required placeholder="Example: Artist management agreement" /></label>
           <label><span>Category</span><select name="category"><option>Contract</option><option>Template</option><option>Brief</option><option>Brand Asset</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
           <label><span>Client (optional)</span><select name="clientId" data-document-client-select><option value="">Shared resource</option></select></label>
           <label class="wide"><span>File (3 MB maximum)</span><input name="file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.jpg,.jpeg,.png" required /></label>
@@ -793,6 +770,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260917-theme"></script>
+    <script src="portal.js?v=20260925-founder"></script>
   </body>
 </html>

@@ -4927,3 +4927,55 @@ html[data-theme="light"] .work-grid .action-item > p { color: #746b63; }
 @media (max-width: 720px) {
   html[data-theme="light"] .nav-more > div { background: #171512; }
 }
+
+/* Founder dashboard: shared context, decisions, and exceptions. */
+.founder-dashboard { display: grid; gap: 24px; }
+.founder-dashboard .my-work-hero { margin-bottom: 0; }
+.founder-metrics { margin: 0; }
+.founder-metrics a { display: grid; gap: 12px; padding: 22px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.founder-metrics a:hover { border-color: var(--orange); }
+.founder-metrics a > span { font-size: 12px; color: var(--muted); }
+.founder-metrics a > strong { font-size: 32px; color: var(--white); line-height: 1; }
+.founder-metrics a:first-child > strong { color: var(--orange-hot); }
+.founder-dashboard .command-panel { min-width: 0; }
+.founder-dashboard .founder-attention { border: 1px solid var(--orange); border-left: 4px solid var(--orange-hot); background: linear-gradient(120deg, rgba(201,116,42,.12), transparent), var(--panel); scroll-margin-top: 24px; }
+.founder-attention h2 { font-size: clamp(24px, 3vw, 32px); }
+.executive-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 17px 0; color: inherit; background: transparent; border: 0; border-bottom: 1px solid var(--line); text-align: left; font: inherit; cursor: pointer; }
+.executive-row:last-child { border-bottom: 0; }
+.executive-row:hover .executive-copy strong { color: var(--orange-hot); }
+.executive-row:focus-visible, .founder-metrics a:focus-visible { outline: 2px solid var(--orange-hot); outline-offset: 4px; }
+.executive-copy { min-width: 0; display: grid; gap: 7px; }
+.executive-copy strong { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.executive-copy > span { color: var(--muted); font-size: 12px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.executive-meta { flex-shrink: 0; max-width: 40%; display: grid; gap: 7px; text-align: right; color: var(--champagne); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.executive-meta small { color: var(--muted); font-size: 11px; }
+.executive-more { display: inline-block; margin-top: 16px; }
+.founder-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; min-width: 0; }
+.founder-dashboard .client-health-strip { grid-template-columns: 1fr; }
+.founder-dashboard .client-health-item { padding: 14px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.founder-dashboard .client-health-item:last-child { border-bottom: 0; }
+.founder-dashboard .section-header { margin-bottom: 12px; }
+.founder-dashboard .mini-empty { padding: 18px 0; }
+@media (max-width: 1100px) { .founder-bottom-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .founder-dashboard { gap: 16px; }
+  .founder-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .founder-metrics a { padding: 16px; }
+  .executive-row { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .executive-meta { max-width: 100%; text-align: left; display: flex; flex-wrap: wrap; gap: 6px 12px; }
+  .founder-dashboard .section-header { align-items: flex-start; gap: 12px; }
+}
+.founder-metrics { border: 0; background: transparent; gap: 12px; }
+.founder-dashboard .command-panel, #talent-bookings { padding: 24px; border-radius: 8px; }
+.founder-dashboard .command-panel:not(.founder-attention), #talent-bookings { border: 1px solid var(--line); background: var(--panel); }
+.founder-dashboard .client-health-item { grid-template-columns: 8px minmax(0,1fr) auto; gap: 10px; }
+.founder-dashboard .client-health-item em { grid-column: 3; }
+@media (max-width: 720px) {
+  .portal-nav { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 6px; }
+  .portal-nav > a, .nav-more summary { padding: 10px 6px; font-size: 12px; white-space: normal; }
+  .founder-dashboard .command-panel, #talent-bookings { padding: 18px; }
+}
+@media (min-width: 721px) and (max-width: 1100px) {
+  .portal-topbar { margin-inline: 0; width: 100%; flex-wrap: wrap; gap: 16px; }
+  .topbar-actions { flex-wrap: wrap; }
+}

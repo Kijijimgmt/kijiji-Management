@@ -164,7 +164,7 @@ const formatDate = (value) => {
     return "No date";
   }
 
-  const date = new Date(`${value}T12:00:00`);
+  const date = new Date(`${String(value).slice(0,10)}T12:00:00`);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -190,7 +190,7 @@ const getDaysUntil = (value) => {
     return Number.POSITIVE_INFINITY;
   }
 
-  const dueDate = new Date(`${value}T00:00:00`);
+  const dueDate = new Date(`${String(value).slice(0,10)}T00:00:00`);
   const start = new Date(`${todayISO}T00:00:00`);
   if (Number.isNaN(dueDate.getTime())) return Number.POSITIVE_INFINITY;
   return Math.ceil((dueDate.getTime() - start.getTime()) / 86400000);
@@ -342,11 +342,15 @@ const viewTitles = {
   clients: "Clients",
   work: "Work",
   calendar: "Calendar",
-  documents: "Documents",
+  files: "Files",
+  decisions: "Decisions",
+  "talent-bookings": "Talent Bookings",
   guidance: "Playbook",
 };
 
 const viewAliases = {
+  documents: "files",
+  attention: "my-work",
   actions: "work",
   opportunities: "work",
 };
@@ -387,6 +391,7 @@ const setActiveView = ({ focusTitle = false } = {}) => {
 
   if (activeView !== requestedHash) {
     window.history.replaceState(null, "", `#${activeView}`);
+    if (requestedHash === "attention") $("#attention")?.scrollIntoView({ block: "start" });
   }
 };
 
@@ -477,7 +482,7 @@ const getOpportunityBlockers = () => state.opportunities.filter((opportunity) =>
 const getOpenOpportunities = () => state.opportunities.filter((opportunity) => !isComplete(opportunity));
 
 const renderMetrics = () => {
-  els.clientsMetric.textContent = String(state.clients.length);
+  els.clientsMetric.textContent = String(state.clients.filter(isActiveClient).length);
   els.todayMetric.textContent = String(getOpenActions().filter((action) => action.dueDate === todayISO).length);
   els.overdueMetric.textContent = String(getOpenActions().filter((action) => getDaysUntil(action.dueDate) < 0).length);
   els.blockersMetric.textContent = String(getBlockers().length);
@@ -509,108 +514,67 @@ const getPersonalEvents = () => {
   return upcoming.filter((event) => ownerMatches(event.owner, state.teamUser?.owner));
 };
 
+// Executive summaries use the records visible to the signed-in identity.
+const isRetiredClient = (client) => /^broshigeez$/i.test(String(client.name || "").trim());
+const isActiveClient = (client) => !isRetiredClient(client) && !["archived", "inactive"].includes(String(client.status || "").toLowerCase());
+const isCurrentRecord = (item) => {
+  const ids = item.clientIds || [];
+  const retired = state.clients.filter((client) => !isActiveClient(client));
+  if (ids.length && ids.every((id) => retired.some((client) => client.id === id))) return false;
+  return !/^broshigeez$/i.test(String(item.clientName || "").trim());
+};
+const isLiveEvent = (item) => !isComplete(item) && !["cancelled", "canceled"].includes(String(item.status || "").toLowerCase());
+const getDecisions = () => getOpenActions().filter(isCurrentRecord)
+  .filter((item) => String(item.status || "").toLowerCase() === "needs approval")
+  .filter((item) => isAdminUser() || !item.approvalOwner || ownerMatches(item.approvalOwner, state.teamUser?.owner))
+  .sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate));
+const getBookings = () => state.events.filter(isCurrentRecord).filter(isLiveEvent).filter((item) => {
+  const isBobby = (item.clientIds || []).some((id) => /bobby outside/i.test(getClient(id)?.name || "")) || /bobby outside/i.test(item.clientName || item.name || "");
+  return isBobby && /^(talent booking|guest booking)$/i.test(item.type || "");
+}).filter((item) => !item.date || getDaysUntil(item.date) >= 0)
+  .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date));
+const executiveRow = (kind, item, context = "") => `<button class="executive-row" type="button" data-${kind}-id="${escapeHtml(item.id)}">
+  <span class="executive-copy"><strong>${escapeHtml(item.title || item.name)}</strong><span>${escapeHtml(context || item.nextStep || item.dependency || item.notes || getClientName(item))}</span></span>
+  <span class="executive-meta"><span>${escapeHtml(item.approvalOwner || item.owner || "Owner needed")}</span><small>${escapeHtml(item.status || item.stage || "Open")} · ${escapeHtml(formatDate(item.date || item.dueDate))}</small></span>
+</button>`;
+const fillExecutiveList = (target, items, emptyTitle, emptyText) => {
+  if (items.length) target.innerHTML = items.join("");
+  else renderEmptyList(target, emptyTitle, emptyText);
+};
 const renderMyWork = () => {
-  const userName = state.teamUser?.fullName || "Team member";
-  const allPersonalActions = getPersonalActions();
-  const allPersonalDeals = getPersonalOpportunities();
-  const waitingAll = [
-    ...allPersonalActions.filter(isWaiting).map((item) => ({ kind: "action", item })),
-    ...allPersonalDeals.filter((item) => item.blocker).map((item) => ({ kind: "opportunity", item })),
-  ];
-  const waitingItems = waitingAll.slice(0, 6);
-  const needsActionAll = [
-    ...allPersonalActions
-      .filter((item) => !isWaiting(item))
-      .map((item) => ({ kind: "action", item, days: getDaysUntil(item.dueDate) })),
-    ...allPersonalDeals
-      .filter((item) => !item.blocker && (isUrgent(item) || getDaysUntil(item.dueDate) <= 7))
-      .map((item) => ({ kind: "opportunity", item, days: getDaysUntil(item.dueDate) })),
-  ]
-    .sort((a, b) => Number(Boolean(b.item.blocker)) - Number(Boolean(a.item.blocker)) || a.days - b.days);
-  const needsAction = needsActionAll.slice(0, 6);
-  const upcomingAll = [
-    ...getPersonalEvents().map((item) => ({ kind: "event", item, days: getDaysUntil(item.date) })),
-    ...allPersonalDeals
-      .filter((item) => !item.blocker && getDaysUntil(item.dueDate) > 7)
-      .map((item) => ({ kind: "opportunity", item, days: getDaysUntil(item.dueDate) })),
-  ]
-    .sort((a, b) => a.days - b.days);
-  const upcomingItems = upcomingAll.slice(0, 6);
-  const personalBlockers = [
-    ...allPersonalActions
-      .filter((action) => action.blocker)
-      .map((item) => ({ kind: "action", item })),
-    ...allPersonalDeals
-      .filter((opportunity) => opportunity.blocker)
-      .map((item) => ({ kind: "opportunity", item })),
-  ];
-
-  const renderLane = (items) =>
-    items
-      .map(({ kind, item }) => {
-        if (kind === "event") return eventCard(item);
-        return kind === "opportunity" ? opportunityCard(item) : actionCard(item);
-      })
-      .join("");
-
-  els.myWorkTitle.textContent = `${userName}'s focus`;
-  els.myWorkSubtitle.textContent = "Move what is actionable, track what is waiting, and protect what is next.";
-  els.userBadge.textContent = `${state.teamUser?.role === "admin" ? "Admin" : "Member"} / ${state.teamUser?.email || "Signed in"}`;
-  els.myWorkTasksMetric.textContent = String(needsActionAll.length);
-  els.myWorkDealsMetric.textContent = String(waitingAll.length);
-  els.myWorkEventsMetric.textContent = String(upcomingAll.length);
-  els.myWorkBlockersMetric.textContent = String(personalBlockers.length);
-
-  const priority = needsActionAll[0];
-  if (priority) {
-    const item = priority.item;
-    const title = priority.kind === "opportunity" ? item.name : item.title;
-    const context = item.nextStep || item.notes || getClientName(item);
-    const recordAttribute = priority.kind === "opportunity" ? "data-opportunity-id" : "data-action-id";
-    els.dailyPriority.innerHTML = `
-      <div>
-        <p class="eyebrow">Your next move</p>
-        <strong>${escapeHtml(title)}</strong>
-        <span>${escapeHtml(context)}</span>
-      </div>
-      <div class="daily-priority-meta">
-        <span class="date-chip" data-tone="${priority.days < 0 ? "danger" : ""}">${formatDate(item.dueDate)}</span>
-        <button class="button button-primary" type="button" ${recordAttribute}="${escapeHtml(item.id)}">Open</button>
-      </div>
-    `;
-  } else {
-    els.dailyPriority.innerHTML = `
-      <div>
-        <p class="eyebrow">Your next move</p>
-        <strong>You are clear for now.</strong>
-        <span>No urgent or overdue work needs your attention.</span>
-      </div>
-      <button class="button button-secondary" type="button" data-open-action-form>Add a task</button>
-    `;
-  }
-
-  if (needsAction.length) {
-    els.myWorkActionList.innerHTML = renderLane(needsAction);
-  } else {
-    renderEmptyList(els.myWorkActionList, "Clear for now", "No urgent, overdue, or active next moves need you.");
-  }
-
-  if (waitingItems.length) {
-    els.myWorkDealList.innerHTML = renderLane(waitingItems);
-  } else {
-    renderEmptyList(els.myWorkDealList, "Nothing waiting", "Approvals, client replies, and blocked deal moves will appear here.");
-  }
-
-  if (upcomingItems.length) {
-    els.myWorkWatchList.innerHTML = renderLane(upcomingItems);
-  } else {
-    renderEmptyList(els.myWorkWatchList, "No upcoming dates", "Assigned events, releases, and future deal moves will appear here.");
-  }
+  const decisions = getDecisions();
+  const attention = [
+    ...getOpenActions().filter((item) => String(item.status || "").toLowerCase() !== "needs approval").map((item) => ({kind: "action", item})),
+    ...getOpenOpportunities().map((item) => ({kind: "opportunity", item})),
+    ...state.events.filter(isLiveEvent).filter((item) => item.status === "Delayed").map((item) => ({kind: "event", item})),
+  ].filter(({item}) => isCurrentRecord(item) && (item.blocker || item.status === "Delayed" || isUrgent(item) || getDaysUntil(item.dueDate) <= 0))
+    .sort((a, b) => Number(Boolean(b.item.blocker)) - Number(Boolean(a.item.blocker)) || getDaysUntil(a.item.dueDate || a.item.date) - getDaysUntil(b.item.dueDate || b.item.date));
+  const upcoming = state.events.filter(isCurrentRecord).filter(isLiveEvent).filter((item) => getDaysUntil(item.date) >= 0 && Number.isFinite(getDaysUntil(item.date)))
+    .sort((a,b) => getDaysUntil(a.date) - getDaysUntil(b.date));
+  const bookings = getBookings();
+  const weekEnd = toLocalISODate(addDays(startOfWeek(today), 7));
+  els.myWorkTitle.textContent = "What matters today.";
+  els.myWorkSubtitle.textContent = `${attention.length} attention ${attention.length === 1 ? "item" : "items"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} across the team.`;
+  els.userBadge.textContent = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric" }).format(today);
+  els.myWorkTasksMetric.textContent = attention.length;
+  els.myWorkDealsMetric.textContent = decisions.length;
+  els.myWorkEventsMetric.textContent = upcoming.filter((item) => String(item.date).slice(0,10) < weekEnd).length;
+  els.myWorkBlockersMetric.textContent = bookings.filter((item) => String(item.status).toLowerCase() === "confirmed").length;
+  const reason = (item) => item.blocker ? "Blocked" : item.status === "Delayed" ? "Delayed" : getDaysUntil(item.dueDate) < 0 ? "Overdue" : getDaysUntil(item.dueDate) === 0 ? "Due today" : "High priority";
+  fillExecutiveList(els.myWorkActionList, attention.slice(0,5).map(({kind,item}) => executiveRow(kind,item, `${reason(item)} · ${item.nextStep || item.dependency || item.notes || getClientName(item)}`)), "Nothing needs attention", "No blocked, overdue, or urgent items in the shared data.");
+  if (attention.length > 5) els.myWorkActionList.innerHTML += `<a class="text-action executive-more" href="#work">${attention.length - 5} more attention items · Open team work →</a>`;
+  fillExecutiveList(els.myWorkDealList, decisions.slice(0,3).map((item) => executiveRow("action",item)), "No decisions waiting", "Items marked Needs Approval will appear here.");
+  fillExecutiveList(els.myWorkWatchList, upcoming.slice(0,4).map((item) => executiveRow("event",item,item.type)), "No upcoming dates", "Meetings, bookings, shoots, and deadlines will appear here.");
+  fillExecutiveList($("[data-booking-snapshot]"), bookings.slice(0,3).map((item) => executiveRow("event",item)), "No upcoming guest bookings", "Add a Bobby Outside Show guest in Talent Bookings.");
+  fillExecutiveList($("[data-booking-list]"), bookings.map((item) => executiveRow("event",item)), "No guest bookings yet", "Add a guest, choose an owner, and track the date and confirmation here.");
+  const recent = [...state.documents].sort((a,b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))).slice(0,3);
+  fillExecutiveList($("[data-recent-files]"), recent.map((file) => `<a class="executive-row" href="#files"><span class="executive-copy"><strong>${escapeHtml(file.name)}</strong><span>${escapeHtml(file.category || "Shared file")} · ${escapeHtml(file.owner || "Kijiji team")}</span></span><span class="executive-meta">${escapeHtml(formatDate(String(file.updatedAt || "").slice(0,10)))}</span></a>`), state.documentsError ? "Files unavailable" : "No shared files yet", state.documentsError ? "Refresh to try loading the file library again." : "Founder resources and client files will appear here.");
 };
 
 const renderClientHealthStrip = () => {
   const toneRank = { danger: 0, warning: 1, waiting: 2, success: 3 };
   const clients = state.clients
+    .filter(isActiveClient)
     .map((client) => ({ client, health: getClientHealth(client) }))
     .sort((a, b) => toneRank[a.health.tone] - toneRank[b.health.tone])
     .slice(0, 5);
@@ -637,10 +601,7 @@ const renderClientHealthStrip = () => {
 };
 
 const renderApprovals = () => {
-  const approvals = state.actions
-    .filter((action) => String(action.status || "").toLowerCase() === "needs approval")
-    .filter((action) => isAdminUser() || !action.approvalOwner || ownerMatches(action.approvalOwner, state.teamUser?.owner))
-    .sort((a, b) => getDaysUntil(a.dueDate) - getDaysUntil(b.dueDate));
+  const approvals = getDecisions();
 
   els.approvalCount.textContent = `${approvals.length} pending`;
   if (!approvals.length) {
@@ -1097,7 +1058,7 @@ const renderPipeline = () => {
 };
 
 const renderCalendar = () => {
-  const upcomingAll = [...state.events]
+  const upcomingAll = state.events.filter(isCurrentRecord).filter(isLiveEvent)
     .filter((event) => getDaysUntil(event.date) >= 0)
     .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date));
   const upcoming = upcomingAll.slice(0, 10);
@@ -1110,11 +1071,11 @@ const renderCalendar = () => {
   const currentMonth = calendarCursor.getMonth();
   const eventsByDate = new Map();
 
-  state.events.forEach((event) => {
+  state.events.filter(isCurrentRecord).filter(isLiveEvent).forEach((event) => {
     if (!event.date) return;
-    const dateEvents = eventsByDate.get(event.date) || [];
+    const dateEvents = eventsByDate.get(String(event.date).slice(0,10)) || [];
     dateEvents.push(event);
-    eventsByDate.set(event.date, dateEvents);
+    eventsByDate.set(String(event.date).slice(0,10), dateEvents);
   });
 
   if (calendarView === "week") {
@@ -1162,7 +1123,7 @@ const renderCalendar = () => {
   els.calendarUpcomingCount.textContent = `${upcomingAll.length} upcoming`;
 
   if (!upcoming.length) {
-    renderEmptyList(els.calendarList, "No upcoming releases", "Events and release dates will appear here once they are added in Notion.");
+    renderEmptyList(els.calendarList, "No upcoming dates", "Events and release dates will appear here once they are added in Notion.");
     return;
   }
 
@@ -1180,7 +1141,7 @@ const renderDocuments = () => {
   });
   els.documentCount.textContent = `${documents.length} ${documents.length === 1 ? "file" : "files"}`;
   if (!documents.length) {
-    renderEmptyList(els.documentList, "No documents found", state.documents.length ? "Try another search or category." : "Upload the first contract, template, or team resource.");
+    renderEmptyList(els.documentList, state.documentsError ? "Files unavailable" : "No files found", state.documentsError ? "Refresh to try loading shared files again." : state.documents.length ? "Try another search or category." : "Upload the first contract, template, or team resource.");
     return;
   }
   els.documentList.innerHTML = documents.map((document) => {
@@ -1198,7 +1159,7 @@ const renderClientOptions = (selectEl) => {
     return;
   }
 
-  selectEl.innerHTML = `<option value="">No client relation</option>${state.clients
+  selectEl.innerHTML = `<option value="">No client relation</option>${state.clients.filter(isActiveClient)
     .map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`)
     .join("")}`;
 };
@@ -1206,6 +1167,8 @@ const renderClientOptions = (selectEl) => {
 const renderActionClientOptions = () => renderClientOptions(els.actionClientSelect);
 
 const setLoadingState = () => {
+  ["[data-booking-snapshot]", "[data-booking-list]", "[data-recent-files]"].forEach((selector) => renderEmptyList($(selector), "Loading shared data", "Syncing with Notion…"));
+
   els.clientsMetric.textContent = "-";
   els.todayMetric.textContent = "-";
   els.overdueMetric.textContent = "-";
@@ -1253,16 +1216,18 @@ const setLoadingState = () => {
 };
 
 const setErrorState = () => {
+  ["[data-booking-snapshot]", "[data-booking-list]", "[data-recent-files]"].forEach((selector) => renderEmptyList($(selector), "Shared data unavailable", "Refresh to try again."));
+
   setSourceBadge("error", "Notion setup needed");
-  els.clientsMetric.textContent = "0";
-  els.todayMetric.textContent = "0";
-  els.overdueMetric.textContent = "0";
-  els.blockersMetric.textContent = "0";
-  els.myWorkTasksMetric.textContent = "0";
-  els.myWorkDealsMetric.textContent = "0";
-  els.myWorkEventsMetric.textContent = "0";
-  els.myWorkBlockersMetric.textContent = "0";
-  if (els.approvalCount) els.approvalCount.textContent = "0 pending";
+  els.clientsMetric.textContent = "—";
+  els.todayMetric.textContent = "—";
+  els.overdueMetric.textContent = "—";
+  els.blockersMetric.textContent = "—";
+  els.myWorkTasksMetric.textContent = "—";
+  els.myWorkDealsMetric.textContent = "—";
+  els.myWorkEventsMetric.textContent = "—";
+  els.myWorkBlockersMetric.textContent = "—";
+  if (els.approvalCount) els.approvalCount.textContent = "Unavailable";
   if (els.dailyPriority) {
     els.dailyPriority.innerHTML = `<div><p class="eyebrow">Your next move</p><strong>Shared data unavailable</strong><span>Reconnect Notion to restore your daily focus.</span></div>`;
   }
@@ -1362,8 +1327,8 @@ const tourSteps = [
   },
   {
     eyebrow: "Today",
-    title: "Start with your operating lane",
-    description: "Today collects your assigned tasks, deals, upcoming dates, and blockers so you know what needs attention first.",
+    title: "Start with the Founder Brief",
+    description: "Today brings together attention items, decisions, client health, guest bookings, dates, and shared files.",
     selector: "[data-my-work-title]",
     hash: "my-work",
   },
@@ -1377,7 +1342,7 @@ const tourSteps = [
   {
     eyebrow: "Work",
     title: "Move tasks and opportunities forward",
-    description: "Work combines approvals, the team task queue, and deals by stage. Open any card to update it or hand it to another partner.",
+    description: "Team Work holds the task queue and deals by stage. Open any card to update it or hand it to another partner.",
     selector: "#work-title",
     hash: "work",
   },
@@ -1389,11 +1354,11 @@ const tourSteps = [
     hash: "calendar",
   },
   {
-    eyebrow: "Documents",
+    eyebrow: "Files",
     title: "Find shared files quickly",
-    description: "Contracts, templates, briefs, and brand assets live in the Document Library and can be filtered by category.",
+    description: "Contracts, templates, briefs, and brand assets live in the Files and can be filtered by category.",
     selector: "#documents-title",
-    hash: "documents",
+    hash: "files",
   },
   {
     eyebrow: "Create and hand off",
@@ -1532,15 +1497,17 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     }
 
     state.teamUser = data.source?.user || state.teamUser;
-    state.clients = Array.isArray(data.clients) ? data.clients : [];
+    state.clients = (Array.isArray(data.clients) ? data.clients : []).map((client) => isRetiredClient(client) ? { ...client, status: "Archived" } : client);
     state.actions = Array.isArray(data.actions) ? data.actions : [];
     state.opportunities = Array.isArray(data.opportunities) ? data.opportunities : [];
     state.events = Array.isArray(data.events) ? data.events : [];
     try {
       const documentsResponse = await fetch(documentsEndpoint, { headers: getRequestHeaders() });
       const documentsData = await parseJsonResponse(documentsResponse);
+      state.documentsError = !documentsResponse.ok;
       state.documents = documentsResponse.ok && Array.isArray(documentsData.documents) ? documentsData.documents : [];
     } catch {
+      state.documentsError = true;
       state.documents = [];
     }
     state.selectedClientId = state.selectedClientId || state.clients[0]?.id || "";
@@ -1557,6 +1524,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     state.actions = [];
     state.opportunities = [];
     state.events = [];
+    state.documents = [];
     state.selectedClientId = "";
     state.teamUser = error.statusCode === 401 || error.statusCode === 403 ? null : state.teamUser;
     state.portalError = fromAuth ? "" : error.message;
@@ -1922,10 +1890,10 @@ const handleDocumentSubmit = async (event) => {
     });
     const response = await fetch(documentsEndpoint, { method: "POST", headers: getRequestHeaders(), body: JSON.stringify({ name: String(formData.get("name") || "").trim(), category: formData.get("category"), clientId: formData.get("clientId"), description: String(formData.get("description") || "").trim(), filename: file.name, contentType: file.type, base64 }) });
     const data = await parseJsonResponse(response);
-    if (!response.ok) throw new Error(data.message || "Unable to upload the document.");
+    if (!response.ok) throw new Error(data.message || "Unable to upload the file.");
     closeDialog(els.documentDialog);
     await loadDashboard();
-    window.location.hash = "documents";
+    window.location.hash = "files";
   } catch (error) {
     els.documentMessage.textContent = error.message;
   } finally {
@@ -2090,7 +2058,7 @@ els.actionList.addEventListener("click", (event) => {
   }
 });
 
-[els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList, els.dailyPriority, els.approvalList].forEach((target) => {
+[els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList, els.dailyPriority, els.approvalList, $("[data-booking-snapshot]"), $("[data-booking-list]")].forEach((target) => {
   target.addEventListener("click", (event) => {
     const createActionButton = event.target.closest("[data-open-action-form]");
     const actionCardEl = event.target.closest("[data-action-id]");
@@ -2420,4 +2388,11 @@ const bootstrapAuth = async () => {
   }
 };
 
+$("[data-add-booking]").addEventListener("click", () => {
+  openEventForm();
+  els.eventForm.elements.type.value = "Talent Booking";
+  const bobby = state.clients.find((client) => isActiveClient(client) && /bobby outside/i.test(client.name));
+  if (bobby) els.eventForm.elements.clientId.value = bobby.id;
+  els.eventFormTitle.textContent = "Add guest booking";
+});
 bootstrapAuth();
