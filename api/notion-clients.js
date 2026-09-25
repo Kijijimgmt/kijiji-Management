@@ -999,6 +999,31 @@ module.exports = async (request, response) => {
       return;
     }
 
+    if (request.method === "DELETE") {
+      assertWritesAllowed();
+      const body = parseBody(request.body);
+      const id = String(body.id || "").trim();
+      if (body.resource !== "action" || !/^(?:[a-f0-9]{32}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i.test(id)) {
+        json(response, 400, { error: "validation_error", message: "A valid task id is required." });
+        return;
+      }
+      const page = await notionRequest(`/pages/${id}`);
+      // Never allow a task-delete request to trash a client or unrelated Notion page.
+      const sourceId = String(page.parent?.data_source_id || "").replaceAll("-", "").toLowerCase();
+      if (sourceId !== dataSources.actions.replaceAll("-", "").toLowerCase()) {
+        json(response, 403, { error: "forbidden_scope", message: "Only tasks in the shared Actions database can be deleted." });
+        return;
+      }
+      const action = mapPageToAction(page);
+      assertCanManageOwnedRecord(action, identity, "Task");
+      if (!page.in_trash) {
+        await notionRequest(`/pages/${id}`, { method: "PATCH", body: JSON.stringify({ in_trash: true }) });
+        await auditWrite({ resource: "action", operation: "deleted", input: action, saved: action, identity });
+      }
+      json(response, 200, { deleted: true, id });
+      return;
+    }
+
     if (request.method === "POST" || request.method === "PATCH") {
       assertWritesAllowed();
       const body = parseBody(request.body);

@@ -29,7 +29,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20260925-founder" />
+    <link rel="stylesheet" href="portal.css?v=20260925-task-delete" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -586,6 +586,7 @@
         </div>
 
         <div class="dialog-actions">
+          <button class="button button-secondary task-delete-button" type="button" data-delete-action hidden>Delete Task</button>
           <button class="button button-secondary" type="button" data-close-action-form>Cancel</button>
           <button class="button button-primary" type="submit">Save Task</button>
         </div>
@@ -770,6 +771,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260925-founder"></script>
+    <script src="portal.js?v=20260925-task-delete"></script>
   </body>
 </html>

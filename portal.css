@@ -4979,3 +4979,6 @@ html[data-theme="light"] .work-grid .action-item > p { color: #746b63; }
   .portal-topbar { margin-inline: 0; width: 100%; flex-wrap: wrap; gap: 16px; }
   .topbar-actions { flex-wrap: wrap; }
 }
+
+.task-delete-button { margin-right: auto; color: var(--danger); border-color: var(--danger); }
+.task-delete-button:hover { background: rgba(230,92,69,.12); }

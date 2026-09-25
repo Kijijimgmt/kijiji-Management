@@ -1645,6 +1645,7 @@ const openActionForm = (action = null, clientId = "") => {
   renderClientOptions(els.actionClientSelect);
   els.actionFormTitle.textContent = action ? "Edit task" : "Add task";
   els.actionForm.elements.id.value = action?.id || "";
+  $("[data-delete-action]").hidden = !action?.id || !(isAdminUser() || ownerMatches(action.owner, state.teamUser?.owner));
   els.actionForm.elements.title.value = action?.title || "";
   setSelectValue(els.actionForm.elements.status, action?.status || "Open");
   setSelectValue(els.actionForm.elements.owner, action?.owner || "Unassigned");
@@ -1764,8 +1765,43 @@ const handleClientSubmit = async (event) => {
   }
 };
 
+let actionMutationPending = false;
+const handleActionDelete = async () => {
+  const id = els.actionForm.elements.id.value;
+  const action = state.actions.find((item) => item.id === id);
+  if (!action || actionMutationPending) return;
+  if (!window.confirm(`Delete “${action.title}”? This removes the task from the dashboard and moves it to Notion trash.`)) return;
+  actionMutationPending = true;
+  const button = $("[data-delete-action]");
+  const submit = els.actionForm.querySelector('[type="submit"]');
+  button.disabled = submit.disabled = true;
+  button.textContent = "Deleting…";
+  setFormError(els.actionForm);
+  try {
+    const response = await fetch(apiEndpoint, {
+      method: "DELETE", headers: getRequestHeaders(),
+      body: JSON.stringify({ resource: "action", id }),
+    });
+    const data = await parseJsonResponse(response);
+    if (!response.ok) throw new Error(data.message || "Unable to delete the task. Try again.");
+    state.actions = state.actions.filter((item) => item.id !== id);
+    closeDialog(els.actionDialog);
+    renderPortal();
+    await loadDashboard();
+  } catch (error) {
+    setFormError(els.actionForm, error.message);
+  } finally {
+    actionMutationPending = false;
+    button.disabled = submit.disabled = false;
+    button.textContent = "Delete Task";
+  }
+};
+
 const handleActionSubmit = async (event) => {
   event.preventDefault();
+  if (actionMutationPending) return;
+  actionMutationPending = true;
+  $("[data-delete-action]").disabled = true;
   const formData = new FormData(els.actionForm);
   const client = getClient(String(formData.get("clientId") || ""));
   const payload = {
@@ -1796,6 +1832,8 @@ const handleActionSubmit = async (event) => {
   } catch (error) {
     setFormError(els.actionForm, error.message);
   } finally {
+    actionMutationPending = false;
+    $("[data-delete-action]").disabled = false;
     submit.disabled = false;
     submit.textContent = "Save Task";
   }
@@ -2260,6 +2298,7 @@ els.logout?.addEventListener("click", logoutPortal);
 els.accessForm.addEventListener("submit", handleAccessSubmit);
 els.clientForm.addEventListener("submit", handleClientSubmit);
 els.actionForm.addEventListener("submit", handleActionSubmit);
+$("[data-delete-action]").addEventListener("click", handleActionDelete);
 els.opportunityForm.addEventListener("submit", handleOpportunitySubmit);
 els.eventForm.addEventListener("submit", handleEventSubmit);
 els.documentForm.addEventListener("submit", handleDocumentSubmit);
