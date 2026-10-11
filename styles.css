@@ -1211,7 +1211,6 @@ section[id] {
 }
 
 .roster-monogram {
-  visibility: hidden;
   align-self: center;
   color: rgba(255, 248, 237, 0.14);
   font-family: var(--serif);
@@ -1221,6 +1220,8 @@ section[id] {
   line-height: 0.72;
   text-align: center;
 }
+
+.roster-card.has-photo .roster-monogram { visibility: hidden; }
 
 .roster-card-copy {
   display: grid;
