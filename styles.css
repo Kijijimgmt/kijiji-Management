@@ -1140,7 +1140,6 @@ section[id] {
 .roster-card:nth-child(1) { transform: translateY(34px) rotate(-10.5deg); }
 .roster-card:nth-child(2) { transform: translateY(12px) rotate(-3.5deg); }
 .roster-card:nth-child(3) { transform: translateY(12px) rotate(3.5deg); }
-.roster-card:nth-child(4) { transform: translateY(34px) rotate(10.5deg); }
 
 .roster-card::before,
 .roster-card::after {
@@ -1178,7 +1177,6 @@ section[id] {
 .roster-card:nth-child(1) .roster-card-image { object-position: 58% 42%; }
 .roster-card:nth-child(2) .roster-card-image { object-position: 50% 38%; }
 .roster-card:nth-child(3) .roster-card-image { object-position: 50% 43%; }
-.roster-card:nth-child(4) .roster-card-image { object-position: 54% 38%; }
 
 .roster-card:hover,
 .roster-card:focus-visible,
@@ -1927,8 +1925,7 @@ body.cursor-active .cursor-ring {
   .roster-card:first-child,
   .roster-card:nth-child(1),
   .roster-card:nth-child(2),
-  .roster-card:nth-child(3),
-  .roster-card:nth-child(4) {
+  .roster-card:nth-child(3) {
     width: min(78vw, 310px);
     flex: 0 0 min(78vw, 310px);
     margin-left: 12px;
