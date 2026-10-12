@@ -1140,6 +1140,7 @@ section[id] {
 .roster-card:nth-child(1) { transform: translateY(34px) rotate(-10.5deg); }
 .roster-card:nth-child(2) { transform: translateY(12px) rotate(-3.5deg); }
 .roster-card:nth-child(3) { transform: translateY(12px) rotate(3.5deg); }
+.roster-card:nth-child(4) { transform: translateY(34px) rotate(10.5deg); }
 
 .roster-card::before,
 .roster-card::after {
@@ -1925,7 +1926,8 @@ body.cursor-active .cursor-ring {
   .roster-card:first-child,
   .roster-card:nth-child(1),
   .roster-card:nth-child(2),
-  .roster-card:nth-child(3) {
+  .roster-card:nth-child(3),
+  .roster-card:nth-child(4) {
     width: min(78vw, 310px);
     flex: 0 0 min(78vw, 310px);
     margin-left: 12px;
