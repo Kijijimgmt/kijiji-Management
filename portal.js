@@ -56,12 +56,14 @@ const els = {
   workBlockedCount: $("[data-work-blocked-count]"),
   workDealCount: $("[data-work-deal-count]"),
   myWorkTitle: $("[data-my-work-title]"),
+  myWorkEyebrow: $("[data-my-work-eyebrow]"),
   myWorkSubtitle: $("[data-my-work-subtitle]"),
   myWorkTasksMetric: $("[data-my-work-tasks]"),
   myWorkDealsMetric: $("[data-my-work-deals]"),
   myWorkEventsMetric: $("[data-my-work-events]"),
   myWorkBlockersMetric: $("[data-my-work-blockers]"),
   userBadge: $("[data-user-badge]"),
+  maxwellRolePanel: $("[data-maxwell-role-panel]"),
   search: $("[data-search-clients]"),
   statusFilter: $("[data-status-filter]"),
   clientDialog: $("[data-client-dialog]"),
@@ -226,6 +228,7 @@ const isComplete = (item) =>
 const isUrgent = (item) => ["urgent", "high"].includes(String(item.priority || item.focusLevel || "").toLowerCase());
 const isWaiting = (item) => ["waiting", "needs approval"].includes(String(item.status || "").toLowerCase());
 const isAdminUser = () => Boolean(state.teamUser?.isAdmin);
+const isMaxwellUser = () => String(state.teamUser?.email || "").trim().toLowerCase() === "max@kijijimgmt.com";
 const ownerKey = (value) => {
   const text = String(value || "").trim().toLowerCase();
   if (text === "max" || text === "maxwell") return "maxwell";
@@ -326,7 +329,10 @@ const showDashboard = () => {
 
 const applyRoleUi = () => {
   const isAdmin = isAdminUser();
+  const isMaxwell = isMaxwellUser();
   document.body.dataset.portalRole = state.teamUser?.role || "signed-out";
+  document.body.dataset.portalProfile = isMaxwell ? "maxwell" : "team-member";
+  if (els.maxwellRolePanel) els.maxwellRolePanel.hidden = !isMaxwell;
   $$("[data-admin-only]").forEach((element) => {
     element.hidden = !isAdmin;
   });
@@ -553,8 +559,15 @@ const renderMyWork = () => {
     .sort((a,b) => getDaysUntil(a.date) - getDaysUntil(b.date));
   const bookings = getBookings();
   const weekEnd = toLocalISODate(addDays(startOfWeek(today), 7));
-  els.myWorkTitle.textContent = "What matters today.";
-  els.myWorkSubtitle.textContent = `${attention.length} attention ${attention.length === 1 ? "item" : "items"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} across the team.`;
+  if (isMaxwellUser()) {
+    els.myWorkEyebrow.textContent = "Digital Growth & Infrastructure";
+    els.myWorkTitle.textContent = "Build visibility. Strengthen the system.";
+    els.myWorkSubtitle.textContent = `${attention.length} client growth ${attention.length === 1 ? "priority" : "priorities"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} need direction across marketing and infrastructure.`;
+  } else {
+    els.myWorkEyebrow.textContent = "Founder Brief";
+    els.myWorkTitle.textContent = "What matters today.";
+    els.myWorkSubtitle.textContent = `${attention.length} attention ${attention.length === 1 ? "item" : "items"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} across the team.`;
+  }
   els.userBadge.textContent = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric" }).format(today);
   els.myWorkTasksMetric.textContent = attention.length;
   els.myWorkDealsMetric.textContent = decisions.length;

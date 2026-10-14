@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20260925-tour-v2" />
+    <link rel="stylesheet" href="portal.css?v=20261014-maxwell-role" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -129,9 +129,26 @@
         <div class="dashboard-content" data-dashboard-content hidden>
           <section class="my-work-section founder-dashboard" id="my-work" aria-labelledby="my-work-title" data-portal-view="my-work">
             <div class="my-work-hero">
-              <div><p class="eyebrow">Founder Brief</p><h2 id="my-work-title" data-my-work-title>What matters today.</h2><p data-my-work-subtitle>One shared view for Maxwell, Joe, and Erik.</p></div>
+              <div><p class="eyebrow" data-my-work-eyebrow>Founder Brief</p><h2 id="my-work-title" data-my-work-title>What matters today.</h2><p data-my-work-subtitle>One shared view for Maxwell, Joe, and Erik.</p></div>
               <span class="user-badge" data-user-badge></span>
             </div>
+            <section class="maxwell-role-panel" data-maxwell-role-panel aria-labelledby="maxwell-role-title" hidden>
+              <div class="maxwell-role-intro">
+                <p class="eyebrow">Maxwell's Client Mandate</p>
+                <h3 id="maxwell-role-title">Digital Marketing &amp; Digital Infrastructure</h3>
+                <p>Build the audience-facing strategy and the operating systems that help every client grow with clarity.</p>
+              </div>
+              <div class="maxwell-role-focus" aria-label="Maxwell's areas of responsibility">
+                <article>
+                  <span>01</span>
+                  <div><strong>Digital Marketing</strong><p>Brand strategy, campaigns, content distribution, audience growth, and measurable performance.</p></div>
+                </article>
+                <article>
+                  <span>02</span>
+                  <div><strong>Digital Infrastructure</strong><p>Client dashboards, workflows, automations, data, and tools that keep momentum organized.</p></div>
+                </article>
+              </div>
+            </section>
             <div data-daily-priority hidden></div>
             <div class="personal-metrics founder-metrics">
               <a href="#decisions"><span>Decisions Needed</span><strong data-my-work-deals>—</strong></a>
@@ -776,6 +793,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20260925-tour-v2"></script>
+    <script src="portal.js?v=20261014-maxwell-role"></script>
   </body>
 </html>

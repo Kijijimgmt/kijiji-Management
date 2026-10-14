@@ -431,6 +431,55 @@ h2 {
   white-space: nowrap;
 }
 
+.maxwell-role-panel {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  gap: 28px;
+  margin: 18px 0 24px;
+  overflow: hidden;
+  border: 1px solid rgba(226, 154, 88, 0.3);
+  border-radius: 10px;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 0 0, rgba(226, 154, 88, 0.16), transparent 20rem),
+    #171614;
+}
+
+.maxwell-role-intro h3 {
+  max-width: 16ch;
+  margin: 7px 0 10px;
+  color: var(--white);
+  font-size: clamp(1.45rem, 2.5vw, 2.2rem);
+  line-height: 1.08;
+}
+
+.maxwell-role-intro > p:last-child {
+  max-width: 48ch;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.maxwell-role-focus {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(8, 7, 6, 0.36);
+}
+
+.maxwell-role-focus article {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 18px;
+}
+
+.maxwell-role-focus article + article { border-left: 1px solid var(--line); }
+.maxwell-role-focus span { color: var(--orange-hot); font-size: 0.65rem; font-weight: 900; }
+.maxwell-role-focus strong { display: block; color: var(--white); font-size: 0.82rem; }
+.maxwell-role-focus p { margin-top: 6px; color: var(--muted); font-size: 0.76rem; line-height: 1.5; }
+
 .personal-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4850,6 +4899,8 @@ html[data-theme="light"] .approval-panel,
 html[data-theme="light"] .work-grid > section,
 html[data-theme="light"] .personal-metrics,
 html[data-theme="light"] .personal-metrics article,
+html[data-theme="light"] .maxwell-role-panel,
+html[data-theme="light"] .maxwell-role-focus,
 html[data-theme="light"] .overview-grid,
 html[data-theme="light"] .my-work-board .command-panel,
 html[data-theme="light"] .client-table-wrap,
@@ -4959,6 +5010,9 @@ html[data-theme="light"] .work-grid .action-item > p { color: #746b63; }
 @media (max-width: 1100px) { .founder-bottom-grid { grid-template-columns: 1fr; } }
 @media (max-width: 640px) {
   .founder-dashboard { gap: 16px; }
+  .maxwell-role-panel { grid-template-columns: 1fr; gap: 18px; padding: 18px; }
+  .maxwell-role-focus { grid-template-columns: 1fr; }
+  .maxwell-role-focus article + article { border-top: 1px solid var(--line); border-left: 0; }
   .founder-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
   .founder-metrics a { padding: 16px; }
   .executive-row { align-items: flex-start; flex-direction: column; gap: 10px; }
