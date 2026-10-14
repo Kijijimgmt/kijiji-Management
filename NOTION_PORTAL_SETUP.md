@@ -42,6 +42,8 @@ The data source IDs are optional while the current Notion operating system stays
 
 The portal sends a private dashboard notification and an individual email to the other approved partners whenever Maxwell, Joe, Erik, or Emad creates or updates a client, task, opportunity, or event. The person making the update is excluded from the recipient list. Alerts identify the editor, record, new status/stage, owner, blocker state, and a link back to the relevant dashboard section.
 
+The scheduled `/api/event-reminders` job also alerts every approved partner the day before an active event. Each reminder appears in the dashboard notification center and is sent by email; it also posts to the configured Slack operations channel. The job runs daily at 8:00 a.m. Pacific during daylight saving time (9:00 a.m. Pacific otherwise) and skips reminders already archived for that event.
+
 To enable partner notifications:
 
 1. Run the `portal_notifications` section of `supabase-schema.sql` in the Supabase SQL editor.

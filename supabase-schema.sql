@@ -71,6 +71,9 @@ create table if not exists public.portal_notifications (
 create index if not exists portal_notifications_recipient_created_idx
 on public.portal_notifications (recipient_email, created_at desc);
 
+create index if not exists portal_notifications_reminder_lookup_idx
+on public.portal_notifications (resource_type, resource_id, operation);
+
 alter table public.portal_notifications enable row level security;
 grant all on public.portal_notifications to service_role;
 notify pgrst, 'reload schema';

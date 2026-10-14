@@ -1309,7 +1309,7 @@ const renderNotifications = () => {
     <a class="notification-item${item.read_at ? "" : " is-unread"}" href="${escapeHtml(item.portal_url || "#my-work")}" data-notification-id="${escapeHtml(item.id)}">
       <span class="notification-dot" aria-hidden="true"></span>
       <span class="notification-copy">
-        <strong>${escapeHtml(item.actor_name)} ${escapeHtml(item.operation)} ${escapeHtml(item.resource_type.toLowerCase())}</strong>
+        <strong>${escapeHtml(item.actor_name)} ${escapeHtml(String(item.operation || "").startsWith("reminder-") ? "reminder for" : item.operation)} ${escapeHtml(item.resource_type.toLowerCase())}</strong>
         <span>${escapeHtml(item.resource_title)}</span>
         <small>${escapeHtml(item.summary || "Open the dashboard for details.")} · ${escapeHtml(formatNotificationTime(item.created_at))}</small>
       </span>
