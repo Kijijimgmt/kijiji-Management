@@ -1178,6 +1178,7 @@ section[id] {
 .roster-card:nth-child(1) .roster-card-image { object-position: 58% 42%; }
 .roster-card:nth-child(2) .roster-card-image { object-position: 50% 38%; }
 .roster-card:nth-child(3) .roster-card-image { object-position: 50% 43%; }
+.roster-card:nth-child(4) .roster-card-image { object-position: 32% 50%; }
 
 .roster-card:hover,
 .roster-card:focus-visible,
