@@ -141,6 +141,7 @@ let state = {
   events: [],
   documents: [],
   notifications: [],
+  retiredClientIds: [],
   selectedClientId: "",
   isLoading: true,
   portalError: "",
@@ -521,13 +522,14 @@ const getPersonalEvents = () => {
 };
 
 // Executive summaries use the records visible to the signed-in identity.
-const isRetiredClient = (client) => /^broshigeez$/i.test(String(client.name || "").trim());
+const retiredClientNames = new Set(["broshigeez", "chef andra"]);
+const normalizedClientName = (value) => String(value || "").trim().toLowerCase();
+const isRetiredClient = (client) => retiredClientNames.has(normalizedClientName(client?.name));
 const isActiveClient = (client) => !isRetiredClient(client) && !["archived", "inactive"].includes(String(client.status || "").toLowerCase());
 const isCurrentRecord = (item) => {
   const ids = item.clientIds || [];
-  const retired = state.clients.filter((client) => !isActiveClient(client));
-  if (ids.length && ids.every((id) => retired.some((client) => client.id === id))) return false;
-  return !/^broshigeez$/i.test(String(item.clientName || "").trim());
+  if (ids.length && ids.every((id) => state.retiredClientIds.includes(id))) return false;
+  return !retiredClientNames.has(normalizedClientName(item.clientName));
 };
 const isLiveEvent = (item) => !isComplete(item) && !["cancelled", "canceled"].includes(String(item.status || "").toLowerCase());
 const getDecisions = () => getOpenActions().filter(isCurrentRecord)
@@ -1535,10 +1537,12 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     }
 
     state.teamUser = data.source?.user || state.teamUser;
-    state.clients = (Array.isArray(data.clients) ? data.clients : []).map((client) => isRetiredClient(client) ? { ...client, status: "Archived" } : client);
-    state.actions = Array.isArray(data.actions) ? data.actions : [];
-    state.opportunities = Array.isArray(data.opportunities) ? data.opportunities : [];
-    state.events = Array.isArray(data.events) ? data.events : [];
+    const incomingClients = Array.isArray(data.clients) ? data.clients : [];
+    state.retiredClientIds = incomingClients.filter(isRetiredClient).map((client) => client.id);
+    state.clients = incomingClients.filter((client) => !isRetiredClient(client));
+    state.actions = (Array.isArray(data.actions) ? data.actions : []).filter(isCurrentRecord);
+    state.opportunities = (Array.isArray(data.opportunities) ? data.opportunities : []).filter(isCurrentRecord);
+    state.events = (Array.isArray(data.events) ? data.events : []).filter(isCurrentRecord);
     try {
       const documentsResponse = await fetch(documentsEndpoint, { headers: getRequestHeaders() });
       const documentsData = await parseJsonResponse(documentsResponse);
@@ -1548,7 +1552,9 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
       state.documentsError = true;
       state.documents = [];
     }
-    state.selectedClientId = state.selectedClientId || state.clients[0]?.id || "";
+    state.selectedClientId = state.clients.some((client) => client.id === state.selectedClientId)
+      ? state.selectedClientId
+      : state.clients[0]?.id || "";
     state.isLoading = false;
     setSourceBadge("ready", state.teamUser?.fullName ? `${state.teamUser.fullName} / Notion synced` : "Synced with Notion");
     setAccessMessage("");
@@ -1563,6 +1569,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     state.opportunities = [];
     state.events = [];
     state.documents = [];
+    state.retiredClientIds = [];
     state.selectedClientId = "";
     state.teamUser = error.statusCode === 401 || error.statusCode === 403 ? null : state.teamUser;
     state.portalError = fromAuth ? "" : error.message;
