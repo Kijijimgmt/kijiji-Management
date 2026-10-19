@@ -50,6 +50,7 @@
           <a href="#calendar">Calendar</a>
           <a href="#decisions">Decisions</a>
           <a href="#files">Files</a>
+          <a href="#reports">Reports</a>
           <details class="nav-more">
             <summary role="button" aria-haspopup="true" aria-expanded="false">More</summary>
             <div>
@@ -399,6 +400,27 @@
             <div class="document-summary"><strong data-document-count>0 files</strong><span>Available to signed-in Kijiji team members</span></div>
             <div class="document-folders" data-document-folders aria-label="File folders"></div>
             <div class="document-grid" data-document-list></div>
+          </section>
+
+          <section class="portal-section reports-section" id="reports" aria-labelledby="reports-title" data-portal-view="reports">
+            <div class="section-header">
+              <div><p class="eyebrow">Intake &amp; Intelligence</p><h2 id="reports-title">Reports</h2><p class="section-note">Client assessment responses and the weekly Kijiji Music Industry Brief in one place.</p></div>
+              <button class="button button-secondary" type="button" data-refresh-dashboard data-requires-access>Refresh Reports</button>
+            </div>
+            <div class="reports-summary" aria-label="Report totals">
+              <div><strong data-assessment-count>0</strong><span>Client assessments</span></div>
+              <div><strong data-brief-count>0</strong><span>Industry briefs</span></div>
+            </div>
+            <div class="reports-grid">
+              <section class="report-feed" aria-labelledby="assessment-feed-title">
+                <div class="report-feed-head"><div><p class="eyebrow">Jotform</p><h3 id="assessment-feed-title">Infrastructure Assessments</h3></div><a class="text-action" href="https://form.jotform.com/ineedthemax05/kijiji-management--artist-digital-i" target="_blank" rel="noreferrer">Open form →</a></div>
+                <div data-assessment-list></div>
+              </section>
+              <section class="report-feed" aria-labelledby="brief-feed-title">
+                <div class="report-feed-head"><div><p class="eyebrow">Weekly intelligence</p><h3 id="brief-feed-title">Kijiji Music Industry Brief</h3></div></div>
+                <div data-industry-brief-list></div>
+              </section>
+            </div>
           </section>
 
           <section class="portal-section guidance-section" id="guidance" aria-labelledby="guidance-title" data-portal-view="guidance">

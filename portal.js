@@ -1,5 +1,6 @@
 const apiEndpoint = "/api/notion-clients";
 const documentsEndpoint = "/api/notion-documents";
+const dashboardInsightsEndpoint = "/api/dashboard-insights";
 const notificationsEndpoint = "/api/notifications";
 const authLinkEndpoint = "/api/auth-link";
 const authConfigEndpoint = "/api/auth-config";
@@ -42,6 +43,10 @@ const els = {
   documentForm: $("[data-document-form]"),
   documentClientSelect: $("[data-document-client-select]"),
   documentMessage: $("[data-document-message]"),
+  assessmentList: $("[data-assessment-list]"),
+  industryBriefList: $("[data-industry-brief-list]"),
+  assessmentCount: $("[data-assessment-count]"),
+  briefCount: $("[data-brief-count]"),
   notificationCenter: $("[data-notification-center]"),
   notificationList: $("[data-notification-list]"),
   notificationCount: $("[data-notification-count]"),
@@ -142,6 +147,9 @@ let state = {
   opportunities: [],
   events: [],
   documents: [],
+  submissions: [],
+  industryBriefs: [],
+  insightsIntegrations: {},
   notifications: [],
   retiredClientIds: [],
   selectedClientId: "",
@@ -353,6 +361,7 @@ const viewTitles = {
   work: "Work",
   calendar: "Calendar",
   files: "Files",
+  reports: "Reports",
   decisions: "Decisions",
   "talent-bookings": "Talent Bookings",
   guidance: "Playbook",
@@ -1203,6 +1212,48 @@ const renderDocuments = () => {
   }).join("");
 };
 
+const renderReports = () => {
+  if (!els.assessmentList || !els.industryBriefList) return;
+  els.assessmentCount.textContent = String(state.submissions.length);
+  els.briefCount.textContent = String(state.industryBriefs.length);
+
+  if (!state.submissions.length) {
+    const integration = state.insightsIntegrations?.jotform || {};
+    renderEmptyList(
+      els.assessmentList,
+      integration.configured ? "No assessments yet" : "Connect Jotform",
+      integration.error || (integration.configured
+        ? "New client assessment responses will appear here automatically."
+        : "Add the secure Jotform API key in Vercel to sync assessment answers."),
+    );
+  } else {
+    els.assessmentList.innerHTML = state.submissions.map((submission) => `<article class="assessment-card">
+      <header><div><span>Submitted ${escapeHtml(formatDate(String(submission.submittedAt || "").slice(0, 10)))}</span><h4>${escapeHtml(submission.artistName)}</h4></div><span class="report-status">New intake</span></header>
+      ${submission.priority ? `<p><strong>90-day priority</strong>${escapeHtml(submission.priority)}</p>` : ""}
+      ${submission.obstacle ? `<p><strong>Biggest obstacle</strong>${escapeHtml(submission.obstacle)}</p>` : ""}
+      ${submission.helpAreas ? `<p><strong>Help needed</strong>${escapeHtml(submission.helpAreas)}</p>` : ""}
+      <details><summary>View all answers</summary><dl>${submission.answers.map((answer) => `<div><dt>${escapeHtml(answer.question)}</dt><dd>${escapeHtml(answer.answer)}</dd></div>`).join("")}</dl></details>
+    </article>`).join("");
+  }
+
+  if (!state.industryBriefs.length) {
+    const integration = state.insightsIntegrations?.industryBriefs || {};
+    renderEmptyList(
+      els.industryBriefList,
+      integration.error ? "Brief feed needs access" : "First brief is pending",
+      integration.error || "The next scheduled Kijiji Music Industry Brief will appear here after it is saved to the shared report library.",
+    );
+  } else {
+    els.industryBriefList.innerHTML = state.industryBriefs.map((brief) => `<article class="industry-brief-card">
+      <header><div><span>${escapeHtml(formatDate(String(brief.issueDate || "").slice(0, 10)))}</span><h4>${escapeHtml(brief.title)}</h4></div><span class="report-status">${escapeHtml(brief.status)}</span></header>
+      <p>${escapeHtml(brief.summary || "Weekly music-industry intelligence for the Kijiji team.")}</p>
+      ${brief.keyMoves ? `<div><strong>Key moves</strong><span>${escapeHtml(brief.keyMoves)}</span></div>` : ""}
+      ${brief.watchlist ? `<div><strong>Watchlist</strong><span>${escapeHtml(brief.watchlist)}</span></div>` : ""}
+      <a class="text-action" href="${escapeHtml(brief.reportUrl || brief.notionUrl)}" target="_blank" rel="noreferrer">Open full brief →</a>
+    </article>`).join("");
+  }
+};
+
 const renderClientOptions = (selectEl) => {
   if (!selectEl) {
     return;
@@ -1257,6 +1308,8 @@ const setLoadingState = () => {
     [els.pipelineGrid, "Pipeline", "Loading opportunities by stage."],
     [els.calendarGrid, "Calendar", "Building the team calendar."],
     [els.calendarList, "Calendar", "Loading upcoming releases and events."],
+    [els.assessmentList, "Assessments", "Checking for new Jotform responses."],
+    [els.industryBriefList, "Industry briefs", "Loading the latest weekly report."],
   ].forEach(([target, title, text]) => {
     if (target) {
       renderEmptyList(target, title, text);
@@ -1307,6 +1360,8 @@ const setErrorState = () => {
     [els.pipelineGrid, "No pipeline available", "Opportunity stages will unlock once the shared Opportunities database is reachable."],
     [els.calendarGrid, "No calendar available", "The calendar will return once the shared Events database is reachable."],
     [els.calendarList, "No calendar available", "Events and releases will unlock once the shared Events database is reachable."],
+    [els.assessmentList, "Assessments unavailable", "Refresh to try loading Jotform responses again."],
+    [els.industryBriefList, "Briefs unavailable", "Refresh to try loading the weekly brief again."],
   ].forEach(([target, title, text]) => {
     if (target) {
       renderEmptyList(target, title, text);
@@ -1339,6 +1394,7 @@ const renderPortal = () => {
   renderPipeline();
   renderCalendar();
   renderDocuments();
+  renderReports();
   renderActionClientOptions();
   renderClientOptions(els.documentClientSelect);
 };
@@ -1577,14 +1633,27 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     state.actions = (Array.isArray(data.actions) ? data.actions : []).filter(isCurrentRecord);
     state.opportunities = (Array.isArray(data.opportunities) ? data.opportunities : []).filter(isCurrentRecord);
     state.events = (Array.isArray(data.events) ? data.events : []).filter(isCurrentRecord);
-    try {
-      const documentsResponse = await fetch(documentsEndpoint, { headers: getRequestHeaders() });
-      const documentsData = await parseJsonResponse(documentsResponse);
-      state.documentsError = !documentsResponse.ok;
-      state.documents = documentsResponse.ok && Array.isArray(documentsData.documents) ? documentsData.documents : [];
-    } catch {
+    const [documentsResult, insightsResult] = await Promise.allSettled([
+      fetch(documentsEndpoint, { headers: getRequestHeaders() }),
+      fetch(dashboardInsightsEndpoint, { headers: getRequestHeaders(), cache: "no-store" }),
+    ]);
+    if (documentsResult.status === "fulfilled") {
+      const documentsData = await parseJsonResponse(documentsResult.value);
+      state.documentsError = !documentsResult.value.ok;
+      state.documents = documentsResult.value.ok && Array.isArray(documentsData.documents) ? documentsData.documents : [];
+    } else {
       state.documentsError = true;
       state.documents = [];
+    }
+    if (insightsResult.status === "fulfilled") {
+      const insightsData = await parseJsonResponse(insightsResult.value);
+      state.submissions = insightsResult.value.ok && Array.isArray(insightsData.submissions) ? insightsData.submissions : [];
+      state.industryBriefs = insightsResult.value.ok && Array.isArray(insightsData.briefs) ? insightsData.briefs : [];
+      state.insightsIntegrations = insightsResult.value.ok ? insightsData.integrations || {} : {};
+    } else {
+      state.submissions = [];
+      state.industryBriefs = [];
+      state.insightsIntegrations = {};
     }
     state.selectedClientId = state.clients.some((client) => client.id === state.selectedClientId)
       ? state.selectedClientId
@@ -1603,6 +1672,9 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     state.opportunities = [];
     state.events = [];
     state.documents = [];
+    state.submissions = [];
+    state.industryBriefs = [];
+    state.insightsIntegrations = {};
     state.retiredClientIds = [];
     state.selectedClientId = "";
     state.teamUser = error.statusCode === 401 || error.statusCode === 403 ? null : state.teamUser;
@@ -2104,6 +2176,9 @@ async function logoutPortal() {
     opportunities: [],
     events: [],
     documents: [],
+    submissions: [],
+    industryBriefs: [],
+    insightsIntegrations: {},
     notifications: [],
     selectedClientId: "",
     isLoading: false,
