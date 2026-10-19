@@ -1,6 +1,6 @@
 const apiEndpoint = "/api/notion-clients";
 const documentsEndpoint = "/api/notion-documents";
-const dashboardInsightsEndpoint = "/api/dashboard-insights";
+const dashboardInsightsEndpoint = "/api/notion-documents?view=insights";
 const notificationsEndpoint = "/api/notifications";
 const authLinkEndpoint = "/api/auth-link";
 const authConfigEndpoint = "/api/auth-config";

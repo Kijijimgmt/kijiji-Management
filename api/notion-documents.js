@@ -5,6 +5,15 @@ const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
 const DOCUMENTS_DATA_SOURCE_ID = String(
   process.env.NOTION_DOCUMENTS_DATA_SOURCE_ID || "8ba38a00-a408-44c9-befe-293359292f75",
 ).replace(/^collection:\/\//, "");
+const INDUSTRY_BRIEFS_DATA_SOURCE_ID = String(
+  process.env.NOTION_INDUSTRY_BRIEFS_DATA_SOURCE_ID || "17891f32-2874-492d-a6f6-67bdcefd4333",
+).replace(/^collection:\/\//, "");
+const JOTFORM_API_KEY = process.env.JOTFORM_API_KEY;
+const JOTFORM_FORM_IDS = String(process.env.JOTFORM_FORM_IDS || "262913925847065")
+  .split(",")
+  .map((id) => id.trim())
+  .filter((id) => /^\d+$/.test(id))
+  .slice(0, 5);
 const MAX_FILE_BYTES = 3 * 1024 * 1024;
 const ALLOWED_TYPES = new Set([
   "application/pdf",
@@ -98,6 +107,77 @@ const listDocuments = async () => {
   return result.results.filter((item) => item.object === "page").map(mapDocument);
 };
 
+const answerText = (value) => {
+  if (Array.isArray(value)) return value.join(", ");
+  if (value && typeof value === "object") return Object.values(value).filter(Boolean).join(" ");
+  return String(value ?? "").trim();
+};
+
+const mapSubmission = (submission, formId) => {
+  const answers = Object.values(submission.answers || {})
+    .map((item) => ({ question: String(item?.text || item?.name || "").trim(), answer: answerText(item?.answer) }))
+    .filter((item) => item.question && item.answer && item.answer !== "No Answer")
+    .slice(0, 80);
+  const find = (pattern) => answers.find((item) => pattern.test(item.question))?.answer || "";
+  return {
+    id: String(submission.id || ""), formId,
+    submittedAt: submission.created_at || submission.updated_at || "",
+    status: submission.status || "ACTIVE",
+    artistName: find(/artist\/?stage name/i) || find(/artist name/i) || "New assessment",
+    contactName: find(/primary client contact/i), email: find(/^email$/i),
+    priority: find(/top priority.*90 days/i), obstacle: find(/biggest obstacle/i),
+    helpAreas: find(/three areas.*need help/i), answers,
+  };
+};
+
+const fetchJotformSubmissions = async () => {
+  if (!JOTFORM_API_KEY || !JOTFORM_FORM_IDS.length) return { submissions: [], configured: false };
+  const groups = await Promise.all(JOTFORM_FORM_IDS.map(async (formId) => {
+    const url = new URL(`https://api.jotform.com/form/${formId}/submissions`);
+    url.searchParams.set("limit", "25");
+    url.searchParams.set("orderby", "created_at");
+    url.searchParams.set("direction", "DESC");
+    const response = await fetch(url, { headers: { APIKEY: JOTFORM_API_KEY, Accept: "application/json" } });
+    if (!response.ok) throw new Error(`Jotform request failed (${response.status}).`);
+    const data = await response.json();
+    return (Array.isArray(data.content) ? data.content : []).map((item) => mapSubmission(item, formId));
+  }));
+  return { configured: true, submissions: groups.flat().sort((a, b) => String(b.submittedAt).localeCompare(String(a.submittedAt))).slice(0, 50) };
+};
+
+const fetchIndustryBriefs = async () => {
+  const data = await notionRequest(`/data_sources/${INDUSTRY_BRIEFS_DATA_SOURCE_ID}/query`, {
+    method: "POST",
+    body: JSON.stringify({ page_size: 25, sorts: [{ property: "Issue Date", direction: "descending" }] }),
+  });
+  return {
+    configured: true,
+    briefs: data.results.filter((item) => item.object === "page").map((page) => {
+      const properties = page.properties || {};
+      return {
+        id: page.id, title: textValue(properties.Brief) || "Kijiji Music Industry Brief",
+        issueDate: properties["Issue Date"]?.date?.start || page.created_time,
+        status: selectValue(properties.Status) || "Published",
+        summary: textValue(properties["Executive Summary"]), keyMoves: textValue(properties["Key Moves"]),
+        watchlist: textValue(properties.Watchlist), reportUrl: properties["Report URL"]?.url || page.url, notionUrl: page.url,
+      };
+    }),
+  };
+};
+
+const listInsights = async () => {
+  const [jotformResult, briefsResult] = await Promise.allSettled([fetchJotformSubmissions(), fetchIndustryBriefs()]);
+  const jotform = jotformResult.status === "fulfilled" ? jotformResult.value : { submissions: [], configured: Boolean(JOTFORM_API_KEY), error: jotformResult.reason?.message };
+  const industry = briefsResult.status === "fulfilled" ? briefsResult.value : { briefs: [], configured: Boolean(NOTION_TOKEN), error: briefsResult.reason?.message };
+  return {
+    submissions: jotform.submissions, briefs: industry.briefs,
+    integrations: {
+      jotform: { configured: jotform.configured, error: jotform.error || "" },
+      industryBriefs: { configured: industry.configured, error: industry.error || "" },
+    },
+  };
+};
+
 const cleanFilename = (value) => String(value || "document")
   .replace(/[\\/\0\r\n]/g, "-")
   .replace(/[^a-zA-Z0-9._() -]/g, "")
@@ -159,6 +239,10 @@ module.exports = async (request, response) => {
   try {
     const identity = await verifyTeamAccess(request);
     if (request.method === "GET") {
+      if (request.query?.view === "insights") {
+        json(response, 200, await listInsights());
+        return;
+      }
       json(response, 200, { documents: await listDocuments() });
       return;
     }
