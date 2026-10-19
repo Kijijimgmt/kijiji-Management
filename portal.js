@@ -34,6 +34,7 @@ const els = {
   calendarToday: $("[data-calendar-today]"),
   calendarViewButtons: $$('[data-calendar-view]'),
   documentList: $("[data-document-list]"),
+  documentFolders: $("[data-document-folders]"),
   documentCount: $("[data-document-count]"),
   documentSearch: $("[data-search-documents]"),
   documentCategory: $("[data-document-category]"),
@@ -73,6 +74,7 @@ const els = {
   actionForm: $("[data-action-form]"),
   actionFormTitle: $("[data-action-form-title]"),
   actionClientSelect: $("[data-action-client-select]"),
+  actionDocumentPicker: $("[data-action-document-picker]"),
   opportunityDialog: $("[data-opportunity-dialog]"),
   opportunityForm: $("[data-opportunity-form]"),
   opportunityFormTitle: $("[data-opportunity-form-title]"),
@@ -147,6 +149,7 @@ let state = {
   portalError: "",
   authSession: null,
   teamUser: null,
+  documentFolder: "all",
 };
 
 let calendarView = "month";
@@ -663,6 +666,18 @@ const renderEmptyList = (target, title, text) => {
   `;
 };
 
+const getActionDocuments = (action) => (action.documentIds || [])
+  .map((id) => state.documents.find((document) => document.id === id))
+  .filter(Boolean);
+
+const renderActionAttachments = (action) => {
+  const files = getActionDocuments(action);
+  if (!files.length) return "";
+  return `<div class="task-attachments" aria-label="Attached files">
+    ${files.map((file) => `<a href="${escapeHtml(file.fileUrl || file.notionUrl)}" target="_blank" rel="noreferrer" data-task-file-link title="Open ${escapeHtml(file.name)}">📎 ${escapeHtml(file.name)}</a>`).join("")}
+  </div>`;
+};
+
 const actionCard = (action) => `
   <article class="action-item editable-card" data-action-id="${escapeHtml(action.id)}" role="button" tabindex="0" aria-label="Edit task: ${escapeHtml(action.title)}">
     <header>
@@ -671,6 +686,7 @@ const actionCard = (action) => `
     </header>
     <p title="${escapeHtml(action.notes || getClientName(action))}">${escapeHtml(action.notes || getClientName(action))}</p>
     ${action.dependency ? `<p class="workflow-context"><span>Waiting on</span> ${escapeHtml(action.dependency)}</p>` : ""}
+    ${renderActionAttachments(action)}
     <div class="item-meta">
       <span data-state="${isWaiting(action) ? "waiting" : "active"}">${escapeHtml(action.status || "Open")}</span>
       <span>${escapeHtml(action.owner || "Unassigned")}</span>
@@ -1149,10 +1165,28 @@ const renderDocuments = () => {
   if (!els.documentList) return;
   const query = String(els.documentSearch?.value || "").trim().toLowerCase();
   const category = els.documentCategory?.value || "all";
+  const folder = state.documentFolder || "all";
+  const activeClients = state.clients.filter(isActiveClient);
+  const folderItems = [
+    { id: "all", name: "All Files", count: state.documents.length },
+    { id: "shared", name: "Shared Resources", count: state.documents.filter((item) => !item.clientIds?.length).length },
+    ...activeClients.map((client) => ({
+      id: client.id,
+      name: client.name,
+      count: state.documents.filter((item) => item.clientIds?.includes(client.id)).length,
+    })),
+  ];
+  if (els.documentFolders) {
+    els.documentFolders.innerHTML = folderItems.map((item) => `<button type="button" class="document-folder${folder === item.id ? " is-active" : ""}" data-document-folder="${escapeHtml(item.id)}" aria-pressed="${folder === item.id}">
+      <span class="folder-icon" aria-hidden="true">▰</span><span><strong>${escapeHtml(item.name)}</strong><small>${item.count} ${item.count === 1 ? "file" : "files"}</small></span>
+    </button>`).join("");
+  }
   const documents = state.documents.filter((document) => {
     const matchesCategory = category === "all" || document.category === category;
-    const haystack = `${document.name} ${document.description} ${document.owner} ${document.category}`.toLowerCase();
-    return matchesCategory && (!query || haystack.includes(query));
+    const matchesFolder = folder === "all" || (folder === "shared" ? !document.clientIds?.length : document.clientIds?.includes(folder));
+    const clientName = document.clientIds?.length ? getClient(document.clientIds[0])?.name || "" : "Shared Resources";
+    const haystack = `${document.name} ${document.description} ${document.owner} ${document.category} ${clientName}`.toLowerCase();
+    return matchesCategory && matchesFolder && (!query || haystack.includes(query));
   });
   els.documentCount.textContent = `${documents.length} ${documents.length === 1 ? "file" : "files"}`;
   if (!documents.length) {
@@ -1385,7 +1419,7 @@ const tourSteps = [
   {
     "eyebrow": "Files",
     "title": "Keep shared resources easy to find",
-    "description": "Files replaces Documents. Upload briefs, contracts, templates, and founder resources here. A client link is optional. Search or filter the library; Today shows the most recently updated files.",
+    "description": "Upload briefs, contracts, templates, and founder resources here. Client files are automatically organized into folders, while reusable items stay in Shared Resources. You can also attach these files directly to tasks.",
     "selector": "#files",
     "hash": "files"
   },
@@ -1702,8 +1736,27 @@ const openActionForm = (action = null, clientId = "") => {
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
   els.actionForm.elements.dependency.value = action?.dependency || "";
   els.actionForm.elements.notes.value = action?.notes || "";
+  renderActionDocumentPicker(action?.documentIds || [], action?.clientIds?.[0] || clientId);
   applyOwnerFieldPolicy(els.actionForm.elements.owner);
   openDialog(els.actionDialog);
+};
+
+const renderActionDocumentPicker = (selectedIds = [], clientId = "") => {
+  if (!els.actionDocumentPicker) return;
+  const selected = new Set(selectedIds);
+  const sorted = [...state.documents].sort((a, b) => {
+    const aClient = a.clientIds?.includes(clientId) ? 0 : 1;
+    const bClient = b.clientIds?.includes(clientId) ? 0 : 1;
+    return aClient - bClient || String(a.name).localeCompare(String(b.name));
+  });
+  if (!sorted.length) {
+    els.actionDocumentPicker.innerHTML = `<span class="task-file-empty">No files uploaded yet.</span>`;
+    return;
+  }
+  els.actionDocumentPicker.innerHTML = sorted.map((file) => {
+    const client = file.clientIds?.length ? getClient(file.clientIds[0]) : null;
+    return `<label><input type="checkbox" name="documentIds" value="${escapeHtml(file.id)}" ${selected.has(file.id) ? "checked" : ""} /><span><strong>${escapeHtml(file.name)}</strong><small>${escapeHtml(client?.name || "Shared Resources")} · ${escapeHtml(file.category || "File")}</small></span></label>`;
+  }).join("");
 };
 
 const openOpportunityForm = (opportunity = null) => {
@@ -1791,6 +1844,7 @@ const handleClientSubmit = async (event) => {
     phone: String(formData.get("phone") || "").trim(),
     leadSource: String(formData.get("leadSource") || "").trim(),
     notes: String(formData.get("notes") || "").trim(),
+    documentIds: formData.getAll("documentIds").map(String),
   };
   const submit = els.clientForm.querySelector('[type="submit"]');
 
@@ -2056,6 +2110,7 @@ async function logoutPortal() {
     portalError: "",
     authSession: null,
     teamUser: null,
+    documentFolder: "all",
   };
   setSourceBadge("signed-out", "Signed out");
   applyRoleUi();
@@ -2132,6 +2187,7 @@ els.detail.addEventListener("click", (event) => {
 });
 
 els.actionList.addEventListener("click", (event) => {
+  if (event.target.closest("[data-task-file-link]")) return;
   const actionCardEl = event.target.closest("[data-action-id]");
   if (actionCardEl) {
     const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
@@ -2143,6 +2199,7 @@ els.actionList.addEventListener("click", (event) => {
 
 [els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList, els.dailyPriority, els.approvalList, $("[data-booking-snapshot]"), $("[data-booking-list]")].forEach((target) => {
   target.addEventListener("click", (event) => {
+    if (event.target.closest("[data-task-file-link]")) return;
     const createActionButton = event.target.closest("[data-open-action-form]");
     const actionCardEl = event.target.closest("[data-action-id]");
     const opportunityCardEl = event.target.closest("[data-opportunity-id]");
@@ -2175,6 +2232,7 @@ els.actionList.addEventListener("click", (event) => {
   });
 
   target.addEventListener("keydown", (event) => {
+    if (event.target.closest("[data-task-file-link]")) return;
     if (event.key !== "Enter" && event.key !== " ") {
       return;
     }
@@ -2208,6 +2266,20 @@ els.actionList.addEventListener("click", (event) => {
   });
 });
 
+els.documentFolders?.addEventListener("click", (event) => {
+  const folder = event.target.closest("[data-document-folder]");
+  if (!folder) return;
+  state.documentFolder = folder.dataset.documentFolder || "all";
+  renderDocuments();
+});
+
+els.actionClientSelect?.addEventListener("change", () => {
+  const selectedIds = [...els.actionForm.querySelectorAll('input[name="documentIds"]:checked')].map((input) => input.value);
+  renderActionDocumentPicker(selectedIds, els.actionClientSelect.value);
+});
+
+els.actionForm?.querySelector("[data-close-action-for-files]")?.addEventListener("click", () => closeDialog(els.actionDialog));
+
 els.clientHealthStrip.addEventListener("click", (event) => {
   const clientButton = event.target.closest("[data-health-client-id]");
   if (!clientButton) return;
@@ -2218,6 +2290,7 @@ els.clientHealthStrip.addEventListener("click", (event) => {
 });
 
 els.actionList.addEventListener("keydown", (event) => {
+  if (event.target.closest("[data-task-file-link]")) return;
   if (event.key !== "Enter" && event.key !== " ") {
     return;
   }

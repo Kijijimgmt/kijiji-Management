@@ -131,6 +131,28 @@ const emailValue = (property) => property?.email || "";
 const phoneValue = (property) => property?.phone_number || "";
 const relationIds = (property) => property?.relation?.map((item) => item.id) || [];
 const recurringRules = ["", "Weekly", "Every 2 Weeks", "Monthly", "Quarterly"];
+const documentMarkerPattern = /\n?\[\[KMG_DOCUMENTS:([^\]]*)\]\]\s*$/;
+const normalizeDocumentIds = (values) => (Array.isArray(values) ? values : [])
+  .map((id) => String(id || "").trim())
+  .filter((id) => /^[a-f0-9-]{32,36}$/i.test(id))
+  .slice(0, 12);
+
+const splitActionNotes = (value) => {
+  const raw = String(value || "");
+  const match = raw.match(documentMarkerPattern);
+  return {
+    notes: raw.replace(documentMarkerPattern, "").trim(),
+    documentIds: match ? normalizeDocumentIds(match[1].split(",")) : [],
+  };
+};
+
+const actionNotesValue = (notes, documentIds) => {
+  const ids = normalizeDocumentIds(documentIds);
+  const marker = ids.length ? `[[KMG_DOCUMENTS:${ids.join(",")}]]` : "";
+  const separatorLength = notes && marker ? 2 : 0;
+  const safeNotes = String(notes || "").trim().slice(0, Math.max(0, 2000 - marker.length - separatorLength));
+  return [safeNotes, marker].filter(Boolean).join("\n\n");
+};
 
 const richText = (value) => ({
   rich_text: value ? [{ text: { content: String(value).slice(0, 2000) } }] : [],
@@ -279,6 +301,7 @@ const mapPageToClient = (page) => {
 const mapPageToAction = (page) => {
   const properties = page.properties || {};
   const clientRelation = relationIds(propertyByAliases(properties, clientRelationAliases));
+  const actionNotes = splitActionNotes(plainText(propertyByAliases(properties, ["Notes", "Details"])));
 
   return {
     id: page.id,
@@ -297,7 +320,8 @@ const mapPageToAction = (page) => {
     dependency: plainText(propertyByAliases(properties, ["Depends On", "Dependency", "Blocked By"])),
     recurrence: selectName(propertyByAliases(properties, ["Recurrence", "Repeat", "Frequency"])),
     recurringSource: plainText(propertyByAliases(properties, ["Recurring Source", "Recurring Parent"])),
-    notes: plainText(propertyByAliases(properties, ["Notes", "Details"])),
+    notes: actionNotes.notes,
+    documentIds: actionNotes.documentIds,
   };
 };
 
@@ -368,6 +392,7 @@ const normalizeActionInput = (body) => ({
   dependency: String(body.dependency || "").trim(),
   recurrence: String(body.recurrence || "").trim(),
   notes: String(body.notes || "").trim(),
+  documentIds: normalizeDocumentIds(body.documentIds),
 });
 
 const normalizeOpportunityInput = (body) => ({
@@ -716,7 +741,7 @@ const actionProperties = (action, schema) => {
   assignOptionalProperty(properties, schema, ["Depends On", "Dependency", "Blocked By"], "rich_text", richText, action.dependency);
   assignOptionalProperty(properties, schema, ["Recurrence", "Repeat", "Frequency"], "select", select, action.recurrence);
   assignOptionalProperty(properties, schema, ["Recurring Source", "Recurring Parent"], "rich_text", richText, action.recurringSource);
-  assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, action.notes);
+  assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, actionNotesValue(action.notes, action.documentIds));
 
   assignClientRelation(properties, schema, action.clientId);
 
