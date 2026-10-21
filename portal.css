@@ -5227,3 +5227,268 @@ html[data-theme="light"] .work-grid .action-item > p { color: #746b63; }
 
 .task-delete-button { margin-right: auto; color: var(--danger); border-color: var(--danger); }
 .task-delete-button:hover { background: rgba(230,92,69,.12); }
+
+/* Calm workspace refresh: Kijiji brand applied to a softer, modular dashboard. */
+:root {
+  --workspace-radius: 20px;
+  --card-radius: 16px;
+  --workspace-shadow: 0 24px 70px rgba(43, 32, 24, 0.16);
+  --card-shadow: 0 6px 22px rgba(43, 32, 24, 0.055);
+}
+
+body { padding: 18px; }
+body::before { opacity: 0.08; }
+
+.portal-shell {
+  width: min(1720px, 100%);
+  grid-template-columns: 218px minmax(0, 1fr);
+  min-height: calc(100vh - 36px);
+  margin: 0 auto;
+  overflow: clip;
+  border: 1px solid var(--line);
+  border-radius: var(--workspace-radius);
+  box-shadow: var(--workspace-shadow);
+}
+
+.portal-sidebar {
+  top: 18px;
+  height: calc(100vh - 36px);
+  gap: 22px;
+  padding: 26px 18px;
+  background: #0d0b09;
+}
+
+.portal-brand,
+.portal-brand img { width: 132px; }
+
+.portal-nav { gap: 6px; }
+.portal-nav a,
+.nav-more summary {
+  min-height: 44px;
+  border-radius: 12px;
+  padding-inline: 13px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.portal-nav a.is-active {
+  border-color: rgba(255, 178, 94, 0.2);
+  background: linear-gradient(135deg, #ad5718, #8f400d);
+  color: #fffaf4;
+  box-shadow: 0 7px 18px rgba(201, 116, 42, 0.2);
+}
+
+.sidebar-note {
+  margin-top: auto;
+  border: 1px solid rgba(237, 227, 208, 0.1);
+  border-radius: 13px;
+  padding: 13px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.portal-main {
+  min-width: 0;
+  padding: 0 26px 30px;
+}
+
+.portal-topbar {
+  top: 0;
+  margin: 0 -2px 22px;
+  padding: 18px 2px 14px;
+  background: rgba(246, 242, 235, 0.92);
+  backdrop-filter: blur(18px);
+}
+
+.portal-topbar h1,
+.portal-main h1,
+.portal-main h2,
+.portal-main h3,
+.client-dialog h2,
+.notification-popover h2,
+.tour-card h2 {
+  font-family: var(--sans);
+  letter-spacing: -0.035em;
+}
+
+.portal-topbar h1 { font-size: 1.22rem; font-weight: 750; }
+.topbar-actions { gap: 8px; }
+.topbar-actions .button,
+.topbar-actions summary.button,
+.notification-trigger,
+.icon-button { min-height: 42px; border-radius: 12px; }
+
+.button { border-radius: 11px; font-weight: 750; }
+.button-primary { box-shadow: 0 7px 18px rgba(201, 116, 42, 0.18); }
+
+.my-work-hero {
+  align-items: center;
+  border: 0;
+  border-radius: var(--card-radius);
+  padding: 18px 20px;
+  background: linear-gradient(120deg, rgba(201, 116, 42, 0.11), rgba(255, 255, 255, 0.02));
+}
+
+.my-work-hero h2 { max-width: none; font-size: clamp(1.75rem, 3vw, 2.8rem); }
+.my-work-hero p:last-child { margin-top: 7px; font-size: 0.88rem; }
+.user-badge { min-height: 36px; background: rgba(201, 116, 42, 0.08); }
+
+.founder-dashboard { gap: 16px; }
+.founder-metrics { gap: 10px; }
+.founder-metrics a {
+  min-height: 116px;
+  justify-content: space-between;
+  border-radius: var(--card-radius);
+  padding: 18px;
+  box-shadow: var(--card-shadow);
+}
+.founder-metrics a > strong { font-size: 2rem; }
+
+.founder-dashboard .command-panel,
+#talent-bookings,
+.portal-section,
+.approval-panel,
+.work-grid > section,
+.detail-panel,
+.calendar-workspace,
+.document-library,
+.report-feed,
+.reports-summary,
+.maxwell-role-panel,
+.quick-start,
+.client-brand-kit,
+.access-panel {
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.founder-dashboard .command-panel,
+#talent-bookings { padding: 20px; }
+.founder-dashboard .founder-attention { border-left-width: 3px; }
+.section-header h2,
+.work-intro h2 { font-size: clamp(1.35rem, 2.3vw, 2rem); }
+.section-note,
+.section-support { max-width: 68ch; line-height: 1.55; }
+
+.action-item,
+.approval-item,
+.calendar-item,
+.client-health-item,
+.document-card,
+.client-card,
+.compact-card {
+  border-radius: 12px;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.action-item:hover,
+.approval-item:hover,
+.calendar-item:hover,
+.document-card:hover,
+.client-card:hover,
+.compact-card:hover { transform: translateY(-1px); }
+
+input,
+select,
+textarea {
+  min-height: 44px;
+  border-radius: 10px;
+  padding-inline: 12px;
+}
+textarea { padding-block: 11px; }
+
+.document-folder { min-height: 70px; border-radius: 13px; }
+.document-card { padding: 15px; }
+.document-icon { border-radius: 10px; }
+.brand-kit-slot { border-radius: 12px; }
+.calendar-view-switch,
+.calendar-grid-wrap,
+.calendar-agenda { border-radius: 13px; }
+
+html[data-theme="light"] body {
+  background: linear-gradient(145deg, #ded9e7 0%, #e7dfd7 54%, #ddd6cf 100%);
+}
+
+html[data-theme="light"] body::before { display: none; }
+html[data-theme="light"] .portal-shell { border-color: rgba(50, 39, 30, 0.1); background: #f7f4ef; }
+html[data-theme="light"] .portal-main { background: #f7f4ef; }
+html[data-theme="light"] .portal-sidebar { background: #0e0c0a; }
+html[data-theme="light"] .portal-topbar { background: rgba(247, 244, 239, 0.94); }
+html[data-theme="light"] .my-work-hero { background: linear-gradient(120deg, #fff9f1, #f4ece3); }
+
+html[data-theme="light"] .founder-metrics a,
+html[data-theme="light"] .founder-dashboard .command-panel,
+html[data-theme="light"] #talent-bookings,
+html[data-theme="light"] .portal-section,
+html[data-theme="light"] .approval-panel,
+html[data-theme="light"] .work-grid > section,
+html[data-theme="light"] .detail-panel,
+html[data-theme="light"] .calendar-workspace,
+html[data-theme="light"] .document-library,
+html[data-theme="light"] .report-feed,
+html[data-theme="light"] .reports-summary,
+html[data-theme="light"] .maxwell-role-panel,
+html[data-theme="light"] .quick-start,
+html[data-theme="light"] .client-brand-kit,
+html[data-theme="light"] .access-panel { background: #fffdf9; }
+
+html[data-theme="light"] .founder-dashboard .founder-attention {
+  background: linear-gradient(120deg, #fff7ee, #fffdf9);
+}
+
+html[data-theme="light"] .action-item,
+html[data-theme="light"] .approval-item,
+html[data-theme="light"] .calendar-item,
+html[data-theme="light"] .document-card,
+html[data-theme="light"] .client-card,
+html[data-theme="light"] .compact-card,
+html[data-theme="light"] .brand-kit-slot { background: #faf7f2; }
+
+html[data-theme="light"] .action-item:hover,
+html[data-theme="light"] .approval-item:hover,
+html[data-theme="light"] .calendar-item:hover,
+html[data-theme="light"] .document-card:hover,
+html[data-theme="light"] .client-card:hover,
+html[data-theme="light"] .compact-card:hover {
+  border-color: rgba(182, 95, 30, 0.3);
+  background: #fffaf4;
+  box-shadow: 0 8px 24px rgba(59, 43, 29, 0.08);
+}
+
+html[data-theme="dark"] .portal-topbar { background: rgba(18, 16, 14, 0.94); }
+html[data-theme="dark"] .portal-main { background: #12100e; }
+html[data-theme="dark"] .portal-shell { background: #12100e; }
+
+@media (min-width: 1101px) {
+  .portal-main { height: calc(100vh - 36px); overflow-y: auto; }
+}
+
+@media (max-width: 1100px) {
+  body { padding: 0; }
+  .portal-shell { min-height: 100vh; grid-template-columns: 1fr; border: 0; border-radius: 0; box-shadow: none; }
+  .portal-sidebar { top: 0; height: auto; padding: 14px 16px; }
+  .portal-main { padding: 0 18px 26px; }
+  .portal-brand,
+  .portal-brand img { width: 104px; }
+  .portal-topbar { padding-top: 14px; }
+}
+
+@media (max-width: 720px) {
+  .portal-main { padding-inline: 13px; }
+  .portal-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .portal-nav > a,
+  .nav-more summary { min-height: 44px; border-radius: 10px; padding: 8px 4px; font-size: 0.69rem; }
+  .my-work-hero { align-items: flex-start; padding: 16px; }
+  .founder-metrics a { min-height: 98px; }
+  .section-header { align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-item,
+  .approval-item,
+  .calendar-item,
+  .document-card,
+  .client-card,
+  .compact-card { transition: none; }
+}

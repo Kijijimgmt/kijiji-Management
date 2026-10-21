@@ -21,7 +21,7 @@
         }
 
         const key = "kijiji-dashboard-theme";
-        let preference = "system";
+        let preference = "light";
         try {
           const saved = window.localStorage.getItem(key);
           if (["dark", "light", "system"].includes(saved)) preference = saved;
@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261021-client-brand-kits" />
+    <link rel="stylesheet" href="portal.css?v=20261021-calm-workspace" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
