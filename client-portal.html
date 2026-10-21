@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261014-maxwell-role" />
+    <link rel="stylesheet" href="portal.css?v=20261021-client-brand-kits" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -56,6 +56,7 @@
             <div>
               <a href="#work">Team Work</a>
               <a href="#guidance">Playbook</a>
+              <button type="button" data-show-quick-start data-requires-access>Getting Started</button>
               <button type="button" data-start-tour data-requires-access>Take Dashboard Tour</button>
               <div class="theme-picker" role="group" aria-label="Dashboard appearance">
                 <span>Appearance</span>
@@ -106,7 +107,7 @@
                 <button type="button" data-open-client-form data-requires-access data-admin-only>Client</button>
               </div>
             </details>
-            <button class="button button-secondary" type="button" data-refresh-dashboard data-requires-access>Refresh</button>
+            <button class="button button-secondary" type="button" data-refresh-dashboard data-requires-access>Sync Now</button>
             <button class="button button-secondary" type="button" data-logout-portal>Log Out</button>
           </div>
         </header>
@@ -120,7 +121,7 @@
             </div>
             <label>
               <span>Team email</span>
-              <input data-auth-email name="email" type="email" autocomplete="email" placeholder="max@kijijimgmt.com" required />
+              <input data-auth-email name="email" type="email" autocomplete="email" placeholder="name@kijijimgmt.com" required />
             </label>
             <button class="button button-primary" type="submit" data-access-submit>Send Magic Link</button>
             <p class="access-message" data-access-message role="status" aria-live="polite"></p>
@@ -130,9 +131,25 @@
         <div class="dashboard-content" data-dashboard-content hidden>
           <section class="my-work-section founder-dashboard" id="my-work" aria-labelledby="my-work-title" data-portal-view="my-work">
             <div class="my-work-hero">
-              <div><p class="eyebrow" data-my-work-eyebrow>Founder Brief</p><h2 id="my-work-title" data-my-work-title>What matters today.</h2><p data-my-work-subtitle>One shared view for Maxwell, Joe, and Erik.</p></div>
+              <div><p class="eyebrow" data-my-work-eyebrow>Team Brief</p><h2 id="my-work-title" data-my-work-title>What matters today.</h2><p data-my-work-subtitle>Your priorities, handoffs, and shared client work.</p></div>
               <span class="user-badge" data-user-badge></span>
             </div>
+            <section class="quick-start" data-quick-start hidden aria-labelledby="quick-start-title">
+              <div class="quick-start-copy">
+                <p class="eyebrow">Getting Started</p>
+                <h3 id="quick-start-title">Your first five minutes</h3>
+                <p>Use this short path to understand what needs attention and make your first useful update.</p>
+              </div>
+              <ol class="quick-start-steps">
+                <li><span>1</span><div><strong>Review your work</strong><p>Check ownership, due dates, and blockers.</p><a href="#work">Open Team Work →</a></div></li>
+                <li><span>2</span><div><strong>Open a client</strong><p>Read the current status and next move.</p><a href="#clients">View Clients →</a></div></li>
+                <li><span>3</span><div><strong>Keep context attached</strong><p>Add notes and connect the supporting contract or file.</p><a href="#files">View Files →</a></div></li>
+              </ol>
+              <div class="quick-start-actions">
+                <button class="button button-primary" type="button" data-start-tour>Take the Guided Tour</button>
+                <button class="text-action" type="button" data-dismiss-quick-start>Dismiss</button>
+              </div>
+            </section>
             <section class="maxwell-role-panel" data-maxwell-role-panel aria-labelledby="maxwell-role-title" hidden>
               <div class="maxwell-role-intro">
                 <p class="eyebrow">Maxwell's Client Mandate</p>
@@ -162,7 +179,7 @@
               <div data-my-work-action-list></div>
             </section>
             <section class="command-panel" aria-labelledby="today-decisions-title">
-              <div class="section-header compact"><div><p class="eyebrow">Founder decisions</p><h2 id="today-decisions-title">Decisions</h2></div><a class="text-action" href="#decisions">Review all →</a></div>
+                <div class="section-header compact"><div><p class="eyebrow">Team decisions</p><h2 id="today-decisions-title">Decisions</h2></div><a class="text-action" href="#decisions">Review all →</a></div>
               <div data-my-work-deal-list></div>
             </section>
             <section class="command-panel" aria-labelledby="client-health-title">
@@ -390,15 +407,16 @@
 
           <section class="portal-section document-library" id="files" aria-labelledby="documents-title" data-portal-view="files">
             <div class="section-header">
-              <div><p class="eyebrow">Team Resources</p><h2 id="documents-title">Files</h2><p class="section-note">Contracts, templates, briefs, and reusable files in one secure place.</p></div>
+              <div><p class="eyebrow">Team Resources</p><h2 id="documents-title">Files</h2><p class="section-note">Client logos, brand guides, contracts, templates, and briefs in one secure place.</p></div>
               <div class="section-actions document-actions">
                 <label><span>Search</span><input type="search" data-search-documents placeholder="Find a file" /></label>
-                <label><span>Category</span><select data-document-category><option value="all">All categories</option><option>Contract</option><option>Template</option><option>Brief</option><option>Brand Asset</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
+                <label><span>Category</span><select data-document-category><option value="all">All categories</option><option>Logo</option><option>Brand Guide</option><option>Brand Asset</option><option>Contract</option><option>Template</option><option>Brief</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
                 <button class="button button-primary" type="button" data-open-document-form data-requires-access>Upload File</button>
               </div>
             </div>
             <div class="document-summary"><strong data-document-count>0 files</strong><span>Available to signed-in Kijiji team members</span></div>
             <div class="document-folders" data-document-folders aria-label="File folders"></div>
+            <section class="client-brand-kit" data-client-brand-kit hidden aria-live="polite"></section>
             <div class="document-grid" data-document-list></div>
           </section>
 
@@ -575,6 +593,7 @@
               <option>Maxwell</option>
               <option>Joe</option>
               <option>Erik</option>
+              <option>Emad</option>
             </select>
           </label>
           <label>
@@ -603,6 +622,7 @@
               <option>Maxwell</option>
               <option>Joe</option>
               <option>Erik</option>
+              <option>Emad</option>
               <option>Client</option>
             </select>
           </label>
@@ -629,10 +649,17 @@
             <textarea name="notes" rows="4"></textarea>
           </label>
           <fieldset class="wide task-file-fieldset">
-            <legend>Attached files</legend>
-            <p>Choose contracts, briefs, or other files from the Files library.</p>
+            <legend>Contract or supporting document</legend>
+            <p>Attach an existing file, or upload a new contract without leaving this task.</p>
+            <div class="task-inline-upload">
+              <input id="task-document-upload" name="taskDocument" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.jpg,.jpeg,.png" data-action-document-upload />
+              <label class="button button-secondary" for="task-document-upload">Upload document</label>
+              <span data-action-document-upload-name>No new file selected</span>
+            </div>
+            <p class="task-upload-note">PDF, Office document, text file, JPG, or PNG · 3 MB maximum</p>
             <div class="task-file-picker" data-action-document-picker></div>
             <a class="text-action" href="#files" data-close-action-for-files>Open Files to upload a new document →</a>
+            <p class="access-message" data-action-document-message role="status" aria-live="polite"></p>
           </fieldset>
         </div>
 
@@ -680,6 +707,7 @@
               <option>Maxwell</option>
               <option>Joe</option>
               <option>Erik</option>
+              <option>Emad</option>
             </select>
           </label>
           <label>
@@ -767,6 +795,7 @@
               <option>Maxwell</option>
               <option>Joe</option>
               <option>Erik</option>
+              <option>Emad</option>
             </select>
           </label>
           <label>
@@ -797,7 +826,7 @@
         <div class="dialog-head"><div><p class="eyebrow">Team file</p><h2 id="document-dialog-title">Upload file</h2></div><button class="icon-button" type="button" data-close-document-form aria-label="Close form">x</button></div>
         <div class="form-grid">
           <label class="wide"><span>File name</span><input name="name" required placeholder="Example: Artist management agreement" /></label>
-          <label><span>Category</span><select name="category"><option>Contract</option><option>Template</option><option>Brief</option><option>Brand Asset</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
+          <label><span>Category</span><select name="category"><option>Logo</option><option>Brand Guide</option><option>Brand Asset</option><option>Contract</option><option>Template</option><option>Brief</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
           <label><span>Client (optional)</span><select name="clientId" data-document-client-select><option value="">Shared resource</option></select></label>
           <label class="wide"><span>File (3 MB maximum)</span><input name="file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.jpg,.jpeg,.png" required /></label>
           <label class="wide"><span>Description</span><textarea name="description" rows="3" placeholder="When and how the team should use this file"></textarea></label>
@@ -810,7 +839,7 @@
     <div class="tour-overlay" data-tour-overlay hidden>
       <div class="tour-scrim" aria-hidden="true"></div>
       <section class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description">
-        <div class="tour-progress"><span data-tour-progress>1 of 11</span><button type="button" class="text-action" data-tour-skip>Skip tour</button></div>
+        <div class="tour-progress"><span data-tour-progress>1 of 14</span><button type="button" class="text-action" data-tour-skip>Skip tour</button></div>
         <p class="eyebrow" data-tour-eyebrow>Welcome</p>
         <h2 id="tour-title" data-tour-title>Your guide to the Kijiji dashboard</h2>
         <p id="tour-description" data-tour-description>Learn what needs attention, where decisions happen, and how to keep your partners informed.</p>
@@ -822,6 +851,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20261014-remove-chef-andra"></script>
+    <script src="portal.js?v=20261021-client-brand-kits"></script>
   </body>
 </html>

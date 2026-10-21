@@ -36,6 +36,7 @@ const els = {
   calendarViewButtons: $$('[data-calendar-view]'),
   documentList: $("[data-document-list]"),
   documentFolders: $("[data-document-folders]"),
+  documentBrandKit: $("[data-client-brand-kit]"),
   documentCount: $("[data-document-count]"),
   documentSearch: $("[data-search-documents]"),
   documentCategory: $("[data-document-category]"),
@@ -80,6 +81,9 @@ const els = {
   actionFormTitle: $("[data-action-form-title]"),
   actionClientSelect: $("[data-action-client-select]"),
   actionDocumentPicker: $("[data-action-document-picker]"),
+  actionDocumentUpload: $("[data-action-document-upload]"),
+  actionDocumentUploadName: $("[data-action-document-upload-name]"),
+  actionDocumentMessage: $("[data-action-document-message]"),
   opportunityDialog: $("[data-opportunity-dialog]"),
   opportunityForm: $("[data-opportunity-form]"),
   opportunityFormTitle: $("[data-opportunity-form-title]"),
@@ -112,6 +116,9 @@ const els = {
   tourBack: $("[data-tour-back]"),
   tourNext: $("[data-tour-next]"),
   tourSkip: $("[data-tour-skip]"),
+  quickStart: $("[data-quick-start]"),
+  quickStartDismiss: $("[data-dismiss-quick-start]"),
+  quickStartTriggers: $$('[data-show-quick-start]'),
   tourTriggers: $$("[data-start-tour]"),
   themeButtons: $$('[data-theme-option]'),
 };
@@ -578,7 +585,7 @@ const renderMyWork = () => {
     els.myWorkTitle.textContent = "Build visibility. Strengthen the system.";
     els.myWorkSubtitle.textContent = `${attention.length} client growth ${attention.length === 1 ? "priority" : "priorities"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} need direction across marketing and infrastructure.`;
   } else {
-    els.myWorkEyebrow.textContent = "Founder Brief";
+    els.myWorkEyebrow.textContent = "Team Brief";
     els.myWorkTitle.textContent = "What matters today.";
     els.myWorkSubtitle.textContent = `${attention.length} attention ${attention.length === 1 ? "item" : "items"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} across the team.`;
   }
@@ -1190,6 +1197,7 @@ const renderDocuments = () => {
       <span class="folder-icon" aria-hidden="true">▰</span><span><strong>${escapeHtml(item.name)}</strong><small>${item.count} ${item.count === 1 ? "file" : "files"}</small></span>
     </button>`).join("");
   }
+  renderClientBrandKit(folder);
   const documents = state.documents.filter((document) => {
     const matchesCategory = category === "all" || document.category === category;
     const matchesFolder = folder === "all" || (folder === "shared" ? !document.clientIds?.length : document.clientIds?.includes(folder));
@@ -1210,6 +1218,38 @@ const renderDocuments = () => {
       <div class="document-card-actions">${document.fileUrl ? `<a class="button button-primary" href="${escapeHtml(document.fileUrl)}" target="_blank" rel="noreferrer">Download</a>` : ""}${document.notionUrl ? `<a class="text-action" href="${escapeHtml(document.notionUrl)}" target="_blank" rel="noreferrer">Open in Notion</a>` : ""}</div>
     </article>`;
   }).join("");
+};
+
+const getLatestClientDocument = (clientId, category) => [...state.documents]
+  .filter((document) => document.clientIds?.includes(clientId) && document.category === category)
+  .sort((a, b) => String(b.updatedAt || b.uploadedAt || "").localeCompare(String(a.updatedAt || a.uploadedAt || "")))[0];
+
+const renderClientBrandKit = (folder) => {
+  if (!els.documentBrandKit) return;
+  const client = getClient(folder);
+  if (!client) {
+    els.documentBrandKit.hidden = true;
+    els.documentBrandKit.innerHTML = "";
+    return;
+  }
+  const logo = getLatestClientDocument(client.id, "Logo");
+  const guide = getLatestClientDocument(client.id, "Brand Guide");
+  const slot = (category, document, description) => {
+    const fileUrl = document?.fileUrl || document?.notionUrl || "";
+    const preview = category === "Logo" && document?.fileUrl
+      ? `<img src="${escapeHtml(document.fileUrl)}" alt="${escapeHtml(client.name)} logo" loading="lazy" />`
+      : `<span aria-hidden="true">${category === "Logo" ? "LOGO" : "PDF"}</span>`;
+    return `<article class="brand-kit-slot${document ? " has-file" : ""}">
+      <div class="brand-kit-preview">${preview}</div>
+      <div class="brand-kit-copy"><span>${escapeHtml(category)}</span><strong>${escapeHtml(document?.name || `${category} needed`)}</strong><p>${escapeHtml(document?.description || description)}</p></div>
+      <div class="brand-kit-actions">
+        ${fileUrl ? `<a class="button button-secondary" href="${escapeHtml(fileUrl)}" target="_blank" rel="noreferrer">Open</a>` : ""}
+        <button class="text-action" type="button" data-brand-upload data-client-id="${escapeHtml(client.id)}" data-category="${escapeHtml(category)}">${document ? "Replace" : "Add"} ${escapeHtml(category)}</button>
+      </div>
+    </article>`;
+  };
+  els.documentBrandKit.hidden = false;
+  els.documentBrandKit.innerHTML = `<header><div><p class="eyebrow">${escapeHtml(client.name)}</p><h3>Brand essentials</h3></div><p>Keep the approved logo and current brand guide easy for the whole team to find.</p></header><div class="brand-kit-grid">${slot("Logo", logo, "Upload the approved PNG or JPG logo.")}${slot("Brand Guide", guide, "Upload the current PDF brand standards.")}</div>`;
 };
 
 const renderReports = () => {
@@ -1425,15 +1465,15 @@ const renderNotifications = () => {
 const tourSteps = [
   {
     "eyebrow": "Welcome",
-    "title": "Your guide to the Kijiji dashboard",
-    "description": "Use your own sign-in. Your name appears beside the Notion sync status, and your permissions determine which records you can see and edit. This tour shows where to look and how to keep your partners informed.",
+    "title": "Welcome to your Kijiji workspace",
+    "description": "This dashboard keeps clients, assignments, decisions, dates, documents, and team updates together. Your sign-in controls what you can edit, while the sync badge confirms when the shared workspace is current.",
     "selector": ".portal-topbar",
     "hash": "my-work"
   },
   {
-    "eyebrow": "Founder Brief",
-    "title": "Start with what matters today",
-    "description": "The four numbers summarize decisions waiting, items needing attention, remaining events this calendar week, and confirmed upcoming guests. Select a number to open the related area. These reflect the records available to your account.",
+    "eyebrow": "Today",
+    "title": "Start with your daily priorities",
+    "description": "These four numbers summarize decisions, urgent work, upcoming dates, and confirmed guests. Select any number to jump directly to the records behind it.",
     "selector": ".founder-metrics",
     "hash": "my-work"
   },
@@ -1452,11 +1492,11 @@ const tourSteps = [
     "hash": "decisions"
   },
   {
-    "eyebrow": "Client Pulse",
-    "title": "Check the relationships",
-    "description": "Client Pulse gives you a quick health check. Select a client to open its existing profile, see the owner and next move, and review related work. Use Clients in the sidebar for the full roster.",
-    "selector": "[data-client-health-strip]",
-    "hash": "my-work"
+    "eyebrow": "Clients",
+    "title": "Open the full client picture",
+    "description": "Search or filter the roster, then select a client to see their status, owners, next move, progress, related tasks, opportunities, events, and documents. Keep the record current so another partner can take over without losing context.",
+    "selector": "#clients",
+    "hash": "clients"
   },
   {
     "eyebrow": "Talent Bookings",
@@ -1468,21 +1508,21 @@ const tourSteps = [
   {
     "eyebrow": "Calendar",
     "title": "Protect the important dates",
-    "description": "Keep meetings, guest bookings, shoots, deadlines, and internal founder meetings here. Switch between month and week views, or open an event to update it. The upcoming schedule on Today is a short preview.",
-    "selector": "#calendar-title",
+    "description": "Keep meetings, launches, shoots, deadlines, and internal check-ins here. Switch between month and week views, open an event to update it, and use the countdowns to see what is approaching.",
+    "selector": "#calendar",
     "hash": "calendar"
   },
   {
     "eyebrow": "Files",
-    "title": "Keep shared resources easy to find",
-    "description": "Upload briefs, contracts, templates, and founder resources here. Client files are automatically organized into folders, while reusable items stay in Shared Resources. You can also attach these files directly to tasks.",
+    "title": "Keep every client file organized",
+    "description": "Select a client folder to manage its approved logo, current brand guide, contracts, briefs, and other assets. Reusable resources stay shared across the team.",
     "selector": "#files",
     "hash": "files"
   },
   {
-    "eyebrow": "Create and assign",
-    "title": "Give each next move an owner",
-    "description": "Use + New to add a task, deal, or event. Give it a clear title, owner, date, and enough context to act. Client creation is available to admins. For a show guest, use Add booking in Talent Bookings.",
+    "eyebrow": "Add a Task",
+    "title": "Connect the work to the contract",
+    "description": "Use + New → Task, then add a clear next step, owner, due date, and client. In the same form you can choose an existing file or upload a new contract so the document stays attached to the assignment.",
     "selector": ".create-menu",
     "hash": "my-work"
   },
@@ -1494,15 +1534,60 @@ const tourSteps = [
     "hash": "work"
   },
   {
-    "eyebrow": "Stay aligned",
-    "title": "Make this your daily check-in",
-    "description": "Check Needs Attention and Decisions first, then upcoming dates. The bell shows partner updates; the sync badge shows whether shared data loaded. You can replay this guide anytime from More → Take Dashboard Tour.",
+    "eyebrow": "Reports",
+    "title": "Review intake and industry intelligence",
+    "description": "Jotform assessment responses and the Kijiji Music Industry Brief appear here. Use Refresh Reports after a new submission or brief is added to pull in the latest information.",
+    "selector": "#reports",
+    "hash": "reports"
+  },
+  {
+    "eyebrow": "Appearance",
+    "title": "Choose the view that works for you",
+    "description": "Open More and choose Light, Dark, or Auto. This preference only changes your own dashboard appearance and does not affect another partner’s layout.",
+    "selector": ".nav-more",
+    "hash": "my-work"
+  },
+  {
+    "eyebrow": "Team Updates",
+    "title": "Know when a partner changes something",
+    "description": "The bell shows client, task, deal, event, and reminder activity from the team. Open an alert to go to the relevant area, then mark it read once you have handled it.",
     "selector": ".notification-trigger",
+    "hash": "my-work"
+  },
+  {
+    "eyebrow": "You’re Ready",
+    "title": "Use the dashboard as the team’s operating truth",
+    "description": "Start with Today, keep every next move assigned, attach the source documents, and update records when the work changes. You can replay this guide anytime from More → Take Dashboard Tour.",
+    "selector": ".portal-nav",
     "hash": "my-work"
   }
 ];
 
-const getTourStorageKey = () => `kijiji-dashboard-tour-v2:${state.teamUser?.email || "team"}`;
+const getTourStorageKey = () => `kijiji-dashboard-tour-v3:${state.teamUser?.email || "team"}`;
+const getQuickStartStorageKey = () => `kijiji-dashboard-quick-start-v1:${state.teamUser?.email || "team"}`;
+
+const setQuickStartVisible = (visible, { save = false } = {}) => {
+  if (!els.quickStart) return;
+  els.quickStart.hidden = !visible;
+  if (save) {
+    try {
+      window.localStorage.setItem(getQuickStartStorageKey(), visible ? "visible" : "dismissed");
+    } catch {
+      // The checklist remains usable when storage is unavailable.
+    }
+  }
+};
+
+const applyQuickStartState = () => {
+  if (!state.teamUser?.email || !els.quickStart) return;
+  let dismissed = false;
+  try {
+    dismissed = window.localStorage.getItem(getQuickStartStorageKey()) === "dismissed";
+  } catch {
+    dismissed = false;
+  }
+  setQuickStartVisible(!dismissed);
+};
 
 const setTourComplete = () => {
   try {
@@ -1663,6 +1748,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     setAccessMessage("");
     showDashboard();
     renderPortal();
+    applyQuickStartState();
     await loadNotifications();
     maybeStartTour();
     return true;
@@ -1808,6 +1894,8 @@ const openActionForm = (action = null, clientId = "") => {
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
   els.actionForm.elements.dependency.value = action?.dependency || "";
   els.actionForm.elements.notes.value = action?.notes || "";
+  els.actionDocumentUploadName.textContent = "No new file selected";
+  els.actionDocumentMessage.textContent = "";
   renderActionDocumentPicker(action?.documentIds || [], action?.clientIds?.[0] || clientId);
   applyOwnerFieldPolicy(els.actionForm.elements.owner);
   openDialog(els.actionDialog);
@@ -1866,10 +1954,13 @@ const openEventForm = (eventItem = null, clientId = "", eventDate = todayISO) =>
   openDialog(els.eventDialog);
 };
 
-const openDocumentForm = () => {
+const openDocumentForm = ({ clientId = "", category = "", suggestedName = "" } = {}) => {
   els.documentForm.reset();
   els.documentMessage.textContent = "";
   renderClientOptions(els.documentClientSelect);
+  if (clientId) els.documentClientSelect.value = clientId;
+  if (category) setSelectValue(els.documentForm.elements.category, category);
+  if (suggestedName) els.documentForm.elements.name.value = suggestedName;
   openDialog(els.documentDialog);
 };
 
@@ -1975,6 +2066,8 @@ const handleActionSubmit = async (event) => {
   $("[data-delete-action]").disabled = true;
   const formData = new FormData(els.actionForm);
   const client = getClient(String(formData.get("clientId") || ""));
+  const selectedDocumentIds = formData.getAll("documentIds").map(String);
+  const uploadedFile = formData.get("taskDocument");
   const payload = {
     resource: "action",
     id: String(formData.get("id") || ""),
@@ -1990,6 +2083,7 @@ const handleActionSubmit = async (event) => {
     blocker: formData.get("blocker") === "on",
     dependency: String(formData.get("dependency") || "").trim(),
     notes: String(formData.get("notes") || "").trim(),
+    documentIds: selectedDocumentIds,
   };
   const submit = els.actionForm.querySelector('[type="submit"]');
 
@@ -1997,6 +2091,31 @@ const handleActionSubmit = async (event) => {
   submit.textContent = "Saving...";
 
   try {
+    if (uploadedFile instanceof File && uploadedFile.size) {
+      if (uploadedFile.size > 3 * 1024 * 1024) {
+        throw new Error("Choose a file smaller than 3 MB.");
+      }
+      submit.textContent = "Uploading document...";
+      els.actionDocumentMessage.textContent = "Securely uploading and linking the document to this task...";
+      const base64 = await fileToBase64(uploadedFile);
+      const uploadResponse = await fetch(documentsEndpoint, {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+          name: uploadedFile.name.replace(/\.[^.]+$/, ""),
+          category: "Contract",
+          clientId: client?.id || "",
+          description: `Attached to task: ${payload.title}`,
+          filename: uploadedFile.name,
+          contentType: uploadedFile.type,
+          base64,
+        }),
+      });
+      const uploadData = await parseJsonResponse(uploadResponse);
+      if (!uploadResponse.ok) throw new Error(uploadData.message || "Unable to upload the document.");
+      if (uploadData.document?.id) payload.documentIds.push(uploadData.document.id);
+    }
+    submit.textContent = "Saving task...";
     await saveResource(payload);
     closeDialog(els.actionDialog);
     await loadDashboard();
@@ -2091,12 +2210,7 @@ const handleDocumentSubmit = async (event) => {
   submit.textContent = "Uploading...";
   els.documentMessage.textContent = "Securely uploading to the Kijiji Notion workspace...";
   try {
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    const base64 = await fileToBase64(file);
     const response = await fetch(documentsEndpoint, { method: "POST", headers: getRequestHeaders(), body: JSON.stringify({ name: String(formData.get("name") || "").trim(), category: formData.get("category"), clientId: formData.get("clientId"), description: String(formData.get("description") || "").trim(), filename: file.name, contentType: file.type, base64 }) });
     const data = await parseJsonResponse(response);
     if (!response.ok) throw new Error(data.message || "Unable to upload the file.");
@@ -2110,6 +2224,13 @@ const handleDocumentSubmit = async (event) => {
     submit.textContent = "Upload File";
   }
 };
+
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
 
 const handleAccessSubmit = async (event) => {
   event.preventDefault();
@@ -2348,9 +2469,23 @@ els.documentFolders?.addEventListener("click", (event) => {
   renderDocuments();
 });
 
+els.documentBrandKit?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-brand-upload]");
+  if (!button) return;
+  const client = getClient(button.dataset.clientId);
+  const category = button.dataset.category || "Brand Asset";
+  openDocumentForm({ clientId: client?.id || "", category, suggestedName: client ? `${client.name} ${category}` : category });
+});
+
 els.actionClientSelect?.addEventListener("change", () => {
   const selectedIds = [...els.actionForm.querySelectorAll('input[name="documentIds"]:checked')].map((input) => input.value);
   renderActionDocumentPicker(selectedIds, els.actionClientSelect.value);
+});
+
+els.actionDocumentUpload?.addEventListener("change", () => {
+  const file = els.actionDocumentUpload.files?.[0];
+  els.actionDocumentUploadName.textContent = file ? file.name : "No new file selected";
+  els.actionDocumentMessage.textContent = file && file.size > 3 * 1024 * 1024 ? "This file is larger than the 3 MB maximum." : "";
 });
 
 els.actionForm?.querySelector("[data-close-action-for-files]")?.addEventListener("click", () => closeDialog(els.actionDialog));
@@ -2486,7 +2621,7 @@ $$("[data-close-client-form]").forEach((button) => button.addEventListener("clic
 $$("[data-close-opportunity-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.opportunityDialog)));
 $$("[data-close-event-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.eventDialog)));
 $$("[data-close-document-form]").forEach((button) => button.addEventListener("click", () => closeDialog(els.documentDialog)));
-$("[data-refresh-dashboard]").addEventListener("click", () => loadDashboard());
+$$("[data-refresh-dashboard]").forEach((button) => button.addEventListener("click", () => loadDashboard()));
 els.logout?.addEventListener("click", logoutPortal);
 els.accessForm.addEventListener("submit", handleAccessSubmit);
 els.clientForm.addEventListener("submit", handleClientSubmit);
@@ -2502,6 +2637,17 @@ els.statusFilter.addEventListener("change", renderRows);
 els.tourTriggers.forEach((trigger) => trigger.addEventListener("click", () => {
   trigger.closest("details")?.removeAttribute("open");
   startTour(trigger);
+}));
+els.quickStartDismiss?.addEventListener("click", () => setQuickStartVisible(false, { save: true }));
+els.quickStartTriggers.forEach((trigger) => trigger.addEventListener("click", () => {
+  trigger.closest("details")?.removeAttribute("open");
+  window.location.hash = "my-work";
+  setActiveView();
+  setQuickStartVisible(true, { save: true });
+  window.requestAnimationFrame(() => {
+    els.quickStart?.scrollIntoView({ behavior: "smooth", block: "center" });
+    els.quickStart?.querySelector("a, button")?.focus({ preventScroll: true });
+  });
 }));
 els.themeButtons.forEach((button) => button.addEventListener("click", () => {
   applyThemePreference(button.dataset.themeOption, { save: true });
