@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261021-calm-workspace" />
+    <link rel="stylesheet" href="portal.css?v=20261024-artist-workspace" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -274,8 +274,8 @@
             <div class="section-header">
               <div>
                 <p class="eyebrow">Clients</p>
-                <h2 id="clients-title">Roster, next moves, and focus</h2>
-                <p class="section-support"><span data-client-count>0 clients</span> · Select a client to open their roadmap.</p>
+                <h2 id="clients-title">Your artists & clients</h2>
+                <p class="section-support"><span data-client-count>0 clients</span> · Open a profile for tasks, events, marketing, and files.</p>
               </div>
               <div class="section-actions">
                 <button class="button button-secondary" type="button" data-open-client-form data-requires-access data-admin-only>Add Client</button>
@@ -851,6 +851,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="portal.js?v=20261021-client-brand-kits"></script>
+    <script src="artist-workspace.js?v=20261024"></script>
+    <script src="portal.js?v=20261024-artist-workspace"></script>
   </body>
 </html>

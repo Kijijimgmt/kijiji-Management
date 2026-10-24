@@ -1,3 +1,55 @@
+/* Artist profiles share the portal theme and remain usable on small screens. */
+.artist-header { display: flex; align-items: center; gap: 20px; padding: 8px 0 24px; }
+.artist-roster-portrait { width: 52px; height: 52px; object-fit: cover; border-radius: 14px; flex-shrink: 0; }
+.client-card-head:has(.artist-roster-portrait) .client-name { flex: 1; }
+html[data-theme="light"] .client-card .health-pill[data-tone="calm"],
+html[data-theme="light"] .client-card .status-pill[data-status="Active"] { color: #246132; }
+html[data-theme="light"] .client-card .focus-pill { color: #665342; }
+.artist-header h2 { margin: 4px 0; font-size: clamp(1.5rem, 3vw, 2.2rem); }
+.artist-header p { color: var(--muted); }
+.artist-header > .status-pill { margin-left: auto; }
+.artist-portrait, .artist-avatar { width: 84px; height: 84px; border-radius: 22px; object-fit: cover; flex-shrink: 0; }
+.artist-avatar { display: grid; place-items: center; background: var(--panel-strong); color: var(--orange); font-size: 2rem; }
+.artist-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 5px 0 16px; border-bottom: 1px solid var(--line); }
+.artist-tabs button { flex-shrink: 0; min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+.artist-tabs button[aria-current="page"] { color: #fff; background: #995017; }
+.artist-tabs button:focus-visible, .artist-editor summary:focus-visible, .artist-record:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+.artist-message:empty { display: none; }
+.artist-message { padding: 12px; border-left: 3px solid var(--orange); }
+[data-artist-content] { padding: 24px 0; }
+[data-artist-content] > p { color: var(--muted); margin: 10px 0 20px; }
+.artist-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.artist-metric { display: grid; gap: 8px; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.artist-metric span, .artist-record span, .artist-section small { color: var(--muted); font-size: .85rem; }
+.artist-metric strong { font-size: clamp(1.1rem, 2vw, 1.6rem); overflow-wrap: anywhere; }
+.artist-section { padding: 20px; border: 1px solid var(--line); border-radius: 16px; margin: 16px 0; }
+.artist-section h3 { margin: 8px 0; }
+.artist-section p { line-height: 1.7; margin: 8px 0 20px; }
+.artist-links { display: flex; gap: 20px; flex-wrap: wrap; text-transform: capitalize; }
+.artist-section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.artist-record { display: grid; gap: 8px; width: 100%; text-align: left; padding: 18px; margin: 10px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: inherit; font: inherit; overflow-wrap: anywhere; }
+button.artist-record { cursor: pointer; }
+.artist-editor, [data-artist-legacy] { border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 16px 0; }
+.artist-editor summary, [data-artist-legacy] > summary { cursor: pointer; padding: 6px; font-weight: 650; min-height: 32px; }
+.artist-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 20px; }
+.artist-form label { display: grid; gap: 8px; font-size: .9rem; }
+.artist-form input, .artist-form textarea, .artist-form select { width: 100%; min-width: 0; padding: 12px; border: 1px solid var(--line-strong); border-radius: 10px; color: var(--white); background: var(--espresso); font: inherit; min-height: 44px; }
+.artist-form textarea { resize: vertical; }
+.artist-wide { grid-column: 1 / -1; }
+.artist-form button:disabled { opacity: .55; cursor: not-allowed; }
+.artist-notice, .artist-empty { padding: 18px; background: var(--panel); border-radius: 12px; line-height: 1.6; }
+.artist-draft, .artist-prewrap { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.7; }
+.artist-draft { padding: 16px 0; }
+[data-artist-legacy] .client-detail-head { margin-top: 20px; }
+@media (max-width: 600px) {
+  .artist-tabs { flex-wrap: wrap; overflow: visible; }
+  .artist-tabs button { padding: 9px 12px; font-size: .85rem; }
+  .artist-header { flex-wrap: wrap; gap: 12px; }
+  .artist-header > .status-pill { margin-left: 0; }
+  .artist-metrics, .artist-form { grid-template-columns: 1fr; }
+  .artist-section-head { align-items: flex-start; flex-direction: column; }
+  .artist-portrait, .artist-avatar { width: 60px; height: 60px; border-radius: 16px; }
+}
 :root {
   color-scheme: dark;
   --black: #060504;

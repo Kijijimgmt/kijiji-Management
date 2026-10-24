@@ -814,6 +814,7 @@ const renderRows = () => {
           aria-label="Open ${escapeHtml(client.name || "Untitled client")} client roadmap"
         >
           <div class="client-card-head">
+            ${window.artistRosterPortrait?.(client) || ""}
             <div class="client-name">
               <strong>${escapeHtml(client.name || "Untitled client")}</strong>
               <span>${escapeHtml(client.category || "Type not set")}</span>
@@ -837,7 +838,7 @@ const renderRows = () => {
               <strong>${progress}%</strong>
             </div>
           </div>
-          <span class="client-card-open" aria-hidden="true">Open roadmap <b>→</b></span>
+          <span class="client-card-open" aria-hidden="true">Open artist profile <b>→</b></span>
         </button>
       `;
     })
@@ -1048,6 +1049,7 @@ const renderDetail = () => {
         : ""
     }
   `;
+  window.renderArtistWorkspace?.(client, els.detail);
 };
 
 const renderActions = () => {
@@ -1494,7 +1496,7 @@ const tourSteps = [
   {
     "eyebrow": "Clients",
     "title": "Open the full client picture",
-    "description": "Search or filter the roster, then select a client to see their status, owners, next move, progress, related tasks, opportunities, events, and documents. Keep the record current so another partner can take over without losing context.",
+    "description": "Select an artist to open their profile. Use the tabs for tasks, events and ticket sales, social snapshots, marketing drafts, and files. Ticket and social numbers are manual entries until accounts are connected. The original client details and roadmap are under Overview.",
     "selector": "#clients",
     "hash": "clients"
   },
@@ -1686,6 +1688,7 @@ const markNotificationsRead = async (id = "") => {
 };
 
 const loadDashboard = async ({ fromAuth = false } = {}) => {
+  window.refreshArtistWorkspace?.();
   state.isLoading = true;
   state.portalError = "";
   setSourceBadge("loading", fromAuth ? "Verifying" : "Syncing Notion");
@@ -2290,6 +2293,7 @@ const handleAccessSubmit = async (event) => {
 };
 
 async function logoutPortal() {
+  window.clearArtistWorkspace?.();
   await supabaseClient?.auth?.signOut?.();
   state = {
     clients: [],
@@ -2727,6 +2731,7 @@ const initializeAuth = async () => {
       await loadDashboard({ fromAuth: true });
     }
     if (event === "SIGNED_OUT") {
+      window.clearArtistWorkspace?.();
       state.teamUser = null;
       state.authSession = null;
       applyRoleUi();
