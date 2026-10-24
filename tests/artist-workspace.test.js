@@ -1,6 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { normalizeEntry, handleArtistWorkspace, readEntries } = require("../api/lib/artist-workspace");
+const { normalizeEntry, handleArtistWorkspace, readEntries } = require("../api/lib/_artist-workspace");
 const client = { id: "artist-1", name: "Test Artist" };
 const dashboard = { events: [{ id: "event-1", name: "Show", clientIds: [client.id] }] };
 test("ticket entries validate event scope, counts, currency and links", () => {

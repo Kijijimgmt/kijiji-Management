@@ -1,3 +1,4 @@
+// Internal helper: underscore prevents Vercel from deploying this as an extra function.
 // Append-only entries preserve partner edits and provide a dated activity history.
 const MARKER = "kijiji-artist-workspace-v1";
 const fail = (message, statusCode = 400) => { throw Object.assign(new Error(message), { statusCode }); };

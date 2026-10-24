@@ -1022,7 +1022,7 @@ module.exports = async (request, response) => {
       const dashboard = filterDashboardForIdentity(await listDashboard(), identity);
       const client = dashboard.clients.find((item) => item.id === request.query.clientId);
       if (!client) return json(response, 403, { message: "This artist is not in your assigned workspace." });
-      const { handleArtistWorkspace } = require("./lib/artist-workspace");
+      const { handleArtistWorkspace } = require("./lib/_artist-workspace");
       const result = await handleArtistWorkspace({ request, identity, client, dashboard, notionRequest, assertWritesAllowed });
       response.setHeader("Cache-Control", "no-store");
       return json(response, 200, result);
