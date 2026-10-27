@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261024-artist-workspace" />
+    <link rel="stylesheet" href="portal.css?v=20261027-shared-strategy" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -839,7 +839,7 @@
     <div class="tour-overlay" data-tour-overlay hidden>
       <div class="tour-scrim" aria-hidden="true"></div>
       <section class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description">
-        <div class="tour-progress"><span data-tour-progress>1 of 14</span><button type="button" class="text-action" data-tour-skip>Skip tour</button></div>
+        <div class="tour-progress"><span data-tour-progress>Dashboard guide</span><button type="button" class="text-action" data-tour-skip>Skip tour</button></div>
         <p class="eyebrow" data-tour-eyebrow>Welcome</p>
         <h2 id="tour-title" data-tour-title>Your guide to the Kijiji dashboard</h2>
         <p id="tour-description" data-tour-description>Learn what needs attention, where decisions happen, and how to keep your partners informed.</p>
@@ -851,7 +851,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="artist-workspace.js?v=20261024"></script>
-    <script src="portal.js?v=20261024-artist-workspace"></script>
+    <script src="artist-workspace.js?v=20261027-tour"></script>
+    <script src="portal.js?v=20261027-shared-strategy"></script>
+    <script src="client-strategy.js?v=20261027"></script>
   </body>
 </html>

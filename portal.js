@@ -170,6 +170,7 @@ let state = {
 let calendarView = "month";
 let calendarCursor = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 let tourIndex = 0;
+let activeTourSteps = [];
 let tourReturnFocus = null;
 
 const escapeHtml = (value) =>
@@ -1275,6 +1276,7 @@ const renderReports = () => {
       ${submission.obstacle ? `<p><strong>Biggest obstacle</strong>${escapeHtml(submission.obstacle)}</p>` : ""}
       ${submission.helpAreas ? `<p><strong>Help needed</strong>${escapeHtml(submission.helpAreas)}</p>` : ""}
       <details><summary>View all answers</summary><dl>${submission.answers.map((answer) => `<div><dt>${escapeHtml(answer.question)}</dt><dd>${escapeHtml(answer.answer)}</dd></div>`).join("")}</dl></details>
+      <button class="button button-primary" type="button" data-build-strategy="${escapeHtml(submission.id)}">Build / open client strategy</button>
     </article>`).join("");
   }
 
@@ -1501,6 +1503,36 @@ const tourSteps = [
     "hash": "clients"
   },
   {
+    eyebrow: "Artist overview", title: "Start with the artist's actual position",
+    description: "Overview holds the bio, official links, current priority, and work totals. Expand Edit bio, photo & official links to update the profile. The original client details and roadmap are below it.",
+    selector: "[data-client-detail]", hash: "clients", artistTab: 0
+  },
+  {
+    eyebrow: "Artist tasks", title: "Turn the next move into an assignment",
+    description: "Tasks shows work linked to this artist. Add task sets the client for you. Open an existing task to update its owner, due date, status, notes, or attached contract, within your access permissions.",
+    selector: "[data-client-detail]", hash: "clients", artistTab: 1
+  },
+  {
+    eyebrow: "Events & tickets", title: "Track events and dated sales updates",
+    description: "Add an event first, then Record a sales update for that event. Enter cumulative tickets sold, optional capacity and revenue, currency, and the as-of date. These are manual snapshots, not automatic ticket-provider data. Sales history keeps earlier entries.",
+    selector: "[data-client-detail]", hash: "clients", artistTab: 2
+  },
+  {
+    eyebrow: "Socials", title: "Record what the platforms actually show",
+    description: "Add social metrics with the platform, date, source and measurement period. Enter only numbers you know; blank means not entered, not zero. These snapshots do not connect or publish to social accounts.",
+    selector: "[data-client-detail]", hash: "clients", artistTab: 3
+  },
+  {
+    eyebrow: "Marketing", title: "Create and review artist marketing drafts",
+    description: "Create a marketing draft for an email, captions, plan or activity summary. When AI is connected, provide a brief and choose Draft with AI. Review and edit the result, then Save draft to share it with authorized partners. Saving does not send emails or publish posts.",
+    selector: "[data-client-detail]", hash: "clients", artistTab: 4
+  },
+  {
+    eyebrow: "Artist files", title: "Find the artist's source materials",
+    description: "Files lists this artist's linked assets. Open artist folder takes you to their folder in the shared library for logos, brand guides, contracts and campaign files.",
+    selector: "[data-client-detail]", hash: "clients", artistTab: 5
+  },
+  {
     "eyebrow": "Talent Bookings",
     "title": "Track Bobby Outside Show guests",
     "description": "This section is currently for Bobby Outside Show guests, not bookings for every client. Choose Add booking, enter the guest, assign an owner, and set a date. Use Confirmed only once the guest has agreed; link the booking to Bobby Outside.",
@@ -1543,6 +1575,11 @@ const tourSteps = [
     "hash": "reports"
   },
   {
+    eyebrow: "Client strategy", title: "Build one shared strategy from the assessment",
+    description: "In Reports, choose Build / open client strategy beneath a Jotform response and select the correct client. The first generation saves one internal draft for the team. Max approves the Current Plan. Alternatives and proposed updates stay separate; a client-facing draft comes from the approved plan and is never sent automatically. AI and shared storage must be connected first.",
+    selector: "[data-assessment-list]", hash: "reports"
+  },
+  {
     "eyebrow": "Appearance",
     "title": "Choose the view that works for you",
     "description": "Open More and choose Light, Dark, or Auto. This preference only changes your own dashboard appearance and does not affect another partner’s layout.",
@@ -1565,7 +1602,7 @@ const tourSteps = [
   }
 ];
 
-const getTourStorageKey = () => `kijiji-dashboard-tour-v3:${state.teamUser?.email || "team"}`;
+const getTourStorageKey = () => `kijiji-dashboard-tour-v4:${state.teamUser?.email || "team"}`;
 const getQuickStartStorageKey = () => `kijiji-dashboard-quick-start-v1:${state.teamUser?.email || "team"}`;
 
 const setQuickStartVisible = (visible, { save = false } = {}) => {
@@ -1604,19 +1641,23 @@ const clearTourHighlight = () => {
 };
 
 const renderTourStep = () => {
-  const step = tourSteps[tourIndex];
+  const step = activeTourSteps[tourIndex];
   if (!step || !els.tourOverlay) return;
   clearTourHighlight();
   window.location.hash = step.hash;
   setActiveView();
-  els.tourProgress.textContent = `${tourIndex + 1} of ${tourSteps.length}`;
+  if (step.artistTab != null) window.showArtistTourTab?.(step.artistTab);
+  const more = document.querySelector(".nav-more");
+  if (more) more.open = step.selector === ".nav-more";
+  els.tourProgress.textContent = `${tourIndex + 1} of ${activeTourSteps.length}`;
   els.tourEyebrow.textContent = step.eyebrow;
   els.tourTitle.textContent = step.title;
   els.tourDescription.textContent = step.description;
   els.tourBack.hidden = tourIndex === 0;
-  els.tourNext.textContent = tourIndex === tourSteps.length - 1 ? "Finish" : tourIndex === 0 ? "Start tour" : "Next";
+  els.tourNext.textContent = tourIndex === activeTourSteps.length - 1 ? "Finish" : tourIndex === 0 ? "Start tour" : "Next";
 
   window.requestAnimationFrame(() => {
+    if (els.tourOverlay.hidden || activeTourSteps[tourIndex] !== step) return;
     const target = document.querySelector(step.selector);
     if (target && !target.closest("[hidden]")) {
       target.classList.add("tour-highlight");
@@ -1638,6 +1679,7 @@ const closeTour = ({ completed = true } = {}) => {
 const startTour = (trigger = null) => {
   if (!els.tourOverlay || els.dashboard.hidden) return;
   tourReturnFocus = trigger || document.activeElement;
+  activeTourSteps = tourSteps.filter((step) => step.artistTab == null || state.clients.length > 0);
   tourIndex = 0;
   els.tourOverlay.hidden = false;
   document.body.classList.add("tour-open");
@@ -2657,7 +2699,7 @@ els.themeButtons.forEach((button) => button.addEventListener("click", () => {
   applyThemePreference(button.dataset.themeOption, { save: true });
 }));
 els.tourNext?.addEventListener("click", () => {
-  if (tourIndex >= tourSteps.length - 1) {
+  if (tourIndex >= activeTourSteps.length - 1) {
     closeTour();
     return;
   }

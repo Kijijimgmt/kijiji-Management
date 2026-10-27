@@ -1018,6 +1018,16 @@ module.exports = async (request, response) => {
 
     const identity = await verifyTeamAccess(request);
 
+    if (request.query?.view === "strategy") {
+      const dashboard = filterDashboardForIdentity(await listDashboard(), identity);
+      const client = dashboard.clients.find((item) => item.id === request.query.clientId);
+      if (!client) return json(response, 403, { message: "This client is not in your assigned workspace." });
+      const { handleStrategy } = require("./lib/_client-strategy");
+      const { getStrategySubmission } = require("./notion-documents");
+      response.setHeader("Cache-Control", "no-store");
+      return json(response, 200, await handleStrategy({ request, identity, client, getStrategySubmission, assertWritesAllowed }));
+    }
+
     if (request.query?.view === "artist-workspace") {
       const dashboard = filterDashboardForIdentity(await listDashboard(), identity);
       const client = dashboard.clients.find((item) => item.id === request.query.clientId);

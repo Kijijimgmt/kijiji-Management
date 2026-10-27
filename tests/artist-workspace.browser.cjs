@@ -75,7 +75,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   const integrated = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   integrated.on("pageerror", (error) => errors.push(error.message));
   await integrated.addInitScript(() => {
-    localStorage.setItem("kijiji-dashboard-tour-v3:max@kijijimgmt.com", "complete");
+    localStorage.setItem("kijiji-dashboard-tour-v4:max@kijijimgmt.com", "complete");
     window.supabase = { createClient: () => ({ auth: {
       getSession: async () => ({ data: { session: { access_token: "test" } } }),
       onAuthStateChange: () => {},
@@ -102,6 +102,21 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   await integrated.getByText("Create a marketing draft", { exact: true }).waitFor();
   await integrated.getByRole("button", { name: "Overview", exact: true }).click();
   await integrated.screenshot({ path: "/tmp/kijiji-artist-integrated.png", fullPage: true });
+  for (const member of ['Maxwell', 'Joe', 'Erik']) {
+    await integrated.evaluate(member => {
+      state.teamUser = { email: `${member.toLowerCase()}@kijijimgmt.com`, fullName: member, owner: member, isAdmin: member === 'Maxwell' };
+      startTour();
+    }, member);
+    const total = await integrated.evaluate(() => activeTourSteps.length);
+    assert(total >= 20);
+    for (let step = 0; step < total; step++) {
+      await integrated.waitForFunction(() => Boolean(document.querySelector('.tour-highlight')), null, { timeout: 5000 }).catch(e => { throw new Error(`${member} tour step ${step + 1}: ${e.message}`); });
+      assert(await integrated.locator('.tour-highlight').isVisible(), `${member} tour step ${step + 1} target hidden`);
+      assert.equal(await integrated.locator('[data-tour-progress]').textContent(), `${step + 1} of ${total}`);
+      await integrated.locator('[data-tour-next]').click();
+    }
+    assert(await integrated.locator('[data-tour-overlay]').isHidden());
+  }
   assert.deepEqual(errors, []);
   await browser.close();
   console.log("PASS: six tabs, profile loading, zero metrics, draft save/failure/retention, AI unavailable state, mobile layout, both themes.");

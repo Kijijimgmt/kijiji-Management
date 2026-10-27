@@ -145,6 +145,16 @@ const fetchJotformSubmissions = async () => {
   return { configured: true, submissions: groups.flat().sort((a, b) => String(b.submittedAt).localeCompare(String(a.submittedAt))).slice(0, 50) };
 };
 
+const getStrategySubmission = async (id) => {
+  if (!/^\d{1,30}$/.test(String(id))) throw Object.assign(new Error("Choose a valid assessment."), { statusCode: 400 });
+  if (!JOTFORM_API_KEY) throw Object.assign(new Error("Jotform is not connected."), { statusCode: 503 });
+  const response = await fetch(`https://api.jotform.com/submission/${id}`, { headers: { APIKEY: JOTFORM_API_KEY }, signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw Object.assign(new Error("The assessment could not be loaded from Jotform."), { statusCode: 502 });
+  const data = await response.json();
+  if (!data.content || !JOTFORM_FORM_IDS.includes(String(data.content.form_id)) || data.content.status === "DELETED") throw Object.assign(new Error("This assessment is not in a connected Kijiji form."), { statusCode: 403 });
+  return mapSubmission(data.content, String(data.content.form_id));
+};
+
 const fetchIndustryBriefs = async () => {
   const data = await notionRequest(`/data_sources/${INDUSTRY_BRIEFS_DATA_SOURCE_ID}/query`, {
     method: "POST",
@@ -258,3 +268,4 @@ module.exports = async (request, response) => {
     json(response, error.statusCode || 500, { error: "document_library_error", message: error.message || "Unable to use the document library." });
   }
 };
+module.exports.getStrategySubmission = getStrategySubmission;

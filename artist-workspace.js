@@ -98,4 +98,13 @@
   }
   window.addEventListener("beforeunload", (event) => { if ([...cache.values()].some((data) => Object.keys(data.forms).length)) { event.preventDefault(); event.returnValue = ""; } });
   window.renderArtistWorkspace = render;
+  window.showArtistTourTab = (index) => {
+    const client = getClient(state.selectedClientId) || state.clients[0];
+    if (!client) return;
+    state.selectedClientId = client.id;
+    const key = `${state.teamUser?.email || state.teamUser?.owner || "session"}:${client.id}`;
+    render(client, els.detail);
+    cache.get(key).tab = index;
+    render(client, els.detail);
+  };
 })();
