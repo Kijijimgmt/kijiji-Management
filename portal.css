@@ -5556,3 +5556,17 @@ html[data-theme="dark"] .portal-shell { background: #12100e; }
   .client-card,
   .compact-card { transition: none; }
 }
+
+/* Partner brief: readable content first; sources and record IDs stay secondary. */
+.strategy-reading { max-width:72ch; margin:24px auto; font-size:.98rem; line-height:1.65; overflow-wrap:anywhere; }
+.strategy-reading h3 { font-family:inherit; font-size:1.15rem; margin:28px 0 10px; padding-top:18px; border-top:1px solid var(--line); }
+.strategy-reading h3:first-child { border-top:0; padding-top:0; }
+.strategy-reading p { margin:8px 0 14px; }
+.strategy-reading ul { padding-left:22px; margin:8px 0 18px; }
+.strategy-reading li { margin:7px 0; }
+.strategy-brief-top { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:24px; color:var(--muted); font-size:.82rem; }
+.strategy-brief-top strong { color:var(--orange-hot); }
+.strategy-materials,.strategy-update,.strategy-history,.strategy-audit { margin:16px 0; padding:14px 0; border-block:1px solid var(--line); }
+.strategy-materials summary,.strategy-update summary,.strategy-history summary,.strategy-audit summary { cursor:pointer; font-weight:650; }
+.strategy-audit { color:var(--muted); font-size:.8rem; overflow-wrap:anywhere; }
+.strategy-dialog input[type=file] { max-width:100%; }

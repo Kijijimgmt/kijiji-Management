@@ -115,12 +115,14 @@ const answerText = (value) => {
 
 const mapSubmission = (submission, formId) => {
   const answers = Object.values(submission.answers || {})
+    .filter((item) => item.type !== "control_fileupload")
     .map((item) => ({ question: String(item?.text || item?.name || "").trim(), answer: answerText(item?.answer) }))
     .filter((item) => item.question && item.answer && item.answer !== "No Answer")
-    .slice(0, 80);
+    .slice(0, 150);
   const find = (pattern) => answers.find((item) => pattern.test(item.question))?.answer || "";
   return {
     id: String(submission.id || ""), formId,
+    attachments: Object.values(submission.answers || {}).filter((item) => item.type === "control_fileupload").flatMap((item) => (Array.isArray(item.answer) ? item.answer : [item.answer]).filter(Boolean)).filter((url) => typeof url === "string" && /^https:\/\//.test(url)).map((url) => ({ url, filename: (() => { const name = url.split('/').pop().split('?')[0]; try { return decodeURIComponent(name); } catch { return name; } })() })),
     submittedAt: submission.created_at || submission.updated_at || "",
     status: submission.status || "ACTIVE",
     artistName: find(/artist\/?stage name/i) || find(/artist name/i) || "New assessment",
