@@ -62,7 +62,11 @@ async function generate({ submission, client, base, kind, direction, documents =
       input: [{ role: "user", content: [{ type: "input_text", text: JSON.stringify({ client: client.name, intake: clientFacing ? undefined : answers, previousPlan: base?.content || null, previousPlanApproved: Boolean(base?.approved_at), request: kind, direction, today: new Date().toISOString().slice(0, 10), documentDates: documents.map(({filename,period}) => ({filename,period})) }) }, ...documents.map((d) => ({ type: "input_file", filename: d.filename, file_data: `data:application/pdf;base64,${d.content_base64}` }))] }],
     }),
   });
-  if (!response.ok) fail("AI strategy generation is unavailable. Try again; the current plan is unchanged.", 502);
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    const code = String(detail.error?.code || "request_failed").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 60);
+    fail(`AI strategy generation is unavailable (${response.status}: ${code}). Your saved plan is unchanged.`, 502);
+  }
   const result = extractResponse(await response.json());
   if (clientFacing) result.citations = base.citations || [];
   if (!clientFacing && !result.citations.length) fail("Market research returned no verifiable citations. No strategy was saved; try again.", 502);
