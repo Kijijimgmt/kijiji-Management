@@ -2,7 +2,9 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "functions": {
-    "api/notion-clients.js": { "maxDuration": 60 }
+    "api/notion-clients.js": {
+      "maxDuration": 60
+    }
   },
   "crons": [
     {
@@ -15,6 +17,24 @@
     }
   ],
   "headers": [
+    {
+      "source": "/client-portal",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-cache, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/client-portal.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-cache, max-age=0, must-revalidate"
+        }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [

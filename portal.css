@@ -5570,3 +5570,22 @@ html[data-theme="dark"] .portal-shell { background: #12100e; }
 .strategy-materials summary,.strategy-update summary,.strategy-history summary,.strategy-audit summary { cursor:pointer; font-weight:650; }
 .strategy-audit { color:var(--muted); font-size:.8rem; overflow-wrap:anywhere; }
 .strategy-dialog input[type=file] { max-width:100%; }
+
+/* Keep the shared plan readable and its actions reachable on phones. */
+.strategy-head > div { min-width:0; flex:1 1 240px; }
+.strategy-head h2 { overflow-wrap:anywhere; line-height:1.15; }
+.strategy-dialog input { min-width:0; width:100%; }
+.strategy-dialog summary { min-height:44px; display:list-item; padding:12px 0; }
+@media (max-width:600px) {
+  .strategy-dialog { width:calc(100% - 16px); max-width:none; max-height:calc(100dvh - 16px); padding:18px 16px; border-radius:16px; }
+  .strategy-head { align-items:flex-start; margin-top:0; }
+  .strategy-head > div { flex-basis:calc(100% - 90px); }
+  .strategy-head h2 { font-size:1.75rem; }
+  .strategy-head .eyebrow { margin-top:0; }
+  .strategy-dialog select, .strategy-dialog textarea, .strategy-dialog input { font-size:16px; }
+  .strategy-reading { font-size:1rem; margin:20px 0; }
+  .strategy-actions { align-items:stretch; gap:8px; }
+  .strategy-actions .button { flex:1 1 100%; min-height:44px; white-space:normal; }
+  .strategy-brief-top { align-items:flex-start; gap:6px; flex-direction:column; }
+  .strategy-dialog .text-action { min-height:44px; }
+}

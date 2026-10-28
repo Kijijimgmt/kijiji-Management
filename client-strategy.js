@@ -2,7 +2,7 @@
   let generation=0,selectedClient='',submissionId='',data=null,pending=false,message='',trigger=null,direction='';
   const e=v=>escapeHtml(v==null?'':String(v));
   const dialog=document.createElement('dialog');dialog.className='strategy-dialog';dialog.setAttribute('aria-labelledby','strategy-heading');document.body.append(dialog);
-  const api=async body=>{const r=await fetch(`/api/notion-clients?view=strategy&clientId=${encodeURIComponent(selectedClient)}`,{method:body?'POST':'GET',headers:getRequestHeaders(),...(body?{body:JSON.stringify(body)}:{})});const result=await parseJsonResponse(r);if(!r.ok)throw new Error(result.message||'Unable to load shared strategy.');return result;};
+  const api=async body=>{const r=await fetch(`/api/notion-clients?view=strategy&clientId=${encodeURIComponent(selectedClient)}`,{method:body?'POST':'GET',cache:'no-store',headers:getRequestHeaders(),...(body?{body:JSON.stringify(body)}:{})});const result=await parseJsonResponse(r);if(!r.ok)throw new Error(result.message||'Unable to load shared strategy.');return result;};
   const busy=()=>pending||new Date(data?.busyUntil).getTime()>Date.now();
   const date=v=>new Date(v).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
   const disabled=()=>busy()||!data?.aiReady?'disabled':'';
@@ -49,6 +49,7 @@
     const ticket=++generation;pending=true;message=action==='approve'?'Saving approval…':action.endsWith('-document')?'Saving the supporting document…':'Researching and building the shared draft. This can take about a minute…';render();
     try{const result=await api({action,submissionId,direction,versionId,expectedCurrentId:data.currentId,...extra});if(ticket===generation){data=result;message=action==='approve'?'Current Plan approved for the team.':action.endsWith('-document')?'Document saved. Build or revise the draft to include it.':'Shared draft saved for team review.';}}catch(error){if(ticket===generation)message=error.message;}finally{if(ticket===generation){pending=false;render();}}
   }
+  window.addEventListener('pageshow',event=>{if(event.persisted&&dialog.open&&selectedClient&&!pending&&!direction.trim())refresh();});
   dialog.addEventListener('close',()=>{generation++;pending=false;trigger?.focus();});
   document.addEventListener('click',event=>{const b=event.target.closest('[data-build-strategy]');if(!b)return;trigger=b;submissionId=b.dataset.buildStrategy;selectedClient='';data=null;direction='';message='Select the client to open the team’s saved plan.';render();dialog.showModal();});
 })();

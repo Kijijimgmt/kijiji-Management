@@ -11,7 +11,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     let result = { currentId: null, busyUntil: null, versions: [], aiReady: true };
     const version = { id: '11111111-1111-4111-8111-111111111111', kind: 'initial', base_id: null, content: 'Shared strategy <script>unsafe</script>', citations: [], created_at: new Date().toISOString(), created_by: 'Joe', submission_id: '123' };
     await page.route('https://strategy.test/**', route => {
-      if (!route.request().url().includes('/api/')) return route.fulfill({ body: '<button data-build-strategy="123">Open strategy</button>' });
+      if (!route.request().url().includes('/api/')) return route.fulfill({ contentType: 'text/html', body: '<meta name="viewport" content="width=device-width,initial-scale=1"><button data-build-strategy="123">Open strategy</button>' });
       if (failed) return route.fulfill({ status: 503, json: { message: 'Storage unavailable' } });
       if (route.request().method() === 'POST') { posts++; result.versions = [version]; }
       return route.fulfill({ json: { ...result, canApprove: admin } });
@@ -61,9 +61,16 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.waitForFunction(() => document.querySelector('[data-strategy-action="alternative"]').disabled);
     for (const theme of ['light', 'dark']) {
       await page.evaluate(t => document.documentElement.dataset.theme = t, theme);
-      await page.setViewportSize({ width: 390, height: 844 });
-      assert(await page.evaluate(() => { const d = document.querySelector('dialog'); return d.scrollWidth <= d.clientWidth + 1; }), `${theme} dialog overflow`);
+      for (const width of [320,390,430]) {
+        await page.setViewportSize({ width, height: 844 });
+        assert(await page.evaluate(() => { const d = document.querySelector('dialog'); return d.scrollWidth <= d.clientWidth + 1; }), `${theme} ${width}px dialog overflow`);
+        assert(await page.locator('[data-strategy-client]').evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=16),'phone inputs avoid automatic zoom');
+      }
     }
+    result.busyUntil=null; version.content='Updated shared plan from another partner';
+    await page.evaluate(()=>window.dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true})));
+    await page.getByText('Updated shared plan from another partner',{exact:true}).waitFor();
+    assert.equal(posts,1,'restoring the mobile page only loads the shared plan');
     await page.getByRole('button', { name: 'Close', exact: true }).click();
     assert(await page.getByText('Open strategy').evaluate(el => document.activeElement === el));
     assert.deepEqual(errors, []);
