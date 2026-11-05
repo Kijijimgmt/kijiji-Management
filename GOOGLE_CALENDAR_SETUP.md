@@ -1,6 +1,6 @@
 # Google Calendar connection — setup and acceptance test
 
-**Status (November 5, 2026): implementation prepared; no Google account authorized and no real shared-calendar test completed.** Outlook remains the business email system. Google is used only to read calendars shared with `kijijimgmt@gmail.com`.
+**Status (November 5, 2026): setup controls deployed (commit da1d9f6); no Google account authorized and no real shared-calendar test completed.** Outlook remains the business email system. Google is used only to read calendars shared with `kijijimgmt@gmail.com`.
 
 ## What was inspected and implemented
 
@@ -105,6 +105,10 @@ Use a dedicated test work calendar with the client calendar owner's permission:
 7. Check as Joe/Erik and a team account without that client's access. The authorized partner sees it; the unauthorized account cannot retrieve it by calling the API directly either.
 8. Revoke the share, sync, and confirm imported details disappear with a useful repair message. Re-share/accept and verify recovery. Revoke app authorization and test Max's reconnect flow.
 9. Verify the five-minute scheduler updates data with all dashboard tabs closed. Record actual create/move/delete timestamps, event IDs and corresponding successful sync times before marking the integration operational.
+
+## Deployment verification
+
+The production deployment completed successfully. The deployed portal includes the new Calendar controls. Unauthenticated calendar reads and scheduler calls both return HTTP 401. The scheduler has not been enabled. This verifies protected deployment, not real Google synchronization.
 
 ## Automated verification
 
