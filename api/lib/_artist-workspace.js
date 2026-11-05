@@ -21,7 +21,7 @@ const date = (value) => {
 };
 function normalizeEntry(body, dashboard, client) {
   const kind = body.kind;
-  if (kind === "profile") return { kind, bio: text(body.bio), website: url(body.website), instagram: url(body.instagram), tiktok: url(body.tiktok), youtube: url(body.youtube), photo: url(body.photo) };
+  if (kind === "profile") return { kind, bio: text(body.bio), website: url(body.website), instagram: url(body.instagram), tiktok: url(body.tiktok), youtube: url(body.youtube), spotify: url(body.spotify), appleMusic: url(body.appleMusic), photo: url(body.photo) };
   if (kind === "social") {
     if (!["Instagram", "TikTok", "YouTube", "Facebook", "Spotify"].includes(body.platform)) fail("Choose a supported platform.");
     const entry = { kind, platform: body.platform, date: date(body.date), followers: number(body.followers), views: number(body.views), engagement: number(body.engagement), notes: text(body.notes, 1000) };
