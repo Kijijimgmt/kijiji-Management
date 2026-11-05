@@ -1,4 +1,5 @@
 const crypto = require("node:crypto");
+const { WRITE_SCOPE, createClientEvent } = require("./_google-calendar-create");
 const { store, fail } = require("./_google-calendar-store");
 const SCOPES = [
   "openid",
@@ -122,9 +123,13 @@ async function accessToken() {
     );
   }
 }
-async function google(path, token) {
+async function google(path, token, options = {}) {
   const r = await fetch(`https://www.googleapis.com/calendar/v3/${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
     signal: AbortSignal.timeout(10000),
   });
   if (!r.ok) {
@@ -385,6 +390,8 @@ async function readCalendar(dashboard, identity) {
       message: c.message,
       accountEmail: identity.isAdmin ? c.account_email : undefined,
       lastJobAt: c.last_job_at,
+      canCreate:
+        c.status === "connected" && Boolean(c.scopes?.includes(WRITE_SCOPE)),
     },
     links: links.map((l) => ({
       id: l.id,
@@ -397,6 +404,12 @@ async function readCalendar(dashboard, identity) {
       lastSuccessAt: l.last_success_at,
       windowStart: l.window_start,
       windowEnd: l.window_end,
+      allowCreate: Boolean(l.allow_create),
+      canCreate:
+        identity.authMode === "supabase" &&
+        Boolean(l.allow_create) &&
+        c.status === "connected" &&
+        Boolean(c.scopes?.includes(WRITE_SCOPE)),
       events:
         c.status === "connected" && !["access_lost"].includes(l.status)
           ? l.events
@@ -404,7 +417,7 @@ async function readCalendar(dashboard, identity) {
     })),
   };
 }
-async function startOAuth(request, response, identity) {
+async function startOAuth(request, response, identity, wantWrite = false) {
   if (!configured())
     fail(
       "Google Calendar setup is incomplete. Follow GOOGLE_CALENDAR_SETUP.md.",
@@ -426,7 +439,7 @@ async function startOAuth(request, response, identity) {
   await store("google_calendar_oauth_states", {
     state_hash: hash(state),
     browser_hash: hash(browser),
-    verifier_cipher: encrypt(verifier),
+    verifier_cipher: encrypt(JSON.stringify({ verifier, wantWrite })),
     actor_email: identity.email,
     expires_at: new Date(Date.now() + 600000).toISOString(),
   });
@@ -438,7 +451,12 @@ async function startOAuth(request, response, identity) {
     url: oauthClient().generateAuthUrl({
       access_type: "offline",
       prompt: "consent",
-      scope: SCOPES,
+      scope: wantWrite
+        ? SCOPES.filter(
+            (s) =>
+              s !== "https://www.googleapis.com/auth/calendar.events.readonly",
+          ).concat(WRITE_SCOPE)
+        : SCOPES,
       state,
       login_hint: c.email,
       code_challenge: crypto
@@ -482,12 +500,19 @@ async function callback(request, response) {
       "Google access was not granted. Return to the dashboard and connect again.",
       400,
     );
+  const rawVerifier = decrypt(states[0].verifier_cipher);
+  let proof;
+  try {
+    proof = JSON.parse(rawVerifier);
+  } catch {
+    proof = { verifier: rawVerifier, wantWrite: false };
+  }
   const auth = oauthClient();
   let tokens;
   try {
     ({ tokens } = await auth.getToken({
       code: String(request.query.code || ""),
-      codeVerifier: decrypt(states[0].verifier_cipher),
+      codeVerifier: proof.verifier,
     }));
   } catch {
     fail(
@@ -512,10 +537,17 @@ async function callback(request, response) {
     fail(`Use the configured integration Gmail account (${cfg().email}).`, 403);
   const granted = new Set(String(tokens.scope || "").split(" "));
   if (
-    !SCOPES.filter((s) => s.startsWith("https:")).every((s) => granted.has(s))
+    !granted.has(
+      "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+    ) ||
+    !(
+      granted.has("https://www.googleapis.com/auth/calendar.events.readonly") ||
+      granted.has(WRITE_SCOPE)
+    ) ||
+    (proof.wantWrite && !granted.has(WRITE_SCOPE))
   )
     fail(
-      "Both read-only Calendar permissions are required. Connect again and allow them.",
+      "The requested Calendar permissions were not granted. Reconnect and review the permissions.",
       403,
     );
   if (!tokens.refresh_token)
@@ -530,6 +562,7 @@ async function callback(request, response) {
       status: "connected",
       message: "",
       connected_at: new Date().toISOString(),
+      scopes: [...granted],
     }),
   );
   response.statusCode = 303;
@@ -548,6 +581,21 @@ async function handleCalendar({ request, response, identity, dashboard }) {
     typeof request.body === "string"
       ? JSON.parse(request.body)
       : request.body || {};
+  if (action === "create-event") {
+    const created = await createClientEvent(
+      { body, identity, dashboard },
+      {
+        store,
+        connection,
+        accessToken,
+        withLease,
+        google,
+        calendars,
+        normalizeEvent,
+      },
+    );
+    return { ...(await readCalendar(dashboard, identity)), created };
+  }
   if (action === "sync") {
     await runSync(dashboard.clients.map((c) => c.id));
     return readCalendar(dashboard, identity);
@@ -557,7 +605,43 @@ async function handleCalendar({ request, response, identity, dashboard }) {
       "Only Max can manage calendar connections after signing in securely.",
       403,
     );
-  if (action === "connect") return startOAuth(request, response, identity);
+  if (action === "connect" || action === "connect-write")
+    return startOAuth(request, response, identity, action === "connect-write");
+  if (action === "enable-create") {
+    const link = (
+      await store(
+        `google_calendar_links?id=eq.${encodeURIComponent(String(body.linkId))}&enabled=eq.true&select=*`,
+      )
+    )[0];
+    if (!link || !dashboard.clients.some((c) => c.id === link.client_id))
+      fail("Choose a mapped client calendar.", 403);
+    if (typeof body.enabled !== "boolean")
+      fail("Choose whether event creation is enabled.");
+    await withLease(async () => {
+      const current = (await store(`google_calendar_links?id=eq.${link.id}&enabled=eq.true&select=*`))[0];
+      if (!current || current.client_id !== link.client_id || current.calendar_id !== link.calendar_id)
+        fail("The calendar mapping changed. Refresh before enabling event creation.", 409);
+      if (body.enabled) {
+        const c = await connection();
+        if (!c.scopes?.includes(WRITE_SCOPE))
+          fail("Enable Google event creation and reconnect first.", 409);
+        const cal = (await calendars(await accessToken())).find(
+          (c) => c.id === link.calendar_id,
+        );
+        if (!cal || !["writer", "owner"].includes(cal.accessRole))
+          fail(
+            "Ask the client to share this calendar with Make changes to events permission.",
+            403,
+          );
+      }
+      await store(
+        `google_calendar_links?id=eq.${link.id}`,
+        { allow_create: body.enabled },
+        "PATCH",
+      );
+    });
+    return readCalendar(dashboard, identity);
+  }
   if (action === "discover") {
     const token = await accessToken();
     return {
@@ -566,6 +650,7 @@ async function handleCalendar({ request, response, identity, dashboard }) {
         name: c.summary || "Calendar",
         timeZone: c.timeZone || "UTC",
         primary: Boolean(c.primary),
+        accessRole: c.accessRole,
       })),
     };
   }
@@ -606,6 +691,7 @@ async function handleCalendar({ request, response, identity, dashboard }) {
         time_zone: cal.timeZone || "UTC",
         color: body.color,
         enabled: true,
+        allow_create: false,
         status: "pending",
         message: "Mapping saved. Sync to import events.",
         events: [],
@@ -625,7 +711,12 @@ async function handleCalendar({ request, response, identity, dashboard }) {
     await withLease(() =>
       store(
         `google_calendar_links?id=eq.${encodeURIComponent(String(body.linkId))}`,
-        { enabled: false, events: [], status: "disconnected" },
+        {
+          enabled: false,
+          allow_create: false,
+          events: [],
+          status: "disconnected",
+        },
         "PATCH",
       ),
     );
@@ -636,9 +727,11 @@ async function handleCalendar({ request, response, identity, dashboard }) {
 function cronAllowed(request) {
   const expected = process.env.CRON_SECRET;
   if (!expected) return false;
-  const given = Buffer.from(String(request.headers.authorization || ''));
+  const given = Buffer.from(String(request.headers.authorization || ""));
   const wanted = Buffer.from(`Bearer ${expected}`);
-  return given.length === wanted.length && crypto.timingSafeEqual(given, wanted);
+  return (
+    given.length === wanted.length && crypto.timingSafeEqual(given, wanted)
+  );
 }
 
 module.exports = {

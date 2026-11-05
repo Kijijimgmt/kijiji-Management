@@ -46,14 +46,28 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
         },
       ],
     };
-    await page.route("https://calendar.test/**", (route) =>
-      route.request().url().includes("/api/")
+    const createAttempts = [];
+    await page.route("https://calendar.test/**", (route) => {
+      if (route.request().url().includes("action=create-event")) {
+        createAttempts.push(route.request().postDataJSON());
+        if (createAttempts.length === 1)
+          return route.fulfill({
+            status: 502,
+            json: {
+              message: "Google did not confirm the save. Retry this form.",
+            },
+          });
+        return route.fulfill({
+          json: { ...response, created: { id: "new-event", cached: true } },
+        });
+      }
+      return route.request().url().includes("/api/")
         ? route.fulfill({ json: response })
         : route.fulfill({
             contentType: "text/html",
             body: '<meta name="viewport" content="width=device-width,initial-scale=1"><div data-google-calendar-controls></div><main data-grid></main><div data-profile></div>',
-          }),
-    );
+          });
+    });
     await page.goto("https://calendar.test");
     await page.evaluate(() => {
       window.state = {
@@ -103,14 +117,16 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
     assert.equal(await page.locator("[data-grid] script").count(), 0);
     await page.locator("[data-grid] [data-google-event-id]").first().click();
     await page.locator("dialog[open]").waitFor();
-    assert((await page.locator("dialog").innerText()).includes("Read only"));
+    assert(
+      (await page.locator("dialog[open]").innerText()).includes("Read only"),
+    );
     assert.equal(
       await page
         .locator("dialog input,dialog textarea,dialog [data-event-id]")
         .count(),
       0,
     );
-    assert.equal(await page.locator("dialog img").count(), 0);
+    assert.equal(await page.locator("dialog[open] img").count(), 0);
     await page.getByRole("button", { name: "Close", exact: true }).click();
     await page.locator("[data-google-client]").selectOption("c2");
     assert.equal(
@@ -236,6 +252,71 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       renderPortal();
     });
     assert.equal(await page.locator("[data-google-action=connect]").count(), 1);
+    response.connection.canCreate = true;
+    response.links[0].canCreate = true;
+    response.links[0].allowCreate = true;
+    await page.evaluate(async () => {
+      await loadGoogleCalendar();
+      renderCalendar();
+    });
+    await page
+      .locator("[data-google-calendar-controls] [data-google-create]")
+      .click();
+    await page
+      .locator("[data-google-create-form] [name=title]")
+      .fill("Partner rehearsal");
+    await page
+      .locator("[data-google-create-form] [name=startLocal]")
+      .fill("2026-11-20T09:00");
+    await page
+      .locator("[data-google-create-form] [name=endLocal]")
+      .fill("2026-11-20T10:00");
+    for (const width of [320, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      assert(
+        await page
+          .locator(".google-create-dialog")
+          .evaluate((d) => d.scrollWidth <= d.clientWidth + 1),
+        "creation form fits phone",
+      );
+    }
+    await page
+      .getByRole("button", { name: "Review event", exact: true })
+      .click();
+    assert.equal(createAttempts.length, 0, "review does not send an event");
+    assert(
+      (await page.locator("[data-google-create-review]").innerText()).includes(
+        "Client One Work",
+      ),
+    );
+    await page
+      .getByRole("button", {
+        name: "Add event to Client One’s Google Calendar",
+        exact: true,
+      })
+      .click();
+    await page
+      .getByText("Google did not confirm the save. Retry this form.", {
+        exact: true,
+      })
+      .waitFor();
+    assert.equal(
+      await page.locator("[data-google-create-form] [name=title]").inputValue(),
+      "Partner rehearsal",
+    );
+    await page
+      .getByRole("button", {
+        name: "Add event to Client One’s Google Calendar",
+        exact: true,
+      })
+      .click();
+    await page.locator(".google-create-dialog").waitFor({ state: "hidden" });
+    assert.equal(createAttempts.length, 2);
+    assert.equal(
+      createAttempts[0].requestId,
+      createAttempts[1].requestId,
+      "retries use the same stable request ID",
+    );
     await page.evaluate(() => {
       clearGoogleCalendar();
       state.teamUser = null;

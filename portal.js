@@ -1542,7 +1542,7 @@ const tourSteps = [
   {
     "eyebrow": "Calendar",
     "title": "Protect the important dates",
-    "description": "Keep internal Kijiji dates and connected client Google schedules together. Filter by client or event source and choose a display time zone. Google events are read-only; the client updates them in Google Calendar. Open Google calendar connections to check sync status. Max connects and maps calendars; authorized partners can view and sync them.",
+    "description": "Keep internal Kijiji dates and connected client Google schedules together. Filter by client or event source and choose a display time zone. Existing Google events open for viewing. Use Add to client Google Calendar to create an event when Max has enabled that calendar and the client has granted editing access. Open Google calendar connections to check sync status. Max connects and maps calendars; authorized partners can view and sync them.",
     "selector": "#calendar",
     "hash": "calendar"
   },

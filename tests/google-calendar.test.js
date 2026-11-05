@@ -306,3 +306,30 @@ test("OAuth callback validates browser binding, consumes state and refuses the w
     OAuth2Client.prototype.verifyIdToken = oldVerify;
   }
 });
+test("write authorization is requested only by the explicit upgrade action and bound to its state", async () => {
+  const { startOAuth } = require("../api/lib/_google-calendar");
+  const original = global.fetch;
+  let saved;
+  global.fetch = async (url, opts) => {
+    if (opts.method === "POST") saved = JSON.parse(opts.body);
+    return new Response("[]");
+  };
+  try {
+    const result = await startOAuth(
+      {},
+      { setHeader: () => {} },
+      { email: "max@kijijimgmt.com" },
+      true,
+    );
+    const scope = new URL(result.url).searchParams.get("scope").split(" ");
+    assert(scope.includes("https://www.googleapis.com/auth/calendar.events"));
+    assert(
+      !scope.includes(
+        "https://www.googleapis.com/auth/calendar.events.readonly",
+      ),
+    );
+    assert.equal(JSON.parse(decrypt(saved.verifier_cipher)).wantWrite, true);
+  } finally {
+    global.fetch = original;
+  }
+});

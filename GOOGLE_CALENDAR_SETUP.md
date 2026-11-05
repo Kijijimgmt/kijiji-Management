@@ -1,14 +1,30 @@
 # Google Calendar connection — setup and acceptance test
 
-**Status (November 5, 2026): setup controls deployed (commit da1d9f6); no Google account authorized and no real shared-calendar test completed.** Outlook remains the business email system. Google is used only to read calendars shared with `kijijimgmt@gmail.com`.
+**Status (November 5, 2026): Google viewing access authorized; direct event creation implemented with explicit permission upgrade. Medusa’s calendar sharing/mapping, write authorization, automatic polling, and real-calendar acceptance tests remain pending.** Outlook remains the business email system. Shared client schedules use `kijijimgmt@gmail.com`.
 
 ## What was inspected and implemented
 
 The portal is static HTML/CSS/plain JavaScript on Vercel, with CommonJS server functions. Supabase validates approved team logins. Notion stores clients, internal tasks and internal events; Supabase already stores private shared strategies. Existing server-side client authorization is reused for imported events.
 
-The integration uses the existing `api/notion-clients` function with `view=google-calendar`, avoiding an additional deployed function. The Google OAuth library is pinned in `package-lock.json`. Calendar scopes are read-only. Max authorizes one integration Google account; clients do not authorize the dashboard individually. OAuth state is one-use, browser-bound, expires in ten minutes, and uses PKCE. The account identity is verified against the configured Gmail. Refresh tokens are encrypted with AES-256-GCM in a private server-only table; access tokens remain server-side and are obtained on demand.
+The integration uses the existing `api/notion-clients` function with `view=google-calendar`, avoiding an additional deployed function. The Google OAuth library is pinned in `package-lock.json`. The default Calendar authorization is read-only; the optional creation upgrade explicitly requests event read/write access and requires opt-in on each calendar. Max authorizes one integration Google account; clients do not authorize the dashboard individually. OAuth state is one-use, browser-bound, expires in ten minutes, and uses PKCE. The account identity is verified against the configured Gmail. Refresh tokens are encrypted with AES-256-GCM in a private server-only table; access tokens remain server-side and are obtained on demand.
 
-The private migration `supabase/migrations/20261105153856_google_calendar_readonly.sql` has been applied to project `vaqgriohhcccvvxgkhgh`. Database checks confirmed RLS on all three tables, no browser table privileges, and no browser RPC privileges. No Google credentials were stored. The database advisor's “RLS enabled, no policy” INFO is intentional: these are server-only tables with no browser policy/grants.
+The private migration `supabase/migrations/20261105153856_google_calendar_readonly.sql` has been applied to project `vaqgriohhcccvvxgkhgh`. Database checks confirmed RLS on all three tables, no browser table privileges, and no browser RPC privileges. Google refresh credentials are encrypted server-side; they are never exposed through dashboard responses. The database advisor's “RLS enabled, no policy” INFO is intentional: these are server-only tables with no browser policy/grants.
+
+## Optional event-creation upgrade (November 5, 2026)
+
+The user requested adding Kijiji events directly to a client’s shared Google calendar, so client and management use one schedule. The Google account has now been authorized for viewing, but **Medusa’s calendar was not present in the discovered calendar list**. Her mapping and real-calendar acceptance tests remain pending.
+
+To enable direct creation:
+
+1. Have Medusa share her actual work calendar with `kijijimgmt@gmail.com` using **Make changes to events** (Google may label this “Make changes (see private events as free/busy)”). Accept the invitation in that Gmail account. Full sharing-management permission is unnecessary.
+2. Google Cloud → Google Auth Platform → Data Access → Add or remove scopes. Add `https://www.googleapis.com/auth/calendar.events`. Keep the Calendar list read scope and identity scopes. This is the event read/write scope required for a shared calendar; an owned-calendars-only scope cannot write a calendar owned by the client.
+3. After the new code is deployed, sign in to the dashboard as Max → Calendar → Google calendar connections → **Enable adding Google events**. Review Google’s new authorization as `kijijimgmt@gmail.com`. The client ID, secret, redirect URI, and encryption key remain the same.
+4. Find shared calendars and map Medusa’s work calendar to the Medusa profile. For that mapping, select **Allow adding events for this client**. The server verifies live Google `writer`/`owner` access before enabling it, and checks it again on every creation.
+5. Use **Add to client Google Calendar**, enter the title, dates, time zone, location and details, then review the exact client/calendar and select **Add event to Medusa’s Google Calendar**. This creates the event on that shared calendar, not a second Notion event. The form does not send guest invitations. Shared-calendar collaborators can see the event through their existing access.
+
+Each mapping defaults to view-only, including existing mappings and any remapping. Authorized partners can create only on their scoped client calendars after Max enables that mapping. A stable request ID is converted into a Google event ID to prevent duplicate submissions and recover uncertain saves. The server constructs the event payload; caller-supplied attendees or alternate calendar IDs are ignored. All-day last dates are inclusive in the form and converted to Google’s exclusive end date. Missing/ambiguous daylight-saving times are rejected instead of silently shifted. Google success with a delayed dashboard cache is reported as created and can be refreshed with Sync Google now.
+
+This upgrade adds event creation only. Existing Google events remain view-only in the dashboard; rescheduling/canceling them still happens in Google Calendar. No real event has been created or changed by this implementation yet. Run a permitted test on the correctly shared calendar before declaring direct creation operational. Automatic polling is still pending scheduler setup.
 
 ## 1. Share and accept a work calendar
 
@@ -27,7 +43,7 @@ Sign in to **kijijimgmt@gmail.com** and click the invitation link to add/accept 
    - `https://www.googleapis.com/auth/userinfo.email` (Google may display this as `email`)
    - `https://www.googleapis.com/auth/calendar.events.readonly`
    - `https://www.googleapis.com/auth/calendar.calendarlist.readonly`
-   No calendar write, sharing, Gmail/mailbox, or full Drive scopes are needed.
+   These are the default viewing scopes. For the optional creation feature also add `https://www.googleapis.com/auth/calendar.events`, then explicitly approve the upgrade described above. No sharing-management, Gmail/mailbox, or full Drive scopes are needed.
 6. Clients → Create client → **Web application**. Name: `Kijiji Dashboard Production`.
 7. Under **Authorized redirect URIs**, add this exact URI, including the query string and order:
 
@@ -86,7 +102,7 @@ For larger rosters, the job processes the oldest attempted calendars first withi
 - Each successful snapshot atomically replaces that calendar's previous snapshot. Events deleted, canceled, moved outside the window, or removed by series changes therefore disappear. Retries deduplicate by event ID. A failed/partial fetch never publishes a partial snapshot.
 - Full reconciliation is intentional for this roster: no `syncToken` is persisted, so there is no invalid-sync-token state to recover. If Google expires a pagination token (410), that calendar retries the full fetch. If incremental sync is added later it must implement Google's 410 full-reset protocol and exact parameter constraints.
 - All-day events retain date-only values with Google's exclusive end date. Timed events preserve offsets and original zone and are shown in the selected display zone, including daylight-saving transitions and multi-day spans.
-- Every Google Calendar resource call is GET. OAuth token exchange/refresh is server-side. No event create/update/delete call is implemented.
+- Calendar synchronization uses GET calls. The optional, explicitly enabled event-creation action uses events.insert (POST) only after scope, client, mapping and live calendar edit-access checks. OAuth token exchange/refresh is server-side. No existing-event update or delete action is implemented.
 - Expired/revoked refresh authorization shows a reconnect message and stops exposing cached events until Max reconnects. Removed calendar sharing hides that calendar's cached events once detected, preserving the mapping so sharing can be repaired. Temporary/network/rate-limit failures keep the last successful snapshot with a delayed status.
 - Calendar and OAuth data use private tables with RLS and explicit revoke/grants. Client scope is checked on every dashboard API read; frontend filters are not the security boundary. Disconnecting a mapping clears its cached events without changing Google Calendar.
 
@@ -112,7 +128,7 @@ The production deployment completed successfully. The deployed portal includes t
 
 ## Automated verification
 
-- `node --test tests/google-calendar.test.js tests/artist-workspace.test.js tests/client-strategy.test.js tests/strategy-evidence.test.js`
+- `node --test tests/google-calendar.test.js tests/google-calendar-create.test.js tests/artist-workspace.test.js tests/client-strategy.test.js tests/strategy-evidence.test.js`
 - `PGLITE_MODULE=/path/to/@electric-sql/pglite node tests/google-calendar.database.cjs`
 - `PLAYWRIGHT_MODULE=/path/to/playwright BROWSER_EXECUTABLE=/path/to/browser node tests/google-calendar.browser.cjs`
 

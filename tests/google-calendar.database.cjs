@@ -13,6 +13,12 @@ const { PGlite } = require(process.env.PGLITE_MODULE || "@electric-sql/pglite");
     ),
   );
   await db.exec(
+    fs.readFileSync(
+      "supabase/migrations/20261105170735_google_calendar_event_creation.sql",
+      "utf8",
+    ),
+  );
+  await db.exec(
     "insert into google_calendar_links(calendar_id,client_id,calendar_name,time_zone,color,created_by) values ('client1@calendar','client1','Client work','America/New_York','#955020','max')",
   );
   const id = (await db.query("select id from google_calendar_links")).rows[0]
@@ -58,6 +64,28 @@ const { PGlite } = require(process.env.PGLITE_MODULE || "@electric-sql/pglite");
     0,
     "deletion reconciles to an empty snapshot",
   );
+  assert.equal(
+    (await db.query("select allow_create from google_calendar_links")).rows[0]
+      .allow_create,
+    false,
+    "existing mappings default to view-only",
+  );
+  await db.exec("update google_calendar_links set allow_create=true");
+  for (let i = 0; i < 2; i++)
+    await db.query("select cache_created_google_event($1,$2,$3)", [
+      token,
+      id,
+      JSON.stringify({ id: "created-id", name: "Created" }),
+    ]);
+  assert.equal(
+    (
+      await db.query(
+        "select jsonb_array_length(events) as n from google_calendar_links",
+      )
+    ).rows[0].n,
+    1,
+    "retry cache insert deduplicates Google event IDs",
+  );
   await db.query("select release_google_calendar_job($1)", [token]);
   assert.equal(
     (
@@ -78,6 +106,13 @@ const { PGlite } = require(process.env.PGLITE_MODULE || "@electric-sql/pglite");
     ])
       await assert.rejects(() => db.query(`select * from ${table}`));
     await assert.rejects(() => db.query("select claim_google_calendar_job()"));
+    await assert.rejects(() =>
+      db.query("select cache_created_google_event($1,$2,$3)", [
+        token,
+        id,
+        "{}",
+      ]),
+    );
     await db.exec("reset role");
   }
   await db.exec("set role service_role");

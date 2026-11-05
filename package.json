@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@js-temporal/polyfill": "0.5.1",
     "google-auth-library": "11.3.3"
   }
 }
