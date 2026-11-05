@@ -1498,7 +1498,7 @@ const tourSteps = [
   {
     "eyebrow": "Clients",
     "title": "Open the full client picture",
-    "description": "Select an artist to open their profile. Use the tabs for tasks, events and ticket sales, social snapshots, marketing drafts, and files. Ticket and social numbers are manual entries until accounts are connected. The original client details and roadmap are under Overview.",
+    "description": "Select an artist to open their profile. Use the tabs for tasks, events and ticket sales, social snapshots, and files. Ticket and social numbers are manual entries until accounts are connected. The original client details and roadmap are under Overview.",
     "selector": "#clients",
     "hash": "clients"
   },
@@ -1523,14 +1523,9 @@ const tourSteps = [
     selector: "[data-client-detail]", hash: "clients", artistTab: 3
   },
   {
-    eyebrow: "Marketing", title: "Create and review artist marketing drafts",
-    description: "Create a marketing draft for an email, captions, plan or activity summary. When AI is connected, provide a brief and choose Draft with AI. Review and edit the result, then Save draft to share it with authorized partners. Saving does not send emails or publish posts.",
-    selector: "[data-client-detail]", hash: "clients", artistTab: 4
-  },
-  {
     eyebrow: "Artist files", title: "Find the artist's source materials",
     description: "Files lists this artist's linked assets. Open artist folder takes you to their folder in the shared library for logos, brand guides, contracts and campaign files.",
-    selector: "[data-client-detail]", hash: "clients", artistTab: 5
+    selector: "[data-client-detail]", hash: "clients", artistTab: 4
   },
   {
     "eyebrow": "Talent Bookings",

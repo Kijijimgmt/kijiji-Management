@@ -35,7 +35,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   await page.addScriptTag({ content: fs.readFileSync(path.join(__dirname, "../artist-workspace.js"), "utf8") });
   await page.evaluate(() => renderArtistWorkspace(client, document.querySelector("#profile")));
   await page.waitForFunction(() => !document.body.textContent.includes("Loading shared artist"));
-  for (const tab of ["Tasks", "Events & tickets", "Socials", "Marketing", "Files", "Overview"]) {
+  for (const tab of ["Tasks", "Events & tickets", "Socials", "Files", "Overview"]) {
     await page.getByRole("button", { name: tab, exact: true }).click();
   }
   assert.equal(await page.locator("[data-artist-legacy] > summary").count(), 1);
@@ -46,20 +46,18 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   await page.getByText("Saved to the shared artist profile.", { exact: true }).waitFor();
   assert.equal(entries[0].followers, 0);
   assert(await page.getByText("Not entered", { exact: true }).count() >= 2);
-  await page.getByRole("button", { name: "Marketing", exact: true }).click();
-  await page.getByText("Create a marketing draft", { exact: true }).click();
-  assert(await page.getByRole("button", { name: "Draft with AI" }).isDisabled());
-  await page.locator('[name="title"]').fill("Launch email");
-  await page.locator('[name="content"]').fill("Review this draft before sending.");
-  failSave = true;
-  await page.getByRole("button", { name: "Save draft", exact: true }).click();
-  await page.getByText("Test storage unavailable", { exact: true }).waitFor();
-  assert.equal(await page.locator('[name="content"]').inputValue(), "Review this draft before sending.");
+  assert.equal(await page.getByRole("button", { name: "Marketing", exact: true }).count(), 0);
   await page.getByRole("button", { name: "Files", exact: true }).click();
-  await page.getByRole("button", { name: "Marketing", exact: true }).click();
-  assert.equal(await page.locator('[name="title"]').inputValue(), "Launch email");
+  await page.getByRole("heading", { name: "Artist files & brand kit", exact: true }).waitFor();
+  await page.getByRole("button", { name: "Overview", exact: true }).click();
+  await page.getByText("Edit bio, photo & official links", { exact: true }).click();
+  await page.getByRole("textbox", { name: "Artist bio", exact: true }).fill("Artist profile draft");
+  failSave = true;
+  await page.getByRole("button", { name: "Save to artist profile", exact: true }).click();
+  await page.getByText("Test storage unavailable", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("textbox", { name: "Artist bio", exact: true }).inputValue(), "Artist profile draft");
   failSave = false;
-  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await page.getByRole("button", { name: "Save to artist profile", exact: true }).click();
   await page.getByText("Saved to the shared artist profile.", { exact: true }).waitFor();
   for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => document.documentElement.dataset.theme = theme, theme);
@@ -97,9 +95,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
     return route.fulfill({ path: file, contentType: filename.endsWith(".html") ? "text/html" : filename.endsWith(".css") ? "text/css" : filename.endsWith(".js") ? "application/javascript" : "image/jpeg" });
   });
   await integrated.goto("https://workspace.test/#clients");
-  await integrated.getByRole("button", { name: "Marketing", exact: true }).waitFor();
-  await integrated.getByRole("button", { name: "Marketing", exact: true }).click();
-  await integrated.getByText("Create a marketing draft", { exact: true }).waitFor();
+  await integrated.getByRole("button", { name: "Files", exact: true }).click();
+  await integrated.getByRole("heading", { name: "Artist files & brand kit", exact: true }).waitFor();
+  assert.equal(await integrated.getByRole("button", { name: "Marketing", exact: true }).count(), 0);
   await integrated.getByRole("button", { name: "Overview", exact: true }).click();
   await integrated.screenshot({ path: "/tmp/kijiji-artist-integrated.png", fullPage: true });
   for (const member of ['Maxwell', 'Joe', 'Erik']) {
@@ -119,5 +117,5 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
   }
   assert.deepEqual(errors, []);
   await browser.close();
-  console.log("PASS: six tabs, profile loading, zero metrics, draft save/failure/retention, AI unavailable state, mobile layout, both themes.");
+  console.log("PASS: five tabs, profile loading, zero metrics, profile save/failure/retention, partner tours, mobile layout, both themes.");
 })().catch((error) => { console.error(error); process.exit(1); });
