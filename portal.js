@@ -1108,8 +1108,10 @@ const renderPipeline = () => {
 };
 
 const renderCalendar = () => {
-  const upcomingAll = state.events.filter(isCurrentRecord).filter(isLiveEvent)
-    .filter((event) => getDaysUntil(event.date) >= 0)
+  window.googleCalendar?.controls();
+  const allEvents = [...state.events.filter(isCurrentRecord).filter(isLiveEvent), ...(window.googleCalendar?.events() || [])].filter(event=>!window.googleCalendar || window.googleCalendar.matches(event));
+  const upcomingAll = allEvents
+    .filter((event) => window.googleCalendar ? window.googleCalendar.upcoming(event) : getDaysUntil(event.date) >= 0)
     .sort((a, b) => getDaysUntil(a.date) - getDaysUntil(b.date));
   const upcoming = upcomingAll.slice(0, 10);
 
@@ -1121,11 +1123,9 @@ const renderCalendar = () => {
   const currentMonth = calendarCursor.getMonth();
   const eventsByDate = new Map();
 
-  state.events.filter(isCurrentRecord).filter(isLiveEvent).forEach((event) => {
-    if (!event.date) return;
-    const dateEvents = eventsByDate.get(String(event.date).slice(0,10)) || [];
-    dateEvents.push(event);
-    eventsByDate.set(String(event.date).slice(0,10), dateEvents);
+  dates.forEach(date=>{
+    const key=toLocalISODate(date);
+    eventsByDate.set(key,allEvents.filter(event=>window.googleCalendar?window.googleCalendar.occurs(event,key):String(event.date).slice(0,10)===key));
   });
 
   if (calendarView === "week") {
@@ -1151,9 +1151,9 @@ const renderCalendar = () => {
             ${visibleEvents
               .map(
                 (event) => `
-                  <button class="calendar-event-pill" type="button" data-event-id="${escapeHtml(event.id)}" title="${escapeHtml(event.name)} - ${escapeHtml(formatCountdown(event.date))}" aria-label="Open ${escapeHtml(event.name)}">
+                  <button class="calendar-event-pill${event.source==='google'?' google-event-pill':''}" type="button" ${event.source==='google'?`data-google-event-id="${escapeHtml(event.id)}" style="--client-color:${escapeHtml(event.color)}"`:`data-event-id="${escapeHtml(event.id)}"`} title="${escapeHtml(event.name)} - ${escapeHtml(formatCountdown(event.date))}" aria-label="Open ${escapeHtml(event.name)}">
                     <span>${escapeHtml(event.name)}</span>
-                    <small>${escapeHtml(getClientName(event))}</small>
+                    <small>${escapeHtml(getClientName(event))}${event.source==='google'?' · Google · Read only':''}</small>
                   </button>
                 `,
               )
@@ -1177,7 +1177,7 @@ const renderCalendar = () => {
     return;
   }
 
-  els.calendarList.innerHTML = upcoming.map(eventCard).join("");
+  els.calendarList.innerHTML = upcoming.map(event=>event.source==='google'?window.googleCalendar.card(event):eventCard(event)).join("");
 };
 
 const renderDocuments = () => {
@@ -1542,7 +1542,7 @@ const tourSteps = [
   {
     "eyebrow": "Calendar",
     "title": "Protect the important dates",
-    "description": "Keep meetings, launches, shoots, deadlines, and internal check-ins here. Switch between month and week views, open an event to update it, and use the countdowns to see what is approaching.",
+    "description": "Keep internal Kijiji dates and connected client Google schedules together. Filter by client or event source and choose a display time zone. Google events are read-only; the client updates them in Google Calendar. Open Google calendar connections to check sync status. Max connects and maps calendars; authorized partners can view and sync them.",
     "selector": "#calendar",
     "hash": "calendar"
   },
@@ -1785,6 +1785,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
       state.industryBriefs = [];
       state.insightsIntegrations = {};
     }
+    await window.loadGoogleCalendar?.(data.googleCalendar);
     state.selectedClientId = state.clients.some((client) => client.id === state.selectedClientId)
       ? state.selectedClientId
       : state.clients[0]?.id || "";
@@ -1983,6 +1984,7 @@ const openOpportunityForm = (opportunity = null) => {
 };
 
 const openEventForm = (eventItem = null, clientId = "", eventDate = todayISO) => {
+  if (eventItem?.source === "google" || eventItem?.readOnly) return;
   els.eventForm.reset();
   setFormError(els.eventForm);
   renderClientOptions(els.eventClientSelect);
@@ -2336,6 +2338,7 @@ const handleAccessSubmit = async (event) => {
 
 async function logoutPortal() {
   window.clearArtistWorkspace?.();
+  window.clearGoogleCalendar?.();
   await supabaseClient?.auth?.signOut?.();
   state = {
     clients: [],
@@ -2774,6 +2777,7 @@ const initializeAuth = async () => {
     }
     if (event === "SIGNED_OUT") {
       window.clearArtistWorkspace?.();
+      window.clearGoogleCalendar?.();
       state.teamUser = null;
       state.authSession = null;
       applyRoleUi();

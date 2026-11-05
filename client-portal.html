@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261028-mobile-plan" />
+    <link rel="stylesheet" href="portal.css?v=20261105-calendar" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -373,6 +373,7 @@
                 <button class="button button-secondary" type="button" data-open-event-form data-requires-access>Add Event</button>
               </div>
             </div>
+            <div data-google-calendar-controls></div>
             <div class="calendar-toolbar">
               <div class="calendar-navigation">
                 <button class="icon-button calendar-arrow" type="button" data-calendar-previous aria-label="Previous period" title="Previous period">&larr;</button>
@@ -851,8 +852,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="artist-workspace.js?v=20261027-tour"></script>
-    <script src="portal.js?v=20261027-shared-strategy"></script>
+    <script src="google-calendar.js?v=20261105-calendar"></script>
+    <script src="artist-workspace.js?v=20261105-calendar"></script>
+    <script src="portal.js?v=20261105-calendar"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>

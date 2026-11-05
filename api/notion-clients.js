@@ -1016,6 +1016,22 @@ module.exports = async (request, response) => {
       return;
     }
 
+    if (request.query?.view === "google-calendar") {
+      response.setHeader("Cache-Control", "private, no-store");
+      const calendar = require("./lib/_google-calendar");
+      if (request.query.action === "callback") {
+        if (request.method !== "GET") return json(response, 405, { message: "Use GET for the OAuth callback." });
+        return await calendar.callback(request, response);
+      }
+      if (request.query.action === "sync-cron") {
+        if (request.method !== "POST" || !calendar.cronAllowed(request)) return json(response, 401, { message: "Calendar scheduler access denied." });
+        return json(response, 200, await calendar.runSync());
+      }
+      const calendarIdentity = await verifyTeamAccess(request);
+      const scoped = filterDashboardForIdentity(await listDashboard(), calendarIdentity);
+      return json(response, 200, await calendar.handleCalendar({ request, response, identity: calendarIdentity, dashboard: scoped }));
+    }
+
     const identity = await verifyTeamAccess(request);
 
     if (request.query?.view === "strategy") {
@@ -1040,7 +1056,14 @@ module.exports = async (request, response) => {
 
     if (request.method === "GET") {
       const dashboard = await listDashboard();
-      json(response, 200, filterDashboardForIdentity(dashboard, identity));
+      const scoped = filterDashboardForIdentity(dashboard, identity);
+      try {
+        scoped.googleCalendar = await require("./lib/_google-calendar").readCalendar(scoped, identity);
+      } catch {
+        scoped.googleCalendar = { links: [], connection: { status: "error", message: "Google schedules are temporarily unavailable. Internal events remain available." }, canManage: identity.isAdmin && identity.authMode === "supabase" };
+      }
+      response.setHeader("Cache-Control", "private, no-store");
+      json(response, 200, scoped);
       return;
     }
 
