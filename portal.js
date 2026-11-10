@@ -707,9 +707,9 @@ const renderActionAttachments = (action) => {
 };
 
 const actionCard = (action) => `
-  <article class="action-item editable-card" data-action-id="${escapeHtml(action.id)}" role="button" tabindex="0" aria-label="Edit task: ${escapeHtml(action.title)}">
+  <article class="action-item editable-card" data-action-id="${escapeHtml(action.id)}" aria-label="Task: ${escapeHtml(action.title)}">
     <header>
-      <strong>${escapeHtml(action.title)}</strong>
+      <button class="task-title-button" type="button" aria-label="Edit task: ${escapeHtml(action.title)}"><strong>${escapeHtml(action.title)}</strong></button>
       <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
     </header>
     <p>${escapeHtml(getClientName(action))}</p>
@@ -723,7 +723,7 @@ const actionCard = (action) => `
       ${action.recurrence ? `<span>Repeats: ${escapeHtml(action.recurrence)}</span>` : ""}
       ${action.blocker ? "<span>Blocker</span>" : ""}
     </div>
-    <span class="text-action" aria-hidden="true">Edit Task</span>
+    ${(isAdminUser() || ownerMatches(action.owner, state.teamUser?.owner)) ? `<button class="task-row-delete" type="button" data-open-task-delete="${escapeHtml(action.id)}" aria-label="Delete task: ${escapeHtml(action.title)}">Delete</button>` : ""}
   </article>
 `;
 
@@ -1932,6 +1932,7 @@ const openClientForm = (client = null) => {
 
 const openActionForm = (action = null, clientId = "") => {
   els.actionForm.reset();
+  els.actionForm.querySelectorAll(".task-form-disclosure").forEach(section => { section.open = false; });
   setFormError(els.actionForm);
   renderClientOptions(els.actionClientSelect);
   els.actionFormTitle.textContent = action ? "Edit task" : "Add task";
@@ -1941,7 +1942,7 @@ const openActionForm = (action = null, clientId = "") => {
   setSelectValue(els.actionForm.elements.status, action?.status || "Open");
   setSelectValue(els.actionForm.elements.owner, action?.owner || "Unassigned");
   setSelectValue(els.actionForm.elements.priority, action?.priority || "Normal");
-  els.actionForm.elements.dueDate.value = action?.dueDate || todayISO;
+  els.actionForm.elements.dueDate.value = action?.dueDate || "";
   els.actionForm.elements.clientId.value = action?.clientIds?.[0] || clientId;
   setSelectValue(els.actionForm.elements.approvalOwner, action?.approvalOwner || "");
   setSelectValue(els.actionForm.elements.recurrence, action?.recurrence || "");
@@ -2885,3 +2886,14 @@ document.querySelectorAll('[data-work-tab]').forEach(button => button.addEventLi
   document.querySelector('#opportunities').hidden = !opportunities;
   document.querySelectorAll('[data-work-tab]').forEach(tab => tab.setAttribute('aria-pressed', String(tab === button)));
 }));
+
+// The same guarded, reversible delete flow is available from the task list.
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-open-task-delete]');
+  if (!button) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  const action = state.actions.find(item => item.id === button.dataset.openTaskDelete);
+  if (!action || actionMutationPending) return;
+  openActionForm(action);
+  handleActionDelete();
+}, true);
