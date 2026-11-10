@@ -587,23 +587,28 @@ const renderMyWork = () => {
     .sort((a,b) => getDaysUntil(a.date) - getDaysUntil(b.date));
   const bookings = getBookings();
   const weekEnd = toLocalISODate(addDays(startOfWeek(today), 7));
-  if (isMaxwellUser()) {
-    els.myWorkEyebrow.textContent = "Digital Growth & Infrastructure";
-    els.myWorkTitle.textContent = "Build visibility. Strengthen the system.";
-    els.myWorkSubtitle.textContent = `${attention.length} client growth ${attention.length === 1 ? "priority" : "priorities"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} need direction across marketing and infrastructure.`;
-  } else {
-    els.myWorkEyebrow.textContent = "Team Brief";
-    els.myWorkTitle.textContent = "What matters today.";
-    els.myWorkSubtitle.textContent = `${attention.length} attention ${attention.length === 1 ? "item" : "items"} and ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} across the team.`;
-  }
+  els.myWorkEyebrow.textContent = "The team, in sync";
+  els.myWorkTitle.textContent = "A clearer view of the work.";
+  els.myWorkSubtitle.textContent = "Know what matters. See who’s moving it forward.";
   els.userBadge.textContent = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric" }).format(today);
   els.myWorkTasksMetric.textContent = attention.length;
   els.myWorkDealsMetric.textContent = decisions.length;
   els.myWorkEventsMetric.textContent = upcoming.filter((item) => String(item.date).slice(0,10) < weekEnd).length;
   els.myWorkBlockersMetric.textContent = bookings.filter((item) => String(item.status).toLowerCase() === "confirmed").length;
-  const reason = (item) => item.blocker ? "Blocked" : item.status === "Delayed" ? "Delayed" : getDaysUntil(item.dueDate) < 0 ? "Overdue" : getDaysUntil(item.dueDate) === 0 ? "Due today" : "High priority";
-  fillExecutiveList(els.myWorkActionList, attention.slice(0,5).map(({kind,item}) => executiveRow(kind,item, `${reason(item)} · ${item.nextStep || item.dependency || item.notes || getClientName(item)}`)), "Nothing needs attention", "No blocked, overdue, or urgent items in the shared data.");
-  if (attention.length > 5) els.myWorkActionList.innerHTML += `<a class="text-action executive-more" href="#work">${attention.length - 5} more attention items · Open team work →</a>`;
+  const reason = (item) => item.blocker ? "Blocked" : item.status === "Delayed" ? "Delayed" : getDaysUntil(item.dueDate) < 0 ? "Overdue" : getDaysUntil(item.dueDate) === 0 ? "Due today" : !item.owner || /^unassigned$/i.test(item.owner) ? "Owner needed" : !item.dueDate ? "Date needed" : "Next action";
+  const focusOwner = document.querySelector('[data-home-owner]')?.value || "";
+  const focusItems = [...attention, ...getOpenActions().filter(isCurrentRecord).filter(item => !attention.some(existing => existing.kind === "action" && existing.item.id === item.id)).map(item => ({kind: "action", item}))];
+  const available = focusItems.filter(({ item }) => !focusOwner || (focusOwner === "unassigned" ? !item.owner || /^unassigned$/i.test(item.owner) : ownerMatches(item.owner, focusOwner)));
+  fillExecutiveList(els.myWorkActionList, available.slice(0,3).map(({kind,item}) => executiveRow(kind,item, `${reason(item)} · ${getClientName(item)}`)), "Nothing needs attention here", "Choose another owner or open all team work.");
+  if (available.length > 3) els.myWorkActionList.innerHTML += `<a class="text-action executive-more" href="#work">${available.length - 3} more items →</a>`;
+  const openActions = getOpenActions().filter(isCurrentRecord);
+  document.querySelector('[data-home-open]').textContent = openActions.length;
+  document.querySelector('[data-home-setup]').textContent = openActions.filter(item => !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate).length;
+  document.querySelector('.home-decisions').hidden = decisions.length === 0;
+  const activeArtists = state.clients.filter(isActiveClient);
+  document.querySelector('[data-home-clients]').innerHTML = activeArtists.map(client => `<button type="button" class="home-client-link" data-health-client-id="${escapeHtml(client.id)}"><span class="home-avatar">${escapeHtml(client.name.split(" ").map(word => word[0]).slice(0,2).join(""))}</span><span><strong>${escapeHtml(client.name)}</strong><small>${getRelated(state.actions,client.id).filter(item => !isComplete(item)).length} open actions</small></span><span aria-hidden="true">→</span></button>`).join("");
+  const nextMilestone = state.events.filter(item => isLiveEvent(item) && /^milestone$/i.test(item.type || "")).sort((a,b) => (a.date || "9999").localeCompare(b.date || "9999") || String(a.name).localeCompare(String(b.name),undefined,{numeric:true}))[0];
+  document.querySelector('[data-home-milestone]').innerHTML = nextMilestone ? `<h3 id="home-milestone-title">${escapeHtml(String(nextMilestone.name).replace(/^\d+[.\s]+/, ""))}</h3><p>${escapeHtml(getClientName(nextMilestone))}</p><small>${nextMilestone.date ? escapeHtml(formatDate(nextMilestone.date)) : "Date to confirm"}</small><button type="button" class="text-action" data-home-milestone-client="${escapeHtml(nextMilestone.clientIds?.[0] || "")}">Open roadmap →</button>` : '<h3 id="home-milestone-title">Set the next milestone.</h3><p>Agree on the next outcome in a client workspace.</p><a class="text-action" href="#clients">Open clients →</a>';
   fillExecutiveList(els.myWorkDealList, decisions.slice(0,3).map((item) => executiveRow("action",item)), "No decisions waiting", "Items marked Needs Approval will appear here.");
   fillExecutiveList(els.myWorkWatchList, upcoming.slice(0,4).map((item) => executiveRow("event",item,item.type)), "No upcoming dates", "Meetings, bookings, shoots, and deadlines will appear here.");
   fillExecutiveList($("[data-booking-snapshot]"), bookings.slice(0,3).map((item) => executiveRow("event",item)), "No upcoming guest bookings", "Add a Bobby Outside Show guest in Talent Bookings.");
@@ -2856,3 +2861,19 @@ document.addEventListener('click', (event) => {
   if (event.target.closest('[data-client-id], [data-health-client-id], [data-open-project], [data-open-meeting]')) document.body.classList.add('client-workspace-open');
   if (event.target.closest('.portal-nav a[href="#clients"], .portal-nav a[href="#projects"]')) document.body.classList.remove('client-workspace-open');
 }, true);
+
+document.querySelector('[data-home-owner]')?.addEventListener('change', renderMyWork);
+document.querySelector('[data-home-clients]')?.addEventListener('click', event => {
+  const button = event.target.closest('[data-health-client-id]');
+  if (!button) return;
+  state.selectedClientId = button.dataset.healthClientId;
+  document.body.classList.add('client-workspace-open');
+  location.hash = 'clients'; renderDetail();
+});
+document.querySelector('[data-home-milestone]')?.addEventListener('click', event => {
+  const button = event.target.closest('[data-home-milestone-client]');
+  if (!button?.dataset.homeMilestoneClient) return;
+  state.selectedClientId = button.dataset.homeMilestoneClient;
+  document.body.classList.add('client-workspace-open');
+  location.hash = 'clients'; renderDetail(); window.showArtistTourTab?.(5);
+});
