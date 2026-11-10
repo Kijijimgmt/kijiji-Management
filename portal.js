@@ -5,7 +5,7 @@ const notificationsEndpoint = "/api/notifications";
 const authLinkEndpoint = "/api/auth-link";
 const authConfigEndpoint = "/api/auth-config";
 const livePortalUrl = "https://www.kijijimgmt.com/client-portal";
-const themeStorageKey = "kijiji-dashboard-theme";
+const themeStorageKey = "kijiji-dashboard-theme-v2";
 const systemTheme = window.matchMedia("(prefers-color-scheme: light)");
 let supabaseClient = null;
 const today = new Date();
@@ -304,6 +304,8 @@ const getClientHealth = (client) => {
     return { label: "Waiting", tone: "waiting", reason: `${waiting} item${waiting === 1 ? "" : "s"} awaiting input or approval` };
   }
 
+  const missing = actions.filter((item) => !String(item.owner || "").trim() || /^unassigned$/i.test(item.owner) || !item.dueDate).length;
+  if (missing) return { label: "Setup needed", tone: "warning", reason: `${missing} open task${missing === 1 ? " needs" : "s need"} an owner or date` };
   return { label: "On Track", tone: "success", reason: "No visible blockers or overdue work" };
 };
 
@@ -363,9 +365,10 @@ const applyRoleUi = () => {
 };
 
 const viewTitles = {
-  "my-work": "Today",
+  "my-work": "Home",
   overview: "Team pulse",
   clients: "Clients",
+  projects: "Projects",
   work: "Work",
   calendar: "Calendar",
   files: "Files",
@@ -482,6 +485,7 @@ const getFilteredClients = () => {
   const status = els.statusFilter?.value || "all";
 
   return state.clients.filter((client) => {
+    if (isProjectClient(client)) return false;
     const searchable = [
       client.name,
       client.category,
@@ -545,7 +549,9 @@ const getPersonalEvents = () => {
 const retiredClientNames = new Set(["broshigeez", "chef andra"]);
 const normalizedClientName = (value) => String(value || "").trim().toLowerCase();
 const isRetiredClient = (client) => retiredClientNames.has(normalizedClientName(client?.name));
-const isActiveClient = (client) => !isRetiredClient(client) && !["archived", "inactive"].includes(String(client.status || "").toLowerCase());
+const isProjectClient = (client) => /luchador/i.test(client?.name || "");
+const isActiveRecord = (client) => !isRetiredClient(client) && !["archived", "inactive"].includes(String(client.status || "").toLowerCase());
+const isActiveClient = (client) => !isProjectClient(client) && isActiveRecord(client);
 const isCurrentRecord = (item) => {
   const ids = item.clientIds || [];
   if (ids.length && ids.every((id) => state.retiredClientIds.includes(id))) return false;
@@ -1185,7 +1191,7 @@ const renderDocuments = () => {
   const query = String(els.documentSearch?.value || "").trim().toLowerCase();
   const category = els.documentCategory?.value || "all";
   const folder = state.documentFolder || "all";
-  const activeClients = state.clients.filter(isActiveClient);
+  const activeClients = state.clients.filter(isActiveRecord);
   const folderItems = [
     { id: "all", name: "All Files", count: state.documents.length },
     { id: "shared", name: "Shared Resources", count: state.documents.filter((item) => !item.clientIds?.length).length },
@@ -1303,7 +1309,7 @@ const renderClientOptions = (selectEl) => {
     return;
   }
 
-  selectEl.innerHTML = `<option value="">No client relation</option>${state.clients.filter(isActiveClient)
+  selectEl.innerHTML = `<option value="">No client relation</option>${state.clients.filter(isActiveRecord)
     .map((client) => `<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`)
     .join("")}`;
 };
@@ -1434,6 +1440,8 @@ const renderPortal = () => {
   renderFocusLists();
   renderRows();
   renderDetail();
+  renderProjects();
+  renderTeamCheckins();
   renderActions();
   renderPipeline();
   renderCalendar();
@@ -2820,3 +2828,31 @@ $("[data-add-booking]").addEventListener("click", () => {
   els.eventFormTitle.textContent = "Add guest booking";
 });
 bootstrapAuth();
+
+// Project records retain their existing Notion IDs and relations.
+function renderProjects() {
+  const target = document.querySelector('[data-project-list]');
+  if (!target) return;
+  const projects = state.clients.filter(isProjectClient);
+  target.innerHTML = projects.length ? projects.map((client) => `<button class="client-card" type="button" data-open-project="${escapeHtml(client.id)}"><div class="client-card-head"><div class="client-name"><strong>${escapeHtml(client.name)}</strong><span>Film project</span></div></div><p>${escapeHtml(client.nextAction || "Review project scope, milestones, and next actions.")}</p><span class="client-card-open">Open project workspace →</span></button>`).join('') : '<p class="artist-empty">No film projects in the shared records.</p>';
+}
+function renderTeamCheckins() {
+  const target = document.querySelector('[data-team-checkins]');
+  if (!target) return;
+  target.innerHTML = state.clients.filter(isActiveClient).map((client) => `<button class="button button-secondary" type="button" data-open-meeting="${escapeHtml(client.id)}">${escapeHtml(client.name)} <span aria-hidden="true">→</span></button>`).join('') || '<p>No artists loaded yet.</p>';
+}
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-open-project], [data-open-meeting]');
+  if (!button) return;
+  state.selectedClientId = button.dataset.openProject || button.dataset.openMeeting;
+  location.hash = 'clients';
+  renderDetail();
+  if (button.dataset.openMeeting) window.showArtistMeeting?.();
+  els.detail.scrollIntoView({ block: 'start', behavior: 'smooth' });
+});
+
+// Keep the roster and the selected workspace as separate steps.
+document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-client-id], [data-health-client-id], [data-open-project], [data-open-meeting]')) document.body.classList.add('client-workspace-open');
+  if (event.target.closest('.portal-nav a[href="#clients"], .portal-nav a[href="#projects"]')) document.body.classList.remove('client-workspace-open');
+}, true);

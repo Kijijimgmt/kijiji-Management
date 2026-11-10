@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow" />
-    <meta name="theme-color" content="#060504" />
+    <meta name="theme-color" content="#f5f5f1" />
     <title>Kijiji Team Portal | Operating Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,7 +20,7 @@
           return;
         }
 
-        const key = "kijiji-dashboard-theme";
+        const key = "kijiji-dashboard-theme-v2";
         let preference = "light";
         try {
           const saved = window.localStorage.getItem(key);
@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261105-create" />
+    <link rel="stylesheet" href="portal.css?v=20261110-team" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -44,17 +44,20 @@
           <img src="assets/kijiji-logo.png" alt="Kijiji Management" />
         </a>
         <nav class="portal-nav">
-          <a class="is-active" href="#my-work" aria-current="page">Today</a>
+          <a class="is-active" href="#my-work" aria-current="page">Home</a>
           <a href="#clients">Clients</a>
-          <a href="#talent-bookings">Talent Bookings</a>
+          <a href="#projects">Projects</a>
+          <a href="#work">Tasks &amp; opportunities</a>
           <a href="#calendar">Calendar</a>
-          <a href="#decisions">Decisions</a>
+
           <a href="#files">Files</a>
-          <a href="#reports">Reports</a>
+
           <details class="nav-more">
             <summary role="button" aria-haspopup="true" aria-expanded="false">More</summary>
             <div>
-              <a href="#work">Team Work</a>
+              <a href="#decisions">Decisions</a>
+              <a href="#talent-bookings">Talent Bookings</a>
+              <a href="#reports">Reports &amp; Jotform</a>
               <a href="#guidance">Playbook</a>
               <button type="button" data-show-quick-start data-requires-access>Getting Started</button>
               <button type="button" data-start-tour data-requires-access>Take Dashboard Tour</button>
@@ -168,6 +171,7 @@
               </div>
             </section>
             <div data-daily-priority hidden></div>
+            <section class="command-panel" aria-labelledby="checkins-title"><div class="section-header compact"><div><p class="eyebrow">Artist conversations</p><h2 id="checkins-title">Team check-ins</h2><p class="section-note">Open an artist’s meeting link, agenda, and shared recap.</p></div></div><div class="team-checkins" data-team-checkins></div></section>
             <div class="personal-metrics founder-metrics">
               <a href="#decisions"><span>Decisions Needed</span><strong data-my-work-deals>—</strong></a>
               <a href="#attention"><span>Needs Attention</span><strong data-my-work-tasks>—</strong></a>
@@ -206,6 +210,7 @@
             <div data-booking-list></div>
           </section>
 
+          <section class="portal-section" id="projects" data-portal-view="projects" aria-labelledby="projects-title"><div class="section-header"><div><p class="eyebrow">Production workspace</p><h2 id="projects-title">Projects</h2><p class="section-support">Film and production work, separate from the artist roster.</p></div></div><div data-project-list></div></section>
           <section class="overview-grid" id="overview" aria-label="Operating overview" data-admin-only data-portal-view="overview">
             <article class="metric-panel">
               <span>Clients</span>
@@ -852,9 +857,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="google-calendar.js?v=20261105-create"></script>
-    <script src="artist-workspace.js?v=20261105-profile-tabs"></script>
-    <script src="portal.js?v=20261105-profile-tabs"></script>
+    <script src="google-calendar.js?v=20261110-team"></script>
+    <script src="artist-workspace.js?v=20261110-team"></script>
+    <script src="portal.js?v=20261110-team"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>

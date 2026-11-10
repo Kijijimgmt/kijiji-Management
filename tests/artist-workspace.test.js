@@ -39,3 +39,19 @@ test("write guard blocks writes and unsupported methods fail", async () => {
   await assert.rejects(handleArtistWorkspace(args), /Writes disabled/);
   await assert.rejects(handleArtistWorkspace({ ...args, request: { method: "DELETE" } }), /Method not allowed/);
 });
+
+test("meeting entries validate Zoom destinations, timezone and paired date/time", () => {
+  const valid = { kind: "meeting", mode: "draft", zoomUrl: "https://us02web.zoom.us/j/123", meetingDate: "2026-11-20", meetingTime: "14:30", timeZone: "America/New_York", agenda: "Review goals" };
+  assert.equal(normalizeEntry(valid).meetingTime, "14:30");
+  assert.equal(normalizeEntry({ kind: "meeting", mode: "draft" }).meetingDate, "");
+  for (const patch of [{ zoomUrl: "https://zoom.us.evil.test/j/123" }, { zoomUrl: "javascript:alert(1)" }, { timeZone: "Not/AZone" }, { meetingDate: "2026-02-30" }, { meetingTime: "25:00" }, { meetingTime: "" }, { mode: "recap" }]) assert.throws(() => normalizeEntry({ ...valid, ...patch }));
+  assert.equal(normalizeEntry({ ...valid, mode: "recap", decisions: "Confirm direction" }).decisions, "Confirm direction");
+});
+test("meeting recap is saved with server author and read back through existing storage", async () => {
+  let block;
+  const saved = await handleArtistWorkspace({ request: { method: "POST", body: { kind: "meeting", mode: "recap", notes: "Agreed priorities", author: "Forged" } }, client, dashboard, identity: { fullName: "Erik" }, assertWritesAllowed() {}, notionRequest: async (path, options) => { block = JSON.parse(options.body).children[0]; return { results: [{ id: "meeting-1" }] }; } });
+  assert.equal(saved.entry.author, "Erik");
+  const entries = await readEntries(async () => ({ results: [{ ...block, id: "meeting-1" }] }), client.id);
+  assert.equal(entries[0].notes, "Agreed priorities");
+  assert.equal(entries[0].mode, "recap");
+});
