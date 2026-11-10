@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261110-compact" />
+    <link rel="stylesheet" href="portal.css?v=20261110-polish" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -262,8 +262,8 @@
           <section class="work-intro" id="work" aria-labelledby="work-title" data-portal-view="work">
             <div>
               <p class="eyebrow">Work Center</p>
-              <h2 id="work-title">Team work, clearly organized.</h2>
-              <p class="work-intro-copy">Review what needs a decision, then move active tasks and opportunities forward.</p>
+              <h2 id="work-title">Tasks &amp; opportunities.</h2>
+              <p class="work-intro-copy">Choose a view, then open an item to update it.</p>
             </div>
             <div class="work-summary" aria-label="Work summary">
               <div><strong data-work-open-count>0</strong><span>Open tasks</span></div>
@@ -284,24 +284,25 @@
           </section>
 
           <div class="work-grid" data-portal-view="work">
+            <nav class="work-view-tabs" aria-label="Work views"><button type="button" data-work-tab="tasks" aria-pressed="true">Tasks</button><button type="button" data-work-tab="opportunities" aria-pressed="false">Opportunities</button></nav>
           <section class="action-panel" id="actions" aria-labelledby="actions-title">
               <div class="section-header compact">
                 <div>
                   <p class="eyebrow">Tasks</p>
                   <h2 id="actions-title">Team queue</h2>
-                  <p class="section-note">Select any task to update status, owner, due date, next step, or blocker state.</p>
+                  <p class="section-note">Actions, owners, and dates. Details open when you need them.</p>
                 </div>
                 <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
               </div>
               <div class="action-list" data-action-list></div>
           </section>
 
-          <section class="portal-section" id="opportunities" aria-labelledby="opportunities-title">
+          <section class="portal-section" id="opportunities" hidden aria-labelledby="opportunities-title">
             <div class="section-header">
               <div>
                 <p class="eyebrow">Opportunities</p>
                 <h2 id="opportunities-title">Deals by stage</h2>
-                <p class="section-note">Open any deal to update stage, owner, next step, next action date, blocker, and client relationship.</p>
+                <p class="section-note">Track each opportunity’s stage and next move.</p>
               </div>
               <div class="section-actions">
                 <button class="button button-secondary" type="button" data-open-opportunity-form data-requires-access>Add Opportunity</button>
@@ -801,9 +802,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="google-calendar.js?v=20261110-compact"></script>
-    <script src="artist-workspace.js?v=20261110-compact"></script>
-    <script src="portal.js?v=20261110-compact"></script>
+    <script src="google-calendar.js?v=20261110-polish"></script>
+    <script src="artist-workspace.js?v=20261110-polish"></script>
+    <script src="portal.js?v=20261110-polish"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>
