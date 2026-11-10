@@ -25,7 +25,27 @@
     const grouped = new Set();
     const groups = milestones.map((milestone, index) => {
       const number = String(milestone.name || "").match(/^(\d+)[.\s]/)?.[1];
-      const linked = number ? tasks.filter(task => new RegExp(`milestone\\s+${number}\\s*:`, "i").test(task.notes || "")) : [];
+      // The approved Medusa reset predates stored milestone context on some records.
+      // Only these exact, agreed task titles use a fallback; other tasks stay ungrouped.
+      const approvedMedusaGroups = {
+        "hold medusa listening and direction session": "1",
+        "review and edit strategic plan for medusa": "1",
+        "finalize management agreement following independent attorney review": "1",
+        "establish medusa communication rhythm": "1",
+        "inventory released and unreleased catalog": "2",
+        "assess master ownership and existing rights obligations": "2",
+        "audit publishing registrations and royalty collection": "2",
+        "map medusa’s existing relationships": "3",
+        "assess team strengths and support gaps": "3",
+        "confirm outstanding hip hop under the big top items": "4",
+        "follow up on marcus johnson/ln show and opportunities": "4",
+        "review collaboration project idea": "4",
+      };
+      const linked = number ? tasks.filter(task => {
+        const explicit = String(task.notes || "").match(/milestone\s+(\d+)\s*:/i)?.[1];
+        const approved = /^medusa$/i.test(client.name) ? approvedMedusaGroups[String(task.title || task.name || "").trim().toLowerCase()] : undefined;
+        return (explicit || approved) === number;
+      }) : [];
       linked.forEach(task => grouped.add(task.id));
       const done = linked.filter(isComplete).length;
       const open = data.openGroups ? data.openGroups.includes(milestone.id) : index === 0;

@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261110-team" />
+    <link rel="stylesheet" href="portal.css?v=20261110-compact" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -132,79 +132,23 @@
         </section>
 
         <div class="dashboard-content" data-dashboard-content hidden>
-          <section class="my-work-section founder-dashboard" id="my-work" aria-labelledby="my-work-title" data-portal-view="my-work">
-            <div class="my-work-hero">
-              <div><p class="eyebrow" data-my-work-eyebrow>Team Brief</p><h2 id="my-work-title" data-my-work-title>What matters today.</h2><p data-my-work-subtitle>Your priorities, handoffs, and shared client work.</p></div>
-              <span class="user-badge" data-user-badge></span>
-            </div>
-            <section class="quick-start" data-quick-start hidden aria-labelledby="quick-start-title">
-              <div class="quick-start-copy">
-                <p class="eyebrow">Getting Started</p>
-                <h3 id="quick-start-title">Your first five minutes</h3>
-                <p>Use this short path to understand what needs attention and make your first useful update.</p>
-              </div>
-              <ol class="quick-start-steps">
-                <li><span>1</span><div><strong>Review your work</strong><p>Check ownership, due dates, and blockers.</p><a href="#work">Open Team Work →</a></div></li>
-                <li><span>2</span><div><strong>Open a client</strong><p>Read the current status and next move.</p><a href="#clients">View Clients →</a></div></li>
-                <li><span>3</span><div><strong>Keep context attached</strong><p>Add notes and connect the supporting contract or file.</p><a href="#files">View Files →</a></div></li>
-              </ol>
-              <div class="quick-start-actions">
-                <button class="button button-primary" type="button" data-start-tour>Take the Guided Tour</button>
-                <button class="text-action" type="button" data-dismiss-quick-start>Dismiss</button>
-              </div>
-            </section>
-            <section class="maxwell-role-panel" data-maxwell-role-panel aria-labelledby="maxwell-role-title" hidden>
-              <div class="maxwell-role-intro">
-                <p class="eyebrow">Maxwell's Client Mandate</p>
-                <h3 id="maxwell-role-title">Digital Marketing &amp; Digital Infrastructure</h3>
-                <p>Build the audience-facing strategy and the operating systems that help every client grow with clarity.</p>
-              </div>
-              <div class="maxwell-role-focus" aria-label="Maxwell's areas of responsibility">
-                <article>
-                  <span>01</span>
-                  <div><strong>Digital Marketing</strong><p>Brand strategy, campaigns, content distribution, audience growth, and measurable performance.</p></div>
-                </article>
-                <article>
-                  <span>02</span>
-                  <div><strong>Digital Infrastructure</strong><p>Client dashboards, workflows, automations, data, and tools that keep momentum organized.</p></div>
-                </article>
-              </div>
-            </section>
-            <div data-daily-priority hidden></div>
-            <section class="command-panel" aria-labelledby="checkins-title"><div class="section-header compact"><div><p class="eyebrow">Artist conversations</p><h2 id="checkins-title">Team check-ins</h2><p class="section-note">Open an artist’s meeting link, agenda, and shared recap.</p></div></div><div class="team-checkins" data-team-checkins></div></section>
-            <div class="personal-metrics founder-metrics">
-              <a href="#decisions"><span>Decisions Needed</span><strong data-my-work-deals>—</strong></a>
-              <a href="#attention"><span>Needs Attention</span><strong data-my-work-tasks>—</strong></a>
-              <a href="#calendar"><span>Upcoming This Week</span><strong data-my-work-events>—</strong></a>
-              <a href="#talent-bookings"><span>Confirmed Guests</span><strong data-my-work-blockers>—</strong></a>
-            </div>
-            <section class="command-panel founder-attention" id="attention" aria-labelledby="attention-title">
-              <div class="section-header compact"><div><p class="eyebrow">First priority</p><h2 id="attention-title">Needs Attention</h2><p class="section-note">Blocked, overdue, or urgent. An owner and a next move for each.</p></div><a class="text-action" href="#work">View team work →</a></div>
-              <div data-my-work-action-list></div>
-            </section>
-            <section class="command-panel" aria-labelledby="today-decisions-title">
-                <div class="section-header compact"><div><p class="eyebrow">Team decisions</p><h2 id="today-decisions-title">Decisions</h2></div><a class="text-action" href="#decisions">Review all →</a></div>
-              <div data-my-work-deal-list></div>
-            </section>
-            <section class="command-panel" aria-labelledby="client-health-title">
-              <div class="section-header compact"><div><p class="eyebrow">Relationships</p><h2 id="client-health-title">Client Pulse</h2></div><a class="text-action" href="#clients">All clients →</a></div>
-              <div class="client-health-strip" data-client-health-strip></div>
-            </section>
-            <section class="command-panel" aria-labelledby="today-bookings-title">
-              <div class="section-header compact"><div><p class="eyebrow">Bobby Outside Show</p><h2 id="today-bookings-title">Talent Bookings</h2></div><a class="text-action" href="#talent-bookings">All bookings →</a></div>
-              <div data-booking-snapshot></div>
-            </section>
-            <div class="founder-bottom-grid">
-              <section class="command-panel" aria-labelledby="today-schedule-title">
-                <div class="section-header compact"><h2 id="today-schedule-title">Upcoming schedule</h2><a class="text-action" href="#calendar">Calendar →</a></div>
-                <div data-my-work-watch-list></div>
-              </section>
-              <section class="command-panel" aria-labelledby="today-files-title">
-                <div class="section-header compact"><h2 id="today-files-title">Recent shared Files</h2><a class="text-action" href="#files">All files →</a></div>
-                <div data-recent-files></div>
-              </section>
-            </div>
-          </section>
+<section class="my-work-section compact-home" id="my-work" aria-labelledby="my-work-title" data-portal-view="my-work">
+  <div class="home-heading"><div><p class="eyebrow" data-my-work-eyebrow>The team, in sync</p><h2 id="my-work-title" data-my-work-title>A clearer view of the work.</h2><p data-my-work-subtitle>Know what matters. See who’s moving it forward.</p></div><button class="button button-primary" type="button" data-open-action-form data-requires-access>+ Add task</button></div>
+  <div class="home-stats">
+    <a href="#work"><span>Open actions</span><strong data-home-open>—</strong><small>Across the team</small></a>
+    <a href="#work"><span>Need an owner or date</span><strong data-home-setup>—</strong><small>Ready to clarify</small></a>
+    <a href="#decisions"><span>Decisions waiting</span><strong data-my-work-deals>—</strong><small>Ready for review</small></a>
+  </div>
+  <div class="home-columns"><div class="home-primary">
+    <section class="home-card" id="attention" aria-labelledby="attention-title"><header><div><h3 id="attention-title">Focus &amp; next actions</h3><p>Three items at a time. Open a task to update it.</p></div><label class="home-owner-label"><span class="sr-only">Filter focus by owner</span><select data-home-owner aria-label="Filter focus by owner"><option value="">Everyone</option><option>Maxwell</option><option>Joe</option><option>Erik</option><option value="unassigned">Unassigned</option></select></label></header><div data-my-work-action-list></div><footer><a href="#work" class="text-action">View all team work →</a></footer></section>
+    <section class="home-card" aria-labelledby="home-clients-title"><header><div><h3 id="home-clients-title">Client workspaces</h3><p>Open an artist’s current goal, roadmap, and tasks.</p></div><a href="#clients" class="text-action">All clients →</a></header><div class="home-client-shortcuts" data-home-clients></div></section>
+  </div><div class="home-secondary">
+    <section class="home-next" aria-labelledby="home-milestone-title"><p class="eyebrow">Next milestone</p><div data-home-milestone><h3 id="home-milestone-title">Loading the shared plan…</h3></div></section>
+    <section class="home-card" aria-labelledby="checkins-title"><header><div><h3 id="checkins-title">Team check-ins</h3><p>Meeting links, agendas, and shared recaps.</p></div></header><div class="team-checkins" data-team-checkins></div></section>
+    <section class="home-card home-decisions" aria-labelledby="today-decisions-title"><header><h3 id="today-decisions-title">Needs a decision</h3><a href="#decisions" class="text-action">Review →</a></header><div data-my-work-deal-list></div></section>
+  </div></div>
+  <div hidden aria-hidden="true"><span data-user-badge></span><div data-daily-priority></div><span data-my-work-tasks></span><span data-my-work-events></span><span data-my-work-blockers></span><div data-client-health-strip></div><div data-booking-snapshot></div><div data-my-work-watch-list></div><div data-recent-files></div></div>
+</section>
           <section class="command-panel" id="talent-bookings" data-portal-view="talent-bookings" aria-labelledby="bookings-title">
             <div class="section-header compact"><div><p class="eyebrow">Bobby Outside Show</p><h2 id="bookings-title">Talent Bookings</h2><p class="section-note">Guest bookings, confirmation status, dates, and owners.</p></div><button class="button button-primary" type="button" data-add-booking data-requires-access>Add booking</button></div>
             <div data-booking-list></div>
@@ -857,9 +801,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="google-calendar.js?v=20261110-team"></script>
-    <script src="artist-workspace.js?v=20261110-team"></script>
-    <script src="portal.js?v=20261110-team"></script>
+    <script src="google-calendar.js?v=20261110-compact"></script>
+    <script src="artist-workspace.js?v=20261110-compact"></script>
+    <script src="portal.js?v=20261110-compact"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>
