@@ -741,6 +741,7 @@ const opportunityCard = (opportunity) => `
       ${opportunity.blocker ? "<span>Blocker</span>" : ""}
     </div>
     <span class="text-action" aria-hidden="true">Edit Opportunity</span>
+    ${(isAdminUser() || ownerMatches(opportunity.owner, state.teamUser?.owner)) ? `<button class="task-row-delete" type="button" data-delete-lead="${escapeHtml(opportunity.id)}">Delete lead</button>` : ""}
   </article>
 `;
 
@@ -839,7 +840,7 @@ const renderRows = () => {
           </div>
           <div class="client-card-next">
             <span>Next move</span>
-            <strong>${escapeHtml(client.nextAction || "Add a clear next move")}</strong>
+            <strong>${escapeHtml(getClientNextStep(client))}</strong>
           </div>
           <div class="client-card-footer">
             <span class="client-card-owner">${escapeHtml(client.owner || "Unassigned")}</span>
@@ -1003,7 +1004,7 @@ const renderDetail = () => {
 
       <div class="roadmap-current">
         <span>Current focus</span>
-        <strong>${escapeHtml(client.nextAction || "Add the next move")}</strong>
+        <strong>${escapeHtml(getClientNextStep(client))}</strong>
         <small>${progress}% complete / ${escapeHtml(client.owner || "Unassigned")}</small>
       </div>
 
@@ -1038,7 +1039,7 @@ const renderDetail = () => {
       </div>
       <div>
         <span>Next move</span>
-        <strong>${escapeHtml(client.nextAction || "Not added")}</strong>
+        <strong>${escapeHtml(getClientNextStep(client))}</strong>
       </div>
       <div>
         <span>Last touch</span>
@@ -1948,7 +1949,8 @@ const openActionForm = (action = null, clientId = "") => {
   setSelectValue(els.actionForm.elements.recurrence, action?.recurrence || "");
   els.actionForm.elements.blocker.checked = Boolean(action?.blocker);
   els.actionForm.elements.dependency.value = action?.dependency || "";
-  els.actionForm.elements.notes.value = action?.notes || "";
+  els.actionForm.elements.notes.value = String(action?.notes || "").replace(/\n?Roadmap milestone ID: [^\n]+/g, "");
+  populateTaskMilestones(action?.clientIds?.[0] || clientId, String(action?.notes || "").match(/Roadmap milestone ID: ([^\n]+)/)?.[1] || "");
   els.actionDocumentUploadName.textContent = "No new file selected";
   els.actionDocumentMessage.textContent = "";
   renderActionDocumentPicker(action?.documentIds || [], action?.clientIds?.[0] || clientId);
@@ -1980,11 +1982,12 @@ const openOpportunityForm = (opportunity = null) => {
   renderClientOptions(els.opportunityClientSelect);
   els.opportunityFormTitle.textContent = opportunity ? "Edit opportunity" : "Add opportunity";
   els.opportunityForm.elements.id.value = opportunity?.id || "";
+  $("[data-delete-opportunity]").hidden = !opportunity || !(isAdminUser() || ownerMatches(opportunity.owner, state.teamUser?.owner));
   els.opportunityForm.elements.name.value = opportunity?.name || "";
   setSelectValue(els.opportunityForm.elements.stage, opportunity?.stage || "New");
   setSelectValue(els.opportunityForm.elements.owner, opportunity?.owner || "Unassigned");
   setSelectValue(els.opportunityForm.elements.priority, opportunity?.priority || "Normal");
-  els.opportunityForm.elements.dueDate.value = opportunity?.dueDate || todayISO;
+  els.opportunityForm.elements.dueDate.value = opportunity?.dueDate || "";
   els.opportunityForm.elements.clientId.value = opportunity?.clientIds?.[0] || "";
   els.opportunityForm.elements.blocker.checked = Boolean(opportunity?.blocker);
   els.opportunityForm.elements.nextStep.value = opportunity?.nextStep || "";
@@ -2062,7 +2065,7 @@ const handleClientSubmit = async (event) => {
     email: String(formData.get("email") || "").trim(),
     phone: String(formData.get("phone") || "").trim(),
     leadSource: String(formData.get("leadSource") || "").trim(),
-    notes: String(formData.get("notes") || "").trim(),
+    notes: [String(formData.get("notes") || "").trim(), formData.get("milestoneId") ? `Roadmap milestone ID: ${formData.get("milestoneId")}` : ""].filter(Boolean).join("\n"),
     documentIds: formData.getAll("documentIds").map(String),
   };
   const submit = els.clientForm.querySelector('[type="submit"]');
@@ -2138,7 +2141,7 @@ const handleActionSubmit = async (event) => {
     recurrence: String(formData.get("recurrence") || "").trim(),
     blocker: formData.get("blocker") === "on",
     dependency: String(formData.get("dependency") || "").trim(),
-    notes: String(formData.get("notes") || "").trim(),
+    notes: [String(formData.get("notes") || "").trim(), formData.get("milestoneId") ? `Roadmap milestone ID: ${formData.get("milestoneId")}` : ""].filter(Boolean).join("\n"),
     documentIds: selectedDocumentIds,
   };
   const submit = els.actionForm.querySelector('[type="submit"]');
@@ -2187,6 +2190,7 @@ const handleActionSubmit = async (event) => {
 
 const handleOpportunitySubmit = async (event) => {
   event.preventDefault();
+  if (opportunityDeletePending) return;
   const formData = new FormData(els.opportunityForm);
   const client = getClient(String(formData.get("clientId") || ""));
   const payload = {
@@ -2441,7 +2445,7 @@ els.detail.addEventListener("click", (event) => {
 });
 
 els.actionList.addEventListener("click", (event) => {
-  if (event.target.closest("[data-task-file-link]")) return;
+  if (event.target.closest("[data-task-file-link], [data-delete-lead]")) return;
   const actionCardEl = event.target.closest("[data-action-id]");
   if (actionCardEl) {
     const action = state.actions.find((item) => item.id === actionCardEl.dataset.actionId);
@@ -2453,7 +2457,7 @@ els.actionList.addEventListener("click", (event) => {
 
 [els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList, els.dailyPriority, els.approvalList, $("[data-booking-snapshot]"), $("[data-booking-list]")].forEach((target) => {
   target.addEventListener("click", (event) => {
-    if (event.target.closest("[data-task-file-link]")) return;
+    if (event.target.closest("[data-task-file-link], [data-delete-lead]")) return;
     const createActionButton = event.target.closest("[data-open-action-form]");
     const actionCardEl = event.target.closest("[data-action-id]");
     const opportunityCardEl = event.target.closest("[data-opportunity-id]");
@@ -2486,7 +2490,7 @@ els.actionList.addEventListener("click", (event) => {
   });
 
   target.addEventListener("keydown", (event) => {
-    if (event.target.closest("[data-task-file-link]")) return;
+    if (event.target.closest("[data-task-file-link], [data-delete-lead]")) return;
     if (event.key !== "Enter" && event.key !== " ") {
       return;
     }
@@ -2584,6 +2588,7 @@ els.pipelineGrid.addEventListener("click", (event) => {
 });
 
 els.pipelineGrid.addEventListener("keydown", (event) => {
+  if (event.target.closest("[data-delete-lead]")) return;
   if (event.key !== "Enter" && event.key !== " ") {
     return;
   }
@@ -2897,3 +2902,38 @@ document.addEventListener('click', event => {
   openActionForm(action);
   handleActionDelete();
 }, true);
+
+let opportunityDeletePending = false;
+const deleteOpportunity = async () => {
+  const id = els.opportunityForm.elements.id.value;
+  const lead = state.opportunities.find(item => item.id === id);
+  if (!lead || opportunityDeletePending || !window.confirm(`Delete “${lead.name}”? This moves the lead to Notion trash. To keep the history, cancel and set its stage to Lost instead.`)) return;
+  opportunityDeletePending = true;
+  const button = $('[data-delete-opportunity]');
+  button.disabled = true;
+  try {
+    const response = await fetch(apiEndpoint, {method:'DELETE', headers:getRequestHeaders(), body:JSON.stringify({resource:'opportunity', id})});
+    const data = await parseJsonResponse(response);
+    if (!response.ok) throw new Error(data.message || 'Unable to delete lead.');
+    closeDialog(els.opportunityDialog);
+    await loadDashboard();
+  } catch(error) { setFormError(els.opportunityForm, error.message); }
+  finally { opportunityDeletePending = false; button.disabled = false; }
+};
+$('[data-delete-opportunity]').addEventListener('click', deleteOpportunity);
+document.addEventListener('click', event => {
+  const button = event.target.closest('[data-delete-lead]');
+  if (!button) return;
+  event.preventDefault(); event.stopImmediatePropagation();
+  openOpportunityForm(state.opportunities.find(item => item.id === button.dataset.deleteLead));
+  deleteOpportunity();
+}, true);
+const getClientNextTask = clientId => getRelated(state.actions, clientId).filter(item => !isComplete(item)).sort((a,b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999') || String(a.title).localeCompare(String(b.title)))[0];
+const getClientNextStep = client => getClientNextTask(client.id)?.title || 'No open tasks. Add the next agreed action.';
+const populateTaskMilestones = (clientId, selected = '') => {
+  const select = els.actionForm.elements.milestoneId;
+  select.innerHTML = '<option value="">No milestone</option>' + getRelated(state.events, clientId).filter(item => /^milestone$/i.test(item.type || '')).map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('');
+  if (selected && !Array.from(select.options).some(option => option.value === selected)) select.add(new Option('Previous milestone', selected));
+  select.value = selected;
+};
+els.actionForm.elements.clientId.addEventListener('change', () => populateTaskMilestones(els.actionForm.elements.clientId.value));

@@ -561,6 +561,7 @@
             <span>Notes (optional)</span>
             <textarea name="notes" rows="3" placeholder="Context, links, or what done looks like"></textarea>
           </label></div>
+        <label class="wide"><span>Roadmap milestone (optional)</span><select name="milestoneId"><option value="">No milestone</option></select></label>
         <details class="task-form-disclosure" data-task-more><summary>More options <span>Priority, approval, repeat & dependencies</span></summary><div class="form-grid"><label>
             <span>Priority</span>
             <select name="priority">
@@ -690,6 +691,7 @@
         </div>
 
         <div class="dialog-actions">
+          <button class="button button-secondary task-delete-button" type="button" data-delete-opportunity hidden>Delete lead</button>
           <button class="button button-secondary" type="button" data-close-opportunity-form>Cancel</button>
           <button class="button button-primary" type="submit">Save Opportunity</button>
         </div>
