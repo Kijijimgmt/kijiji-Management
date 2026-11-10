@@ -353,7 +353,7 @@ const applyRoleUi = () => {
   const isAdmin = isAdminUser();
   const isMaxwell = isMaxwellUser();
   document.body.dataset.portalRole = state.teamUser?.role || "signed-out";
-  document.body.dataset.portalProfile = isMaxwell ? "maxwell" : "team-member";
+  document.body.dataset.portalProfile = "shared-team";
   if (els.maxwellRolePanel) els.maxwellRolePanel.hidden = !isMaxwell;
   $$("[data-admin-only]").forEach((element) => {
     element.hidden = !isAdmin;
@@ -604,7 +604,7 @@ const renderMyWork = () => {
   const openActions = getOpenActions().filter(isCurrentRecord);
   document.querySelector('[data-home-open]').textContent = openActions.length;
   document.querySelector('[data-home-setup]').textContent = openActions.filter(item => !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate).length;
-  document.querySelector('.home-decisions').hidden = decisions.length === 0;
+  document.querySelector('.home-decisions').hidden = false;
   const activeArtists = state.clients.filter(isActiveClient);
   document.querySelector('[data-home-clients]').innerHTML = activeArtists.map(client => `<button type="button" class="home-client-link" data-health-client-id="${escapeHtml(client.id)}"><span class="home-avatar">${escapeHtml(client.name.split(" ").map(word => word[0]).slice(0,2).join(""))}</span><span><strong>${escapeHtml(client.name)}</strong><small>${getRelated(state.actions,client.id).filter(item => !isComplete(item)).length} open actions</small></span><span aria-hidden="true">→</span></button>`).join("");
   const nextMilestone = state.events.filter(item => isLiveEvent(item) && /^milestone$/i.test(item.type || "")).sort((a,b) => (a.date || "9999").localeCompare(b.date || "9999") || String(a.name).localeCompare(String(b.name),undefined,{numeric:true}))[0];
@@ -1267,7 +1267,22 @@ const renderClientBrandKit = (folder) => {
   els.documentBrandKit.innerHTML = `<header><div><p class="eyebrow">${escapeHtml(client.name)}</p><h3>Brand essentials</h3></div><p>Keep the approved logo and current brand guide easy for the whole team to find.</p></header><div class="brand-kit-grid">${slot("Logo", logo, "Upload the approved PNG or JPG logo.")}${slot("Brand Guide", guide, "Upload the current PDF brand standards.")}</div>`;
 };
 
+const renderHomeIndustry = () => {
+  const target = document.querySelector('[data-home-industry]');
+  if (!target) return;
+  const brief = [...state.industryBriefs].sort((a,b) => String(b.issueDate || '').localeCompare(String(a.issueDate || '')))[0];
+  if (!brief) {
+    const integration = state.insightsIntegrations?.industryBriefs || {};
+    target.innerHTML = `<p class="home-news-state">${integration.error ? 'Industry updates are unavailable. Open Reports to check the feed.' : 'No industry brief has been saved yet. The latest update will appear here when available.'}</p>`;
+    return;
+  }
+  let reportUrl = '';
+  try { const url = new URL(brief.reportUrl || brief.notionUrl); if (url.protocol === 'https:') reportUrl = url.href; } catch {}
+  target.innerHTML = `<article class="home-news-brief"><p class="eyebrow">Latest saved brief · ${escapeHtml(formatDate(String(brief.issueDate || '').slice(0,10)))}</p><h4>${escapeHtml(brief.title || 'Kijiji Music Industry Brief')}</h4><p>${escapeHtml(brief.summary || 'Open the full report for the latest industry updates.')}</p>${brief.keyMoves ? `<details><summary>Key moves</summary><p>${escapeHtml(brief.keyMoves)}</p></details>` : ''}<a class="text-action" href="${escapeHtml(reportUrl || '#reports')}" ${reportUrl ? 'target="_blank" rel="noopener noreferrer"' : ''}>Open full report →</a></article>`;
+};
+
 const renderReports = () => {
+  renderHomeIndustry();
   if (!els.assessmentList || !els.industryBriefList) return;
   els.assessmentCount.textContent = String(state.submissions.length);
   els.briefCount.textContent = String(state.industryBriefs.length);
@@ -1323,6 +1338,7 @@ const renderClientOptions = (selectEl) => {
 const renderActionClientOptions = () => renderClientOptions(els.actionClientSelect);
 
 const setLoadingState = () => {
+  document.querySelector("[data-home-industry]").innerHTML = '<p class="home-news-state">Loading the latest industry brief…</p>';
   ["[data-booking-snapshot]", "[data-booking-list]", "[data-recent-files]"].forEach((selector) => renderEmptyList($(selector), "Loading shared data", "Syncing with Notion…"));
 
   els.clientsMetric.textContent = "-";
@@ -1374,6 +1390,7 @@ const setLoadingState = () => {
 };
 
 const setErrorState = () => {
+  document.querySelector("[data-home-industry]").innerHTML = '<p class="home-news-state">Industry updates unavailable. Refresh to try again.</p>';
   ["[data-booking-snapshot]", "[data-booking-list]", "[data-recent-files]"].forEach((selector) => renderEmptyList($(selector), "Shared data unavailable", "Refresh to try again."));
 
   setSourceBadge("error", "Notion setup needed");
