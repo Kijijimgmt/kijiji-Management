@@ -5787,3 +5787,26 @@ html[data-theme="light"] .work-grid .compact-card:hover { background: #f8f7f3; }
 .document-card,.calendar-item,.approval-item { overflow-wrap: anywhere; }
 @media(max-width:1050px) { .work-grid .pipeline-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .google-calendar-filters { grid-template-columns: repeat(3,minmax(0,1fr)); } .google-calendar-filters > .button { grid-column: 1 / -1; justify-self: start; } }
 @media(max-width:640px) { .work-grid .pipeline-grid { grid-template-columns: 1fr; padding: 14px; } .work-grid .action-item { padding: 16px; } .work-intro { flex-direction: column; align-items: start; gap: 16px; } .google-calendar-filters { grid-template-columns: 1fr; } .google-calendar-filters > .button { width: 100%; } .work-grid .action-item header { align-items: start; gap: 12px; } .work-grid .action-item header .date-chip { white-space: nowrap; } }
+
+/* A small task form first, with advanced controls available when needed. */
+.task-title-button { border: 0; padding: 0; background: transparent; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.task-title-button:hover { color: var(--orange); }
+.task-row-delete { display: inline-block; margin-top: 12px; padding: 5px 0; border: 0; background: transparent; color: var(--danger); font: 500 .75rem var(--sans); cursor: pointer; }
+.task-row-delete:hover { text-decoration: underline; }
+[data-action-dialog] .client-form { display: block; padding-bottom: 0; }
+[data-action-dialog] .dialog-head { margin-bottom: 0; }
+.task-form-intro { color: var(--muted); font-size: .82rem; line-height: 1.6; margin: 8px 0 22px; }
+[data-action-dialog] .form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+[data-action-dialog] label > span { font-size: .78rem; font-weight: 600; text-transform: none; letter-spacing: 0; }
+[data-action-dialog] input,[data-action-dialog] select,[data-action-dialog] textarea { border-radius: 7px; min-height: 42px; font-size: .88rem; }
+[data-action-dialog] textarea { min-height: 90px; }
+.task-form-disclosure { margin-top: 20px; border-top: 1px solid var(--line); }
+.task-form-disclosure > summary { padding: 16px 0; cursor: pointer; font-size: .85rem; font-weight: 600; }
+.task-form-disclosure > summary > span { display: block; color: var(--muted); font-weight: 400; font-size: .72rem; margin-top: 3px; }
+.task-form-disclosure .form-grid { padding: 4px 0 16px; }
+.task-form-disclosure .task-file-fieldset { margin: 0 0 16px; padding: 16px; }
+[data-action-dialog] .dialog-actions { position: sticky; bottom: 0; background: var(--espresso); border-top: 1px solid var(--line); margin-top: 22px; padding: 16px 0; display: flex; align-items: center; gap: 10px; z-index: 3; }
+[data-action-dialog] .dialog-actions .button { white-space: nowrap; min-height: 42px; }
+[data-action-dialog] .task-delete-button { margin-right: auto; }
+@media(max-width:480px) { [data-action-dialog] .form-grid { grid-template-columns: 1fr; gap: 14px; } [data-action-dialog] .dialog-actions { flex-wrap: wrap; } [data-action-dialog] .dialog-actions .button { font-size: .75rem; padding-inline: 12px; } }
+.task-row-delete { justify-self: end; width: fit-content; text-align: right; margin-left: auto; }
