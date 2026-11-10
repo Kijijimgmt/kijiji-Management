@@ -369,7 +369,7 @@ const viewTitles = {
   overview: "Team pulse",
   clients: "Clients",
   projects: "Projects",
-  work: "Work",
+  work: "Tasks & opportunities",
   calendar: "Calendar",
   files: "Files",
   reports: "Reports",
@@ -712,7 +712,7 @@ const actionCard = (action) => `
       <strong>${escapeHtml(action.title)}</strong>
       <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
     </header>
-    <p title="${escapeHtml(action.notes || getClientName(action))}">${escapeHtml(action.notes || getClientName(action))}</p>
+    <p>${escapeHtml(getClientName(action))}</p>
     ${action.dependency ? `<p class="workflow-context"><span>Waiting on</span> ${escapeHtml(action.dependency)}</p>` : ""}
     ${renderActionAttachments(action)}
     <div class="item-meta">
@@ -2877,3 +2877,11 @@ document.querySelector('[data-home-milestone]')?.addEventListener('click', event
   document.body.classList.add('client-workspace-open');
   location.hash = 'clients'; renderDetail(); window.showArtistTourTab?.(5);
 });
+
+// Keep task execution and opportunity review as distinct, full-width views.
+document.querySelectorAll('[data-work-tab]').forEach(button => button.addEventListener('click', () => {
+  const opportunities = button.dataset.workTab === 'opportunities';
+  document.querySelector('#actions').hidden = opportunities;
+  document.querySelector('#opportunities').hidden = !opportunities;
+  document.querySelectorAll('[data-work-tab]').forEach(tab => tab.setAttribute('aria-pressed', String(tab === button)));
+}));
