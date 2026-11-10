@@ -5818,3 +5818,62 @@ html[data-theme="light"] .work-grid .compact-card:hover { background: #f8f7f3; }
 @media (pointer: coarse) {
   .artist-tabs button, .work-view-tabs button { min-height: 44px; }
 }
+
+/* Calendar: consistent inner gutters and separate schedule/agenda surfaces. */
+#calendar {
+  padding: 24px;
+  min-width: 0;
+}
+#calendar > .section-header {
+  margin: 0;
+  padding: 0 0 18px;
+  align-items: center;
+  gap: 20px;
+}
+#calendar .section-header .eyebrow { margin-top: 0; }
+#calendar .section-note { margin-bottom: 0; }
+#calendar .google-calendar-filters {
+  margin: 18px 0 14px;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+#calendar .google-calendar-filters .button { align-self: end; }
+#calendar .google-connections { margin: 12px 0; padding: 12px 14px; }
+#calendar .calendar-toolbar { margin: 18px 0 14px; gap: 12px; }
+#calendar .calendar-navigation { gap: 8px; }
+#calendar .calendar-navigation h3 { min-width: 150px; margin: 0; }
+#calendar .calendar-workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 310px);
+  gap: 18px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+#calendar .calendar-grid-wrap {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+#calendar .calendar-agenda {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+#calendar .calendar-agenda-head { min-height: 0; padding-bottom: 14px; margin-bottom: 12px; }
+#calendar .calendar-agenda .calendar-list { display: grid; gap: 10px; }
+#calendar .calendar-agenda .calendar-item { margin: 0; padding: 12px; }
+#calendar .calendar-agenda .calendar-item > * { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 1200px) {
+  #calendar .google-calendar-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #calendar .google-calendar-filters > .button { grid-column: 1 / -1; justify-self: start; }
+  #calendar .calendar-workspace { grid-template-columns: minmax(0, 1fr); }
+  #calendar .calendar-agenda .calendar-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  #calendar { padding: 16px; }
+  #calendar > .section-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  #calendar .google-calendar-filters { grid-template-columns: minmax(0, 1fr); }
+  #calendar .calendar-navigation { flex-wrap: wrap; }
+  #calendar .calendar-navigation h3 { min-width: 120px; }
+  #calendar .calendar-agenda .calendar-list { grid-template-columns: minmax(0, 1fr); }
+}
