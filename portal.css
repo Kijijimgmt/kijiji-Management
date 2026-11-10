@@ -5877,3 +5877,12 @@ html[data-theme="light"] .work-grid .compact-card:hover { background: #f8f7f3; }
   #calendar .calendar-navigation h3 { min-width: 120px; }
   #calendar .calendar-agenda .calendar-list { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Shared Home industry brief, using the existing reports feed. */
+.home-news-brief, .home-news-state { padding: 20px 24px; margin: 0; }
+.home-news-brief h4 { margin: 8px 0; font-size: 1rem; line-height: 1.4; }
+.home-news-brief > p:not(.eyebrow), .home-news-state { color: var(--muted); font-size: .85rem; line-height: 1.6; }
+.home-news-brief details { margin: 14px 0; font-size: .85rem; }
+.home-news-brief summary { cursor: pointer; font-weight: 600; }
+.home-news-brief details p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.home-news-brief > .text-action { display: inline-block; margin-top: 12px; }
