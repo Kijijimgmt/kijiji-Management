@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261110-polish" />
+    <link rel="stylesheet" href="portal.css?v=20261110-task-form" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -522,22 +522,18 @@
 
         <input type="hidden" name="id" />
 
-        <div class="form-grid">
-          <label class="wide">
-            <span>Next step / task</span>
-            <input name="title" placeholder="Example: Send revised launch plan" required />
+        <p class="task-form-intro">One clear action. Add an owner and date when confirmed.</p>
+        <div class="form-grid task-essential-fields"><label class="wide">
+            <span>Task name</span>
+            <input name="title" placeholder="Example: Review Medusa’s strategic plan" required />
           </label>
-          <label>
-            <span>Status</span>
-            <select name="status">
-              <option>Open</option>
-              <option>In Progress</option>
-              <option>Waiting</option>
-              <option>Needs Approval</option>
-              <option>Done</option>
+<label>
+            <span>Client or project</span>
+            <select name="clientId" data-action-client-select>
+              <option value="">No client relation</option>
             </select>
           </label>
-          <label>
+<label>
             <span>Owner</span>
             <select name="owner">
               <option>Unassigned</option>
@@ -547,7 +543,25 @@
               <option>Emad</option>
             </select>
           </label>
-          <label>
+<label>
+            <span>Due date</span>
+            <input name="dueDate" type="date" />
+          </label>
+<label>
+            <span>Status</span>
+            <select name="status">
+              <option>Open</option>
+              <option>In Progress</option>
+              <option>Waiting</option>
+              <option>Needs Approval</option>
+              <option>Done</option>
+            </select>
+          </label>
+<label class="wide">
+            <span>Notes (optional)</span>
+            <textarea name="notes" rows="3" placeholder="Context, links, or what done looks like"></textarea>
+          </label></div>
+        <details class="task-form-disclosure" data-task-more><summary>More options <span>Priority, approval, repeat & dependencies</span></summary><div class="form-grid"><label>
             <span>Priority</span>
             <select name="priority">
               <option>Normal</option>
@@ -556,17 +570,7 @@
               <option>Low</option>
             </select>
           </label>
-          <label>
-            <span>Due date</span>
-            <input name="dueDate" type="date" />
-          </label>
-          <label>
-            <span>Client</span>
-            <select name="clientId" data-action-client-select>
-              <option value="">No client relation</option>
-            </select>
-          </label>
-          <label>
+<label>
             <span>Approver</span>
             <select name="approvalOwner">
               <option value="">No approval needed</option>
@@ -577,7 +581,7 @@
               <option>Client</option>
             </select>
           </label>
-          <label>
+<label>
             <span>Repeat</span>
             <select name="recurrence">
               <option value="">Does not repeat</option>
@@ -587,19 +591,15 @@
               <option>Quarterly</option>
             </select>
           </label>
-          <label class="toggle-label">
+<label class="toggle-label">
             <input name="blocker" type="checkbox" />
             <span>Visible blocker</span>
           </label>
-          <label class="wide">
+<label class="wide">
             <span>Depends on</span>
             <input name="dependency" placeholder="Task, decision, asset, or client response" />
-          </label>
-          <label class="wide">
-            <span>Context / notes</span>
-            <textarea name="notes" rows="4"></textarea>
-          </label>
-          <fieldset class="wide task-file-fieldset">
+          </label></div></details>
+        <details class="task-form-disclosure" data-task-attachments><summary>Files & attachments <span>Optional supporting documents</span></summary><fieldset class="wide task-file-fieldset">
             <legend>Contract or supporting document</legend>
             <p>Attach an existing file, or upload a new contract without leaving this task.</p>
             <div class="task-inline-upload">
@@ -611,8 +611,7 @@
             <div class="task-file-picker" data-action-document-picker></div>
             <a class="text-action" href="#files" data-close-action-for-files>Open Files to upload a new document →</a>
             <p class="access-message" data-action-document-message role="status" aria-live="polite"></p>
-          </fieldset>
-        </div>
+          </fieldset></details>
 
         <div class="dialog-actions">
           <button class="button button-secondary task-delete-button" type="button" data-delete-action hidden>Delete Task</button>
@@ -802,9 +801,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="google-calendar.js?v=20261110-polish"></script>
-    <script src="artist-workspace.js?v=20261110-polish"></script>
-    <script src="portal.js?v=20261110-polish"></script>
+    <script src="google-calendar.js?v=20261110-task-form"></script>
+    <script src="artist-workspace.js?v=20261110-task-form"></script>
+    <script src="portal.js?v=20261110-task-form"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>
