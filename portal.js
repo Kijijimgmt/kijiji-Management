@@ -2558,7 +2558,7 @@ els.clientHealthStrip.addEventListener("click", (event) => {
 });
 
 els.actionList.addEventListener("keydown", (event) => {
-  if (event.target.closest("[data-task-file-link]")) return;
+  if (event.target.closest("button, [data-task-file-link]")) return;
   if (event.key !== "Enter" && event.key !== " ") {
     return;
   }
