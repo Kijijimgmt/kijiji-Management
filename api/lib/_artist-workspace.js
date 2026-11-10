@@ -22,6 +22,20 @@ const date = (value) => {
 function normalizeEntry(body, dashboard, client) {
   const kind = body.kind;
   if (kind === "profile") return { kind, bio: text(body.bio), website: url(body.website), instagram: url(body.instagram), tiktok: url(body.tiktok), youtube: url(body.youtube), spotify: url(body.spotify), appleMusic: url(body.appleMusic), photo: url(body.photo) };
+  if (kind === "meeting") {
+    if (!["draft", "recap"].includes(body.mode)) fail("Choose a meeting draft or recap.");
+    const zoomUrl = url(body.zoomUrl);
+    if (zoomUrl && !/^(?:[a-z0-9-]+\.)*zoom\.(?:us|com)$/i.test(new URL(zoomUrl).hostname)) fail("Use an HTTPS Zoom meeting link.");
+    const timeZone = text(body.timeZone || "America/New_York", 80);
+    try { new Intl.DateTimeFormat("en", { timeZone }).format(); } catch { fail("Choose a valid meeting timezone."); }
+    const meetingDate = body.meetingDate ? date(body.meetingDate) : "";
+    const meetingTime = text(body.meetingTime, 5);
+    if (meetingTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(meetingTime)) fail("Choose a valid meeting time.");
+    if (Boolean(meetingDate) !== Boolean(meetingTime)) fail("Set both a meeting date and time, or leave both blank.");
+    const entry = { kind, mode: body.mode, zoomUrl, timeZone, meetingDate, meetingTime, lead: text(body.lead, 100), agenda: text(body.agenda), notes: text(body.notes), decisions: text(body.decisions), actions: text(body.actions) };
+    if (entry.mode === "recap" && !entry.notes && !entry.decisions && !entry.actions) fail("Add notes, decisions, or actions before saving a recap.");
+    return entry;
+  }
   if (kind === "social") {
     if (!["Instagram", "TikTok", "YouTube", "Facebook", "Spotify"].includes(body.platform)) fail("Choose a supported platform.");
     const entry = { kind, platform: body.platform, date: date(body.date), followers: number(body.followers), views: number(body.views), engagement: number(body.engagement), notes: text(body.notes, 1000) };
