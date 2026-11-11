@@ -257,22 +257,15 @@ const ownerKey = (value) => {
   if (text === "emad") return "emad";
   return text;
 };
-const ownerMatches = (value, owner) => ownerKey(value) === ownerKey(owner);
+const ownerMatches = (value, owner) => String(value || "").split(/[,;/&]+/).some(part => ownerKey(part) === ownerKey(owner));
 
 const getProgressEstimate = (client) => {
   if (Number.isFinite(Number(client.progress)) && Number(client.progress) >= 0) {
     return Math.min(100, Math.max(0, Number(client.progress)));
   }
 
-  const byStatus = {
-    Prospect: 15,
-    Onboarding: 35,
-    Active: 65,
-    Paused: 45,
-    Archived: 100,
-  };
+  return 0; // A relationship status is not evidence of progress.
 
-  return byStatus[client.status] || 25;
 };
 
 const getClient = (clientId) => state.clients.find((client) => client.id === clientId);
@@ -296,9 +289,12 @@ const getClientHealth = (client) => {
     return { label: "At Risk", tone: "danger", reason: hasBlocker ? "Blocked work needs attention" : `${overdue} overdue next moves` };
   }
 
+  if (!actions.length && !opportunities.length && !["Paused", "Archived"].includes(client.status)) return { label: "Needs next action", tone: "warning", reason: "No actionable work is recorded for this client" };
+
   if (overdue === 1 || !String(client.nextAction || "").trim()) {
     return { label: "Needs Attention", tone: "warning", reason: overdue ? "One next move is overdue" : "Next move is missing" };
   }
+
 
   if (waiting) {
     return { label: "Waiting", tone: "waiting", reason: `${waiting} item${waiting === 1 ? "" : "s"} awaiting input or approval` };
@@ -306,7 +302,7 @@ const getClientHealth = (client) => {
 
   const missing = actions.filter((item) => !String(item.owner || "").trim() || /^unassigned$/i.test(item.owner) || !item.dueDate).length;
   if (missing) return { label: "Setup needed", tone: "warning", reason: `${missing} open task${missing === 1 ? " needs" : "s need"} an owner or date` };
-  return { label: "On Track", tone: "success", reason: "No visible blockers or overdue work" };
+  return { label: "On Track", tone: "success", reason: "Tracked work has owners and dates, with no visible blockers or overdue work" };
 };
 
 const setSourceBadge = (mode, text) => {
@@ -390,6 +386,12 @@ const setActiveView = ({ focusTitle = false } = {}) => {
   const requestedView = viewAliases[requestedHash] || requestedHash;
   const isAdminView = requestedView === "overview";
   const activeView = viewTitles[requestedView] && (!isAdminView || isAdminUser()) ? requestedView : "my-work";
+  if (activeView === "work") {
+    const tab = requestedHash === "opportunities" ? "opportunities" : "tasks";
+    const buttons = [...document.querySelectorAll('[data-work-tab]')];
+    const target = buttons.find(button => button.dataset.workTab === tab);
+    target?.click();
+  }
 
   els.portalViews.forEach((view) => {
     const adminOnly = view.hasAttribute("data-admin-only");
@@ -397,7 +399,8 @@ const setActiveView = ({ focusTitle = false } = {}) => {
   });
 
   els.navLinks.forEach((link) => {
-    const isActive = link.getAttribute("href") === `#${activeView}`;
+    const linkView = link.getAttribute("href");
+    const isActive = linkView === `#${activeView}` && requestedHash !== "opportunities" || linkView === "#opportunities" && requestedHash === "opportunities";
     link.classList.toggle("is-active", isActive);
     if (isActive) {
       link.setAttribute("aria-current", "page");
@@ -413,7 +416,7 @@ const setActiveView = ({ focusTitle = false } = {}) => {
   });
 
   if (els.workspaceTitle) {
-    els.workspaceTitle.textContent = viewTitles[activeView];
+    els.workspaceTitle.textContent = activeView === "work" ? (requestedHash === "opportunities" ? "Opportunities" : "Tasks") : viewTitles[activeView];
     if (focusTitle) els.workspaceTitle.focus({ preventScroll: true });
   }
 
@@ -576,45 +579,41 @@ const fillExecutiveList = (target, items, emptyTitle, emptyText) => {
   else renderEmptyList(target, emptyTitle, emptyText);
 };
 const renderMyWork = () => {
-  const decisions = getDecisions();
+  const owner = document.querySelector('[data-home-owner]')?.value || "";
+  const owns = item => !owner || (owner === "me" ? ownerMatches(item.owner, state.teamUser?.owner) : owner === "unassigned" ? !item.owner || /^unassigned$/i.test(item.owner) : ownerMatches(item.owner, owner));
+  const open = getOpenActions().filter(isCurrentRecord).filter(owns);
+  const decisions = getDecisions().filter(owns);
+  const needsSetup = item => !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate;
   const attention = [
-    ...getOpenActions().filter((item) => String(item.status || "").toLowerCase() !== "needs approval").map((item) => ({kind: "action", item})),
-    ...getOpenOpportunities().map((item) => ({kind: "opportunity", item})),
-    ...state.events.filter(isLiveEvent).filter((item) => item.status === "Delayed").map((item) => ({kind: "event", item})),
-  ].filter(({item}) => isCurrentRecord(item) && (item.blocker || item.status === "Delayed" || isUrgent(item) || getDaysUntil(item.dueDate) <= 0))
-    .sort((a, b) => Number(Boolean(b.item.blocker)) - Number(Boolean(a.item.blocker)) || getDaysUntil(a.item.dueDate || a.item.date) - getDaysUntil(b.item.dueDate || b.item.date));
-  const upcoming = state.events.filter(isCurrentRecord).filter(isLiveEvent).filter((item) => getDaysUntil(item.date) >= 0 && Number.isFinite(getDaysUntil(item.date)))
-    .sort((a,b) => getDaysUntil(a.date) - getDaysUntil(b.date));
-  const bookings = getBookings();
-  const weekEnd = toLocalISODate(addDays(startOfWeek(today), 7));
-  els.myWorkEyebrow.textContent = "The team, in sync";
-  els.myWorkTitle.textContent = "A clearer view of the work.";
-  els.myWorkSubtitle.textContent = "Know what matters. See who’s moving it forward.";
-  els.userBadge.textContent = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric" }).format(today);
-  els.myWorkTasksMetric.textContent = attention.length;
+    ...open.filter(item => String(item.status).toLowerCase() !== "needs approval").map(item => ({kind:"action",item})),
+    ...getOpenOpportunities().filter(isCurrentRecord).filter(owns).map(item => ({kind:"opportunity",item}))
+  ].filter(({item}) => item.blocker || isUrgent(item) || getDaysUntil(item.dueDate) <= 0 || needsSetup(item))
+    .sort((a,b) => Number(Boolean(b.item.blocker))-Number(Boolean(a.item.blocker)) || getDaysUntil(a.item.dueDate)-getDaysUntil(b.item.dueDate));
+  els.myWorkEyebrow.textContent = "Daily workspace";
+  els.myWorkTitle.textContent = "Your next move.";
+  els.myWorkSubtitle.textContent = "Tasks, commitments, and decisions.";
+  document.querySelector('[data-home-open]').textContent = open.length;
+  document.querySelector('[data-home-setup]').textContent = open.filter(needsSetup).length;
   els.myWorkDealsMetric.textContent = decisions.length;
-  els.myWorkEventsMetric.textContent = upcoming.filter((item) => String(item.date).slice(0,10) < weekEnd).length;
-  els.myWorkBlockersMetric.textContent = bookings.filter((item) => String(item.status).toLowerCase() === "confirmed").length;
-  const reason = (item) => item.blocker ? "Blocked" : item.status === "Delayed" ? "Delayed" : getDaysUntil(item.dueDate) < 0 ? "Overdue" : getDaysUntil(item.dueDate) === 0 ? "Due today" : !item.owner || /^unassigned$/i.test(item.owner) ? "Owner needed" : !item.dueDate ? "Date needed" : "Next action";
-  const focusOwner = document.querySelector('[data-home-owner]')?.value || "";
-  const focusItems = [...attention, ...getOpenActions().filter(isCurrentRecord).filter(item => !attention.some(existing => existing.kind === "action" && existing.item.id === item.id)).map(item => ({kind: "action", item}))];
-  const available = focusItems.filter(({ item }) => !focusOwner || (focusOwner === "unassigned" ? !item.owner || /^unassigned$/i.test(item.owner) : ownerMatches(item.owner, focusOwner)));
-  fillExecutiveList(els.myWorkActionList, available.slice(0,3).map(({kind,item}) => executiveRow(kind,item, `${reason(item)} · ${getClientName(item)}`)), "Nothing needs attention here", "Choose another owner or open all team work.");
-  if (available.length > 3) els.myWorkActionList.innerHTML += `<a class="text-action executive-more" href="#work">${available.length - 3} more items →</a>`;
-  const openActions = getOpenActions().filter(isCurrentRecord);
-  document.querySelector('[data-home-open]').textContent = openActions.length;
-  document.querySelector('[data-home-setup]').textContent = openActions.filter(item => !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate).length;
-  document.querySelector('.home-decisions').hidden = false;
-  const activeArtists = state.clients.filter(isActiveClient);
-  document.querySelector('[data-home-clients]').innerHTML = activeArtists.map(client => `<button type="button" class="home-client-link" data-health-client-id="${escapeHtml(client.id)}"><span class="home-avatar">${escapeHtml(client.name.split(" ").map(word => word[0]).slice(0,2).join(""))}</span><span><strong>${escapeHtml(client.name)}</strong><small>${getRelated(state.actions,client.id).filter(item => !isComplete(item)).length} open actions</small></span><span aria-hidden="true">→</span></button>`).join("");
-  const nextMilestone = state.events.filter(item => isLiveEvent(item) && /^milestone$/i.test(item.type || "")).sort((a,b) => (a.date || "9999").localeCompare(b.date || "9999") || String(a.name).localeCompare(String(b.name),undefined,{numeric:true}))[0];
-  document.querySelector('[data-home-milestone]').innerHTML = nextMilestone ? `<h3 id="home-milestone-title">${escapeHtml(String(nextMilestone.name).replace(/^\d+[.\s]+/, ""))}</h3><p>${escapeHtml(getClientName(nextMilestone))}</p><small>${nextMilestone.date ? escapeHtml(formatDate(nextMilestone.date)) : "Date to confirm"}</small><button type="button" class="text-action" data-home-milestone-client="${escapeHtml(nextMilestone.clientIds?.[0] || "")}">Open roadmap →</button>` : '<h3 id="home-milestone-title">Set the next milestone.</h3><p>Agree on the next outcome in a client workspace.</p><a class="text-action" href="#clients">Open clients →</a>';
-  fillExecutiveList(els.myWorkDealList, decisions.slice(0,3).map((item) => executiveRow("action",item)), "No decisions waiting", "Items marked Needs Approval will appear here.");
-  fillExecutiveList(els.myWorkWatchList, upcoming.slice(0,4).map((item) => executiveRow("event",item,item.type)), "No upcoming dates", "Meetings, bookings, shoots, and deadlines will appear here.");
-  fillExecutiveList($("[data-booking-snapshot]"), bookings.slice(0,3).map((item) => executiveRow("event",item)), "No upcoming guest bookings", "Add a Bobby Outside Show guest in Talent Bookings.");
-  fillExecutiveList($("[data-booking-list]"), bookings.map((item) => executiveRow("event",item)), "No guest bookings yet", "Add a guest, choose an owner, and track the date and confirmation here.");
-  const recent = [...state.documents].sort((a,b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""))).slice(0,3);
-  fillExecutiveList($("[data-recent-files]"), recent.map((file) => `<a class="executive-row" href="#files"><span class="executive-copy"><strong>${escapeHtml(file.name)}</strong><span>${escapeHtml(file.category || "Shared file")} · ${escapeHtml(file.owner || "Kijiji team")}</span></span><span class="executive-meta">${escapeHtml(formatDate(String(file.updatedAt || "").slice(0,10)))}</span></a>`), state.documentsError ? "Files unavailable" : "No shared files yet", state.documentsError ? "Refresh to try loading the file library again." : "Founder resources and client files will appear here.");
+  els.myWorkTasksMetric.textContent = attention.length;
+  const reason = item => item.blocker ? "Blocked" : getDaysUntil(item.dueDate)<0 ? "Overdue" : !item.owner || /^unassigned$/i.test(item.owner) ? "Owner needed" : !item.dueDate ? "Date needed" : getDaysUntil(item.dueDate) === 0 ? "Due today" : "Priority";
+  fillExecutiveList(els.myWorkActionList, attention.slice(0,6).map(({kind,item}) => executiveRow(kind,item, `${kind === "opportunity" ? "Opportunity" : "Task"} · ${reason(item)} · ${getClientName(item)}`)), "Nothing needs attention", "Open all tasks to review planned work.");
+  if (attention.length > 6) els.myWorkActionList.innerHTML += `<a class="text-action executive-more" href="#work">Review all tasks and opportunities →</a>`;
+  fillExecutiveList(els.myWorkDealList, decisions.slice(0,4).map(item=>executiveRow("action",item)), "No decisions waiting", "");
+  const events = [...state.events.filter(isCurrentRecord).filter(isLiveEvent).filter(item=>!/^milestone$/i.test(item.type||"")), ...(window.googleCalendar?.events() || [])]
+    .filter(item => (!owner || item.source === "google" && (owner !== "unassigned") && item.clientIds?.some(id=>ownerMatches(getClient(id)?.owner, owner === "me" ? state.teamUser?.owner : owner)) || item.source !== "google" && owns(item)) && (window.googleCalendar ? window.googleCalendar.upcoming(item) : getDaysUntil(item.date)>=0))
+    .sort((a,b)=>String(a.start || a.date).localeCompare(String(b.start || b.date)));
+  const schedule = document.querySelector('[data-home-schedule]');
+  fillExecutiveList(schedule,events.slice(0,5).map(item=>item.source === "google" ? `<button type="button" class="executive-row" data-google-event-id="${escapeHtml(item.id)}"><span class="executive-copy"><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.clientName)} · Google Calendar</span></span><span class="executive-meta">${escapeHtml(window.googleCalendar.when(item))}</span></button>` : executiveRow("event",item,getClientName(item))),"No upcoming commitments","Open Calendar to review the schedule.");
+  const calendarStatus = document.querySelector('[data-home-calendar-status]');
+  if(calendarStatus) calendarStatus.textContent = window.googleCalendar?.summary?.() || "Checking Google Calendar…";
+  els.myWorkEventsMetric.textContent = events.length;
+  els.myWorkBlockersMetric.textContent = open.filter(item=>item.blocker).length;
+  const clients = state.clients.filter(isActiveClient);
+  document.querySelector('[data-home-clients]').innerHTML = clients.map(client=>`<button type="button" class="home-client-link" data-health-client-id="${escapeHtml(client.id)}"><span class="home-avatar">${escapeHtml(client.name.split(" ").map(word=>word[0]).slice(0,2).join(""))}</span><span><strong>${escapeHtml(client.name)}</strong><small>${escapeHtml(getClientHealth(client).label)}</small></span><span aria-hidden="true">→</span></button>`).join("");
+  const milestone = state.events.filter(item=>isCurrentRecord(item) && isLiveEvent(item) && /^milestone$/i.test(item.type||"")).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"))[0];
+  document.querySelector('[data-home-milestone]').innerHTML = milestone ? `<h3 id="home-milestone-title">${escapeHtml(String(milestone.name).replace(/^\d+[.\s]+/,""))}</h3><p>${escapeHtml(getClientName(milestone))}</p><small>${milestone.date ? formatDate(milestone.date) : "Date needed"}</small><button type="button" class="text-action" data-home-milestone-client="${escapeHtml(milestone.clientIds?.[0] || "")}">Open roadmap →</button>` : '<h3 id="home-milestone-title">No milestone set</h3><a href="#clients" class="text-action">Open a client roadmap →</a>';
+  fillExecutiveList(document.querySelector('[data-booking-list]'),getBookings().map(item=>executiveRow("event",item)),"No guest bookings yet", "Bobby Outside Show guests appear here.");
 };
 
 const renderClientHealthStrip = () => {
@@ -707,23 +706,11 @@ const renderActionAttachments = (action) => {
 };
 
 const actionCard = (action) => `
-  <article class="action-item editable-card" data-action-id="${escapeHtml(action.id)}" aria-label="Task: ${escapeHtml(action.title)}">
-    <header>
-      <button class="task-title-button" type="button" aria-label="Edit task: ${escapeHtml(action.title)}"><strong>${escapeHtml(action.title)}</strong></button>
-      <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${formatDate(action.dueDate)}</span>
-    </header>
-    <p>${escapeHtml(getClientName(action))}</p>
-    ${action.dependency ? `<p class="workflow-context"><span>Waiting on</span> ${escapeHtml(action.dependency)}</p>` : ""}
-    ${renderActionAttachments(action)}
-    <div class="item-meta">
-      <span data-state="${isWaiting(action) ? "waiting" : "active"}">${escapeHtml(action.status || "Open")}</span>
-      <span>${escapeHtml(action.owner || "Unassigned")}</span>
-      <span>${escapeHtml(action.priority || "Normal")}</span>
-      ${action.approvalOwner ? `<span>Approver: ${escapeHtml(action.approvalOwner)}</span>` : ""}
-      ${action.recurrence ? `<span>Repeats: ${escapeHtml(action.recurrence)}</span>` : ""}
-      ${action.blocker ? "<span>Blocker</span>" : ""}
-    </div>
-    ${(isAdminUser() || ownerMatches(action.owner, state.teamUser?.owner)) ? `<button class="task-row-delete" type="button" data-open-task-delete="${escapeHtml(action.id)}" aria-label="Delete task: ${escapeHtml(action.title)}">Delete</button>` : ""}
+  <article class="action-item editable-card compact-task-row" data-action-id="${escapeHtml(action.id)}" aria-label="Task: ${escapeHtml(action.title)}">
+    <button class="task-title-button" type="button" aria-label="Edit task: ${escapeHtml(action.title)}"><strong>${escapeHtml(action.title)}</strong><span>${escapeHtml(getClientName(action))}</span></button>
+    <span class="task-owner">${escapeHtml(action.owner && !/^unassigned$/i.test(action.owner) ? action.owner : "Owner needed")}</span>
+    <span class="status-pill">${escapeHtml(action.blocker ? "Blocked" : action.status || "Open")}</span>
+    <span class="date-chip" data-tone="${getDaysUntil(action.dueDate) < 0 ? "danger" : ""}">${action.dueDate ? formatDate(action.dueDate) : "Date needed"}</span>
   </article>
 `;
 
@@ -851,7 +838,7 @@ const renderRows = () => {
               <strong>${progress}%</strong>
             </div>
           </div>
-          <span class="client-card-open" aria-hidden="true">Open artist profile <b>→</b></span>
+          <span class="client-card-open" aria-hidden="true">Open client profile <b>→</b></span>
         </button>
       `;
     })
@@ -1066,7 +1053,9 @@ const renderDetail = () => {
 };
 
 const renderActions = () => {
-  const sorted = [...getOpenActions()].sort((a, b) => {
+  const queueFilter = document.querySelector('[data-task-queue-filter]')?.value || "open";
+  const queueOwner = document.querySelector('[data-task-queue-owner]')?.value || "";
+  const sorted = [...getOpenActions()].filter(item => !queueOwner || (queueOwner === "me" ? ownerMatches(item.owner,state.teamUser?.owner) : queueOwner === "unassigned" ? !item.owner || /^unassigned$/i.test(item.owner) : ownerMatches(item.owner,queueOwner))).filter(item => queueFilter === "setup" ? !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate : queueFilter === "overdue" ? getDaysUntil(item.dueDate) < 0 : queueFilter === "mine" ? ownerMatches(item.owner, state.teamUser?.owner) : true).sort((a, b) => {
     const priorityWeight = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
     const priorityDelta = (priorityWeight[a.priority] ?? 2) - (priorityWeight[b.priority] ?? 2);
     if (priorityDelta !== 0) {
@@ -1209,10 +1198,10 @@ const renderDocuments = () => {
   ];
   if (els.documentFolders) {
     els.documentFolders.innerHTML = folderItems.map((item) => `<button type="button" class="document-folder${folder === item.id ? " is-active" : ""}" data-document-folder="${escapeHtml(item.id)}" aria-pressed="${folder === item.id}">
-      <span class="folder-icon" aria-hidden="true">▰</span><span><strong>${escapeHtml(item.name)}</strong><small>${item.count} ${item.count === 1 ? "file" : "files"}</small></span>
+      <span><strong>${escapeHtml(item.name)}</strong><small>${state.documentsLoaded ? `${item.count} ${item.count === 1 ? "file" : "files"}` : "Not loaded"}</small></span>
     </button>`).join("");
   }
-  renderClientBrandKit(folder);
+  if (state.documentsError && !state.documentsLoaded) { els.documentBrandKit.hidden = true; } else renderClientBrandKit(folder);
   const documents = state.documents.filter((document) => {
     const matchesCategory = category === "all" || document.category === category;
     const matchesFolder = folder === "all" || (folder === "shared" ? !document.clientIds?.length : document.clientIds?.includes(folder));
@@ -1220,9 +1209,13 @@ const renderDocuments = () => {
     const haystack = `${document.name} ${document.description} ${document.owner} ${document.category} ${clientName}`.toLowerCase();
     return matchesCategory && matchesFolder && (!query || haystack.includes(query));
   });
-  els.documentCount.textContent = `${documents.length} ${documents.length === 1 ? "file" : "files"}`;
+  els.documentCount.textContent = state.documentsError && !state.documentsLoaded ? "File count unavailable" : `${documents.length} ${documents.length === 1 ? "file" : "files"}${state.documentsError ? " · saved view" : ""}`;
+  let notice = document.querySelector('[data-files-status]');
+  if (!notice) { notice = document.createElement('div'); notice.dataset.filesStatus = ''; notice.className = 'files-status'; notice.setAttribute('role','status'); els.documentList.before(notice); }
+  notice.innerHTML = state.documentsError ? `<p><strong>${state.documentsLoaded ? "Showing the last loaded files." : "Files could not be loaded."}</strong> ${escapeHtml(state.documentsMessage || "Try loading again.")}</p><button type="button" class="button button-secondary" data-retry-files>Retry files</button>` : "";
   if (!documents.length) {
-    renderEmptyList(els.documentList, state.documentsError ? "Files unavailable" : "No files found", state.documentsError ? "Refresh to try loading shared files again." : state.documents.length ? "Try another search or category." : "Upload the first contract, template, or team resource.");
+    if (state.documentsError && !state.documentsLoaded) els.documentList.innerHTML = "";
+    else renderEmptyList(els.documentList, "No files found", state.documents.length ? "Try another search or category." : "Upload the first contract, template, or team resource.");
     return;
   }
   els.documentList.innerHTML = documents.map((document) => {
@@ -1501,15 +1494,15 @@ const tourSteps = [
   {
     "eyebrow": "Welcome",
     "title": "Welcome to your Kijiji workspace",
-    "description": "This dashboard keeps clients, assignments, decisions, dates, documents, and team updates together. Your sign-in controls what you can edit, while the sync badge confirms when the shared workspace is current.",
+    "description": "This dashboard keeps clients, assignments, decisions, dates, documents, and team updates together. Your sign-in controls what you can edit. The top badge confirms Notion access; Files and Calendar show their own loading and sync status.",
     "selector": ".portal-topbar",
     "hash": "my-work"
   },
   {
     "eyebrow": "Today",
     "title": "Start with your daily priorities",
-    "description": "These four numbers summarize decisions, urgent work, upcoming dates, and confirmed guests. Select any number to jump directly to the records behind it.",
-    "selector": ".founder-metrics",
+    "description": "Open task, missing-owner/date, and decision counts link to the matching records. My work filters your daily focus.",
+    "selector": ".home-stats",
     "hash": "my-work"
   },
   {
@@ -1529,13 +1522,13 @@ const tourSteps = [
   {
     "eyebrow": "Clients",
     "title": "Open the full client picture",
-    "description": "Select an artist to open their profile. Use the tabs for tasks, events and ticket sales, social snapshots, and files. Ticket and social numbers are manual entries until accounts are connected. The original client details and roadmap are under Overview.",
+    "description": "Select an artist to open their profile. Use the tabs for tasks, events and ticket sales, social snapshots, and files. Ticket and social numbers are manual entries until accounts are connected. Use Roadmap for goals and milestones; Overview shows existing next actions.",
     "selector": "#clients",
     "hash": "clients"
   },
   {
     eyebrow: "Artist overview", title: "Start with the artist's actual position",
-    description: "Overview holds the bio, official links, current priority, and work totals. Expand Edit bio, photo & official links to update the profile. The original client details and roadmap are below it.",
+    description: "Overview holds the bio, official links, current priority, and work totals. Expand Edit bio, photo & official links to update the profile. Open Roadmap for milestones. More client details holds administrative fields.",
     selector: "[data-client-detail]", hash: "clients", artistTab: 0
   },
   {
@@ -1555,9 +1548,11 @@ const tourSteps = [
   },
   {
     eyebrow: "Artist files", title: "Find the artist's source materials",
-    description: "Files lists this artist's linked assets. Open artist folder takes you to their folder in the shared library for logos, brand guides, contracts and campaign files.",
+    description: "Files lists this artist's linked assets. Open client folder takes you to their folder in the shared library for logos, brand guides, contracts and campaign files.",
     selector: "[data-client-detail]", hash: "clients", artistTab: 4
   },
+  { eyebrow: "Roadmap", title: "Connect outcomes to existing tasks", description: "Roadmap holds goals and milestones. The actions underneath are the same shared tasks shown in Tasks and Home. Link a task to a milestone in the task editor.", selector: "[data-client-detail]", hash: "clients", artistTab: 5 },
+  { eyebrow: "Meetings", title: "Keep the client conversation together", description: "Find meeting links and shared recaps in the client's Meetings tab. Keep follow-up work in Tasks, with an owner and date.", selector: "[data-client-detail]", hash: "clients", artistTab: 6 },
   {
     "eyebrow": "Talent Bookings",
     "title": "Track Bobby Outside Show guests",
@@ -1568,7 +1563,7 @@ const tourSteps = [
   {
     "eyebrow": "Calendar",
     "title": "Protect the important dates",
-    "description": "Keep internal Kijiji dates and connected client Google schedules together. Filter by client or event source and choose a display time zone. Existing Google events open for viewing. Use Add to client Google Calendar to create an event when Max has enabled that calendar and the client has granted editing access. Open Google calendar connections to check sync status. Max connects and maps calendars; authorized partners can view and sync them.",
+    "description": "Keep internal Kijiji dates and connected client Google schedules together. Filter by client or event source and choose a display time zone. Existing Google events open for viewing. Use Add to client Google Calendar to create an event when Max has enabled that calendar and the client has granted editing access. Check the visible last-sync status, use Sync Google now, or open Calendar settings to reconnect. Max connects and maps calendars; authorized partners can view and sync them.",
     "selector": "#calendar",
     "hash": "calendar"
   },
@@ -1589,7 +1584,7 @@ const tourSteps = [
   {
     "eyebrow": "Team Work",
     "title": "Update or remove a task",
-    "description": "Open More → Team Work to see tasks and deals. Select a task to edit it, mark it Done when finished, or choose Delete Task if it is no longer needed. Deletion asks for confirmation and moves the task to Notion trash; normal ownership permissions still apply.",
+    "description": "Open More → Tasks to see tasks and deals. Select a task to edit it, mark it Done when finished, or choose Delete Task if it is no longer needed. Deletion asks for confirmation and moves the task to Notion trash; normal ownership permissions still apply.",
     "selector": "#work-title",
     "hash": "work"
   },
@@ -1672,7 +1667,10 @@ const renderTourStep = () => {
   clearTourHighlight();
   window.location.hash = step.hash;
   setActiveView();
-  if (step.artistTab != null) window.showArtistTourTab?.(step.artistTab);
+  if (step.hash === "clients") {
+    document.body.classList.toggle("client-workspace-open", step.artistTab != null);
+    if (step.artistTab != null) { renderDetail(); window.showArtistTourTab?.(step.artistTab); }
+  }
   const more = document.querySelector(".nav-more");
   if (more) more.open = step.selector === ".nav-more";
   els.tourProgress.textContent = `${tourIndex + 1} of ${activeTourSteps.length}`;
@@ -1796,10 +1794,11 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     if (documentsResult.status === "fulfilled") {
       const documentsData = await parseJsonResponse(documentsResult.value);
       state.documentsError = !documentsResult.value.ok;
-      state.documents = documentsResult.value.ok && Array.isArray(documentsData.documents) ? documentsData.documents : [];
+      state.documentsMessage = documentsData.message || "The file library could not be refreshed.";
+      if (documentsResult.value.ok && Array.isArray(documentsData.documents)) { state.documents = documentsData.documents; state.documentsLoaded = true; state.documentsUpdatedAt = new Date().toISOString(); }
     } else {
       state.documentsError = true;
-      state.documents = [];
+      state.documentsMessage = "The file library could not be reached. Check your connection and retry.";
     }
     if (insightsResult.status === "fulfilled") {
       const insightsData = await parseJsonResponse(insightsResult.value);
@@ -2375,7 +2374,7 @@ async function logoutPortal() {
     actions: [],
     opportunities: [],
     events: [],
-    documents: [],
+    documents: [], documentsLoaded: false, documentsMessage: "", documentsUpdatedAt: "",
     submissions: [],
     industryBriefs: [],
     insightsIntegrations: {},
@@ -2954,3 +2953,29 @@ const populateTaskMilestones = (clientId, selected = '') => {
   select.value = selected;
 };
 els.actionForm.elements.clientId.addEventListener('change', () => populateTaskMilestones(els.actionForm.elements.clientId.value));
+
+// Focused file retry does not reload or discard the rest of the dashboard.
+let filesRetryBusy = false;
+document.addEventListener('click', async event => {
+  const retry = event.target.closest('[data-retry-files]');
+  if (!retry || filesRetryBusy) return;
+  filesRetryBusy = true; retry.disabled = true; retry.textContent = 'Retrying…';
+  const user = state.teamUser?.email;
+  try {
+    const response = await fetch(documentsEndpoint, { headers: getRequestHeaders(), cache: 'no-store' });
+    const data = await parseJsonResponse(response);
+    if (user !== state.teamUser?.email) return;
+    if (!response.ok) throw new Error(data.message || 'Unable to load files.');
+    state.documents = data.documents || []; state.documentsError = false; state.documentsLoaded = true; state.documentsUpdatedAt = new Date().toISOString();
+  } catch (error) { if (user === state.teamUser?.email) { state.documentsError = true; state.documentsMessage = error.message; } }
+  finally { filesRetryBusy = false; if (user === state.teamUser?.email) { renderDocuments(); renderDetail(); } }
+});
+document.querySelector('[data-task-queue-filter]')?.addEventListener('change', renderActions);
+document.addEventListener('click', event => {
+  const link = event.target.closest('[data-home-work-filter]');
+  if (!link) return;
+  const queueOwner = document.querySelector('[data-task-queue-owner]'); if (queueOwner) queueOwner.value = document.querySelector('[data-home-owner]')?.value || "";
+  const filter = document.querySelector('[data-task-queue-filter]'); if (filter) { filter.value = link.dataset.homeWorkFilter; renderActions(); }
+});
+
+document.querySelector('[data-task-queue-owner]')?.addEventListener('change', renderActions);

@@ -165,7 +165,7 @@ test("scheduler rejects missing and incorrect credentials", () => {
   assert(cronAllowed({ headers: { authorization: "Bearer test-secret" } }));
 });
 test("member cannot manage OAuth, mapping, or imported event edits", async () => {
-  for (const action of ["connect", "discover", "map", "unmap", "edit-event"])
+  for (const action of ["connect", "discover", "map", "unmap", "edit-event", "enable-scheduler"])
     await assert.rejects(
       () =>
         handleCalendar({

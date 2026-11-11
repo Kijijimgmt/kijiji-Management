@@ -48,6 +48,15 @@
       throw new Error(result.message || "Calendar connection unavailable.");
     return result;
   };
+  function summary() {
+    if (data.connection?.status !== "connected") return data.connection?.message || statusText();
+    const links = data.links || [];
+    if (!links.length) return "Google Calendar connected · no client calendars mapped";
+    const dates = links.map(link=>new Date(link.lastSuccessAt || 0).getTime());
+    const oldest = Math.min(...dates);
+    const delayed = links.filter(link => link.status !== "connected" || !link.lastSuccessAt || Date.now()-new Date(link.lastSuccessAt).getTime()>15*60000).length;
+    return delayed ? `Google Calendar: ${delayed} calendar${delayed===1?' needs':'s need'} an update · Last successful sync: ${stamp(oldest || null)}${data.scheduler?.enabled ? " · Automatic sync on" : " · Automatic sync off"}` : `Google Calendar up to date · Last successful sync: ${stamp(oldest)}${data.scheduler?.enabled ? " · Automatic sync on" : " · Automatic sync off"}`;
+  }
   function events() {
     return (data.links || [])
       .filter((link) => state.clients.some((c) => c.id === link.clientId))
@@ -154,7 +163,7 @@
       )
       .join(
         "",
-      )}</select></label><label>Display timezone<select data-google-zone>${zones.map((z) => `<option ${zone === z ? "selected" : ""}>${e(z)}</option>`).join("")}</select></label>${createButton(selectedClient)}</div><p class="calendar-connection-alert" role="status" data-google-status>${data.connection?.status !== "connected" || message ? e(message || statusText()) : ""}</p><details class="google-connections" ${wasOpen ? "open" : ""}><summary>Calendar settings</summary><div class="calendar-settings-actions"><p>${e(statusText())}</p><button class="button button-secondary" type="button" data-google-action="sync" ${loading || !data.configured || data.connection?.status !== "connected" ? "disabled" : ""}>${loading ? "Working…" : "Sync Google now"}</button></div><p>Imported coverage: 90 days past through 366 days ahead. All-day dates stay as set by the client; timed events use the selected display time zone.</p><p>Integration Gmail: ${e(data.connection?.accountEmail || "kijijimgmt@gmail.com")}. Only explicitly mapped calendars appear here.</p>${data.connection?.message ? `<p>${e(data.connection.message)}</p>` : ""}${data.canManage ? `<button type="button" class="button button-secondary" data-google-action="${data.connection?.canCreate ? "connect-write" : "connect"}" ${loading || !data.configured ? "disabled" : ""}>${data.connection?.status === "connected" ? "Reconnect Google account" : "Connect Google account"}</button> ${!data.connection?.canCreate ? `<button type="button" class="button button-secondary" data-google-action="connect-write" ${loading || !data.configured ? "disabled" : ""}>Enable adding Google events</button>` : ""}<button type="button" class="button button-secondary" data-google-action="discover" ${loading || data.connection?.status !== "connected" ? "disabled" : ""}>Find shared calendars</button>` : ""}<div class="google-calendar-legend">${links.map((l) => `<div><span class="calendar-color-dot" style="--client-color:${e(l.color)}"></span><strong>${e(state.clients.find((c) => c.id === l.clientId)?.name || "Client")}</strong> · ${e(l.calendarName)}<br><small>Last successful sync: ${e(stamp(l.lastSuccessAt))} · ${e(l.status)}</small>${l.message ? `<p>${e(l.message)}</p>` : ""}${data.canManage ? `<button class="text-action" type="button" data-google-enable="${e(l.id)}" data-enabled="${l.allowCreate ? "false" : "true"}" ${loading ? "disabled" : ""}>${l.allowCreate ? "Turn off adding events" : "Allow adding events for this client"}</button><br><button class="text-action" type="button" data-google-unmap="${e(l.id)}" ${loading ? "disabled" : ""}>Disconnect this calendar</button>` : ""}</div>`).join("") || "<p>No client calendars connected yet.</p>"}</div>${discovered.length && data.canManage ? `<form data-google-map><h4>Map a calendar to its client</h4><label>Shared calendar<select name="calendarId" required><option value="">Choose a work calendar…</option>${discovered.map((c) => `<option value="${e(c.id)}">${e(c.name)}${c.primary ? " (integration account primary calendar)" : ""}</option>`).join("")}</select></label><label>Client<select name="clientId" required><option value="">Choose the correct client…</option>${state.clients.map((c) => `<option value="${e(c.id)}">${e(c.name)}</option>`).join("")}</select></label><label>Client color<select name="color">${PALETTE.map((color, i) => `<option value="${color}">Color ${i + 1} (${color})</option>`).join("")}</select></label><button class="button button-primary" type="submit" ${loading ? "disabled" : ""}>Save mapping</button><p>Use a dedicated client work calendar. Mapping does not change Google events. Event creation requires a separate opt-in for each calendar. Coverage: past 90 days through the next 366 days; normal polling target is every five minutes once the scheduler is enabled.</p></form>` : ""}</details>`;
+      )}</select></label><label>Display timezone<select data-google-zone>${zones.map((z) => `<option ${zone === z ? "selected" : ""}>${e(z)}</option>`).join("")}</select></label>${createButton(selectedClient)}</div><p class="calendar-connection-alert" role="status" data-google-status>${e(message || summary())}</p><button type="button" class="button button-secondary" data-google-action="sync" ${loading || !data.configured || data.connection?.status !== "connected" ? "disabled" : ""}>${loading ? "Working…" : "Sync Google now"}</button><details class="google-connections" ${wasOpen ? "open" : ""}><summary>Calendar settings</summary><p>${data.scheduler?.enabled ? "Automatic sync runs every 5 minutes." : "Automatic sync is off. Use Sync Google now for the latest schedule."}</p>${data.canManage && !data.scheduler?.enabled ? `<button type="button" class="button button-secondary" data-google-action="enable-scheduler" ${loading ? "disabled" : ""}>Enable automatic sync</button>` : ""}<div class="calendar-settings-actions"><p>${e(statusText())}</p></div><p>Imported coverage: 90 days past through 366 days ahead. All-day dates stay as set by the client; timed events use the selected display time zone.</p><p>Integration Gmail: ${e(data.connection?.accountEmail || "kijijimgmt@gmail.com")}. Only explicitly mapped calendars appear here.</p>${data.connection?.message ? `<p>${e(data.connection.message)}</p>` : ""}${data.canManage ? `<button type="button" class="button button-secondary" data-google-action="${data.connection?.canCreate ? "connect-write" : "connect"}" ${loading || !data.configured ? "disabled" : ""}>${data.connection?.status === "connected" ? "Reconnect Google account" : "Connect Google account"}</button> ${!data.connection?.canCreate ? `<button type="button" class="button button-secondary" data-google-action="connect-write" ${loading || !data.configured ? "disabled" : ""}>Enable adding Google events</button>` : ""}<button type="button" class="button button-secondary" data-google-action="discover" ${loading || data.connection?.status !== "connected" ? "disabled" : ""}>Find shared calendars</button>` : ""}<div class="google-calendar-legend">${links.map((l) => `<div><span class="calendar-color-dot" style="--client-color:${e(l.color)}"></span><strong>${e(state.clients.find((c) => c.id === l.clientId)?.name || "Client")}</strong> · ${e(l.calendarName)}<br><small>Last successful sync: ${e(stamp(l.lastSuccessAt))} · ${e(l.status)}</small>${l.message ? `<p>${e(l.message)}</p>` : ""}${data.canManage ? `<button class="text-action" type="button" data-google-enable="${e(l.id)}" data-enabled="${l.allowCreate ? "false" : "true"}" ${loading ? "disabled" : ""}>${l.allowCreate ? "Turn off adding events" : "Allow adding events for this client"}</button><br><button class="text-action" type="button" data-google-unmap="${e(l.id)}" ${loading ? "disabled" : ""}>Disconnect this calendar</button>` : ""}</div>`).join("") || "<p>No client calendars connected yet.</p>"}</div>${discovered.length && data.canManage ? `<form data-google-map><h4>Map a calendar to its client</h4><label>Shared calendar<select name="calendarId" required><option value="">Choose a work calendar…</option>${discovered.map((c) => `<option value="${e(c.id)}">${e(c.name)}${c.primary ? " (integration account primary calendar)" : ""}</option>`).join("")}</select></label><label>Client<select name="clientId" required><option value="">Choose the correct client…</option>${state.clients.map((c) => `<option value="${e(c.id)}">${e(c.name)}</option>`).join("")}</select></label><label>Client color<select name="color">${PALETTE.map((color, i) => `<option value="${color}">Color ${i + 1} (${color})</option>`).join("")}</select></label><button class="button button-primary" type="submit" ${loading ? "disabled" : ""}>Save mapping</button><p>Use a dedicated client work calendar. Mapping does not change Google events. Event creation requires a separate opt-in for each calendar. Coverage: past 90 days through the next 366 days; normal polling target is every five minutes once the scheduler is enabled.</p></form>` : ""}</details>`;
   }
   async function load(initialData) {
     const ticket = ++epoch,
@@ -177,6 +186,7 @@
   }
   function redraw() {
     controls();
+    if (typeof renderMyWork === "function") renderMyWork();
     if (typeof renderCalendar === "function") renderCalendar();
     document
       .querySelectorAll("[data-google-profile-client]")
@@ -211,6 +221,8 @@
         message =
           name === "sync"
             ? "Sync finished. Check each calendar’s status and last successful sync below."
+            : name === "enable-scheduler"
+              ? "Automatic Google Calendar sync enabled. Updates run every 5 minutes."
             : name === "enable-create"
               ? "Calendar event-creation setting updated."
               : "Calendar mapping updated.";
@@ -230,7 +242,7 @@
   function open(id) {
     const ev = events().find((x) => x.id === id);
     if (!ev) return;
-    dialog.innerHTML = `<header><h2 id="google-event-title">${e(ev.name)}</h2><button type="button" class="button button-secondary" data-google-close>Close</button></header><p>${e(ev.clientName)} · ${e(ev.calendarName)} · Read only</p><p><strong>${e(when(ev))}</strong></p>${ev.location ? `<p>${e(ev.location)}</p>` : ""}<div class="google-event-description">${e(ev.description)}</div><p>Last successful sync: ${e(stamp(ev.lastSuccessAt))}</p><p>To change this event, ask the client to update their Google Calendar.</p>`;
+    dialog.innerHTML = `<header><h2 id="google-event-title">${e(ev.name)}</h2><button type="button" class="button button-secondary" data-google-close>Close</button></header><p>${e(ev.clientName)} · ${e(ev.calendarName)} · Read only</p><p><strong>${e(when(ev))}</strong></p>${ev.location ? `<p>${e(ev.location)}</p>` : ""}<div class="google-event-description">${e(ev.description)}</div><p>Last successful sync: ${e(stamp(ev.lastSuccessAt))}</p><p>Edit or cancel this event in the shared Google Calendar. Existing events are view-only here.</p>`;
     dialog.querySelector("[data-google-close]").onclick = () => dialog.close();
     dialog.showModal();
   }
@@ -400,6 +412,7 @@
   };
   window.googleCalendar = {
     events,
+    summary,
     matches,
     occurs,
     upcoming,

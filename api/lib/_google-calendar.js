@@ -384,6 +384,7 @@ async function readCalendar(dashboard, identity) {
   ).filter((l) => allowed.has(l.client_id));
   return {
     configured: true,
+    scheduler: await store("rpc/kijiji_calendar_scheduler_status", {}).then(status => ({ enabled: status?.enabled === true, lastRun: typeof status?.lastRun === "string" ? status.lastRun : null, schedule: "Every 5 minutes" })).catch(() => ({ enabled: false, unavailable: true })),
     canManage: Boolean(identity.isAdmin && identity.authMode === "supabase"),
     connection: {
       status: c.status,
@@ -605,6 +606,16 @@ async function handleCalendar({ request, response, identity, dashboard }) {
       "Only Max can manage calendar connections after signing in securely.",
       403,
     );
+  if (action === "enable-scheduler") {
+    if (!process.env.CRON_SECRET || process.env.CRON_SECRET.length < 16)
+      fail("Automatic sync needs CRON_SECRET configured on the server.", 503);
+    await runSync(dashboard.clients.map(client => client.id));
+    const links = await store("google_calendar_links?enabled=eq.true&select=last_success_at,status");
+    if (!links.length || links.some(link => link.status !== "connected" || !link.last_success_at || Date.now()-new Date(link.last_success_at).getTime()>120000))
+      fail("Sync the connected calendars successfully before enabling automatic updates. Reconnect Google if requested.", 409);
+    await store("rpc/kijiji_enable_calendar_scheduler", { p_secret: process.env.CRON_SECRET });
+    return readCalendar(dashboard, identity);
+  }
   if (action === "connect" || action === "connect-write")
     return startOAuth(request, response, identity, action === "connect-write");
   if (action === "enable-create") {

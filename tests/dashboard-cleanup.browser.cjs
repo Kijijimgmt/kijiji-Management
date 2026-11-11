@@ -1,0 +1,62 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{})});
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ let failFiles=true;const now=new Date(); const date=new Date(now.getTime()+86400000).toISOString().slice(0,10);
+ const client={id:'medusa',name:'Medusa',status:'Active',owner:'Erik',category:'Artist'};
+ const emptyClient={id:'writer',name:'Writer',status:'Active',owner:'Joe',category:'Screenwriter'};
+ const files=[{id:'contract',name:'Performance agreement',category:'Contract',clientIds:['medusa'],updatedAt:new Date().toISOString(),fileName:'contract.pdf',notionUrl:'https://www.notion.so/example'}];
+ const google={configured:true,canManage:true,scheduler:{enabled:false},connection:{status:'connected',canCreate:false},links:[{id:'link',clientId:'medusa',calendarName:'Medusa schedule',status:'connected',lastSuccessAt:'2026-11-05T19:45:21Z',color:'#246b8e',events:[{id:'google1',name:'Shared client appearance',start:date+'T19:00:00-05:00',end:date+'T20:00:00-05:00',allDay:false}]}]};
+ await page.addInitScript(()=>{localStorage.setItem('kijiji-dashboard-tour-v4:max@kijijimgmt.com','complete');window.supabase={createClient:()=>({auth:{getSession:async()=>({data:{session:{access_token:'test'}}}),onAuthStateChange(){}}})}});
+ await page.route('**/*',async route=>{
+  const url=new URL(route.request().url());if(url.hostname!=='cleanup.test')return route.fulfill({body:''});
+  if(url.pathname.startsWith('/api/')){
+   let data={};let status=200;
+   if(url.pathname.endsWith('auth-config'))data={supabaseUrl:'https://auth.test',supabasePublishableKey:'test'};
+   else if(url.pathname.endsWith('notion-documents')){
+    if(url.searchParams.get('view')==='insights')data={submissions:[],briefs:[],integrations:{}};
+    else {status=failFiles?503:200;data=failFiles?{message:'Share the Kijiji Document Library with the portal integration.'}:{documents:files};}
+   }else if(url.searchParams.get('view')==='google-calendar')data=google;
+   else if(url.searchParams.get('view')==='artist-workspace')data={entries:[],aiReady:false};
+   else if(url.pathname.endsWith('notion-clients'))data={clients:[client,emptyClient],actions:[{id:'t1',title:'Review appearance contract',clientIds:['medusa'],owner:'Maxwell',status:'Open',dueDate:date},{id:'t2',title:'Clarify campaign scope',clientIds:['medusa'],owner:'Unassigned',status:'Open'}],events:[],opportunities:[{id:'o1',name:'Brand pitch',owner:'Erik',stage:'New',clientIds:['medusa']}],googleCalendar:google,source:{user:{email:'max@kijijimgmt.com',owner:'Maxwell',fullName:'Maxwell',isAdmin:true}}};
+   return route.fulfill({status,json:data});
+  }
+  const name=url.pathname==='/'?'client-portal.html':url.pathname.slice(1),file=path.join(__dirname,'..',name);
+  if(!fs.existsSync(file))return route.fulfill({status:404});return route.fulfill({path:file,contentType:name.endsWith('.html')?'text/html':name.endsWith('.css')?'text/css':name.endsWith('.js')?'application/javascript':'image/jpeg'});
+ });
+ await page.goto('https://cleanup.test/#my-work');await page.locator('[data-home-open]').getByText('2',{exact:true}).waitFor();
+ assert.equal(await page.locator('[data-home-setup]').textContent(),'1');
+ await page.locator('.skip-link').focus();assert.equal(await page.locator('.skip-link').evaluate(el=>getComputedStyle(el).clipPath),'none');await page.locator('.skip-link').evaluate(el=>el.blur());
+ await page.locator('[data-home-owner]').selectOption('me');assert.equal(await page.locator('[data-home-open]').textContent(),'1');assert.equal(await page.locator('[data-home-setup]').textContent(),'0');
+ await page.locator('[data-home-owner]').selectOption('');
+ assert(await page.locator('[data-home-schedule]').getByText('Shared client appearance',{exact:true}).isVisible());
+ assert.match(await page.locator('[data-home-calendar-status]').textContent(),/needs? an update/);
+ await page.waitForTimeout(250);
+ await page.screenshot({path:'/tmp/kijiji-cleanup-home-desktop.png',fullPage:true});
+ await page.locator('[data-home-work-filter="setup"]').click();await page.locator('.compact-task-row').waitFor();assert.equal(await page.locator('.compact-task-row').count(),1);assert.match(await page.locator('.compact-task-row').textContent(),/Clarify campaign scope/);
+ await page.locator('.portal-nav a[href="#opportunities"]').click();await page.locator('#opportunities').waitFor({state:'visible',timeout:5000});assert(await page.locator('#actions').isHidden());
+ await page.locator('.portal-nav a[href="#clients"]').click();await page.getByRole('button',{name:'Open Writer client roadmap',exact:true}).waitFor();assert.match(await page.getByRole('button',{name:'Open Writer client roadmap',exact:true}).textContent(),/Needs next action/);
+ await page.locator('.nav-more > summary').click();await page.locator('.portal-nav a[href="#files"]').click();
+ assert.equal(await page.locator('[data-document-count]').textContent(),'File count unavailable');assert.match(await page.locator('[data-document-folders]').textContent(),/Not loaded/);
+ failFiles=false;await page.getByRole('button',{name:'Retry files',exact:true}).click();await page.getByRole('heading',{name:'Performance agreement',exact:true}).waitFor();
+ assert.equal(await page.locator('[data-document-count]').textContent(),'1 file');
+ // A subsequent failed global refresh must preserve the known files.
+ failFiles=true;await page.getByRole('button',{name:'Sync Now',exact:true}).click();await page.getByText('Showing the last loaded files.',{exact:true}).waitFor();assert(await page.getByRole('heading',{name:'Performance agreement',exact:true}).isVisible());
+ assert.match(await page.locator('[data-document-count]').textContent(),/saved view/);
+ await page.waitForTimeout(250);
+ await page.screenshot({path:'/tmp/kijiji-cleanup-files-desktop.png',fullPage:true});
+ for(const theme of ['light','dark']){
+  await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
+  for(const width of [320,390,768]){
+   await page.setViewportSize({width,height:844});
+   for(const hash of ['my-work','work','clients','calendar','files']){
+    await page.evaluate(hash=>{location.hash=hash;document.body.classList.remove('client-workspace-open')},hash);
+    await page.waitForTimeout(30);
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${theme} ${width} ${hash} page overflow`);
+   }
+  }
+ }
+ await page.evaluate(()=>{document.documentElement.dataset.theme='light';location.hash='my-work';window.scrollTo(0,0)});await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await page.screenshot({path:'/tmp/kijiji-cleanup-home-mobile.png',fullPage:true});
+ assert.deepEqual(errors,[]);await browser.close();console.log('PASS: Home owner/count filters, Google commitments/status, setup queue, opportunity route, empty-client health, file retry and snapshot retention, light/dark responsive routes.');
+})().catch(e=>{console.error(e);process.exit(1)});

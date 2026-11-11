@@ -1,6 +1,6 @@
 # Google Calendar connection — setup and acceptance test
 
-**Status (November 5, 2026): Google viewing access authorized; direct event creation implemented with explicit permission upgrade. Medusa’s calendar sharing/mapping, write authorization, automatic polling, and real-calendar acceptance tests remain pending.** Outlook remains the business email system. Shared client schedules use `kijijimgmt@gmail.com`.
+**Status (November 11, 2026): Medusa is mapped, and the stored connection has event-creation authorization. The last confirmed successful import was November 5. Scheduled polling is prepared but has not been enabled or verified; create/reschedule/delete acceptance tests remain outstanding.** Outlook remains the business email system. Shared client schedules use `kijijimgmt@gmail.com`.
 
 ## What was inspected and implemented
 
@@ -88,11 +88,11 @@ Partners can read events for clients already authorized by the existing dashboar
 
 Vercel Hobby schedules only once daily, so a five-minute Vercel cron expression would fail deployment. Use the existing Supabase project's Cron module instead; it calls the same authenticated Vercel endpoint. No push channel, public calendar, or webhook is required.
 
-1. In Supabase Integrations → Cron, enable `pg_cron` if not already enabled. Enable `pg_net` under Database → Extensions if needed.
-2. In Supabase Vault, create a secret named **`kijiji_calendar_cron_secret`** with the existing Vercel **CRON_SECRET** as its value. Use the Vault UI so you do not put a secret literal into a saved SQL query.
-3. After production is deployed and the real-calendar manual test passes, run `google-calendar-scheduler.sql` in this project's SQL Editor. It schedules every five minutes, reads the secret from Vault, and sends an authenticated HTTP POST. The SQL file contains no secret value.
-4. Check Cron job runs and HTTP results. A successful `net.http_post` enqueue alone is not proof the sync endpoint succeeded; inspect `net._http_response` by request ID and confirm a 200 result and advancing calendar `last_success_at`. The UI marks old snapshots as delayed after 15 minutes.
-5. Check again while all dashboard tabs are closed. Automatic sync must continue independently of a browser tab. The browser only refreshes the saved cache every minute; it is not the scheduler.
+1. Apply `supabase/migrations/20261111174748_calendar_scheduler_repair.sql` (already applied to the existing production Supabase project on November 11). It enables Cron/network extensions and creates server-only scheduler controls.
+2. After deploying this cleanup, sign in as Max → Calendar → Calendar settings → **Enable automatic sync**. The server first checks a successful real sync, then securely copies the existing server `CRON_SECRET` into Vault and enables the five-minute job. No secret needs to be copied into chat or browser code.
+3. If the manual sync fails, repair Google authorization/sharing first; the button will not enable a scheduler over an unsuccessful connection. The visible status distinguishes automatic sync from the last successful calendar import.
+4. Check Cron job runs and HTTP results. A successful request enqueue alone is not proof the sync endpoint succeeded; confirm a 200 response and advancing calendar `last_success_at`.
+5. Check again with all dashboard tabs closed. Browser cache refreshes are not the scheduler. Do not describe automatic sync as operational until this check passes.
 
 For larger rosters, the job processes the oldest attempted calendars first within a bounded time budget. Unprocessed calendars are picked up by later polls. Ordinary few-calendar accounts target five-minute freshness; heavy calendars/large rosters can take additional polls. Each calendar is limited to 3,000 expanded events in a rolling window of **90 days past to 366 days future**. If that limit is exceeded, the old snapshot remains and an error requests a smaller work calendar or a follow-up scaling change. The dashboard does not provide unlimited historical imports.
 
@@ -108,7 +108,7 @@ For larger rosters, the job processes the oldest attempted calendars first withi
 
 ## Acceptance test — must be completed with a real shared calendar
 
-**Not completed.** No Google OAuth configuration/consent or accepted shared calendar has been confirmed. Mock tests cannot substitute for this.
+**Not completed.** Authorization and a saved Medusa import are confirmed, but a current create/move/delete cycle and unattended polling are not. Mock tests cannot substitute for these checks.
 
 Use a dedicated test work calendar with the client calendar owner's permission:
 

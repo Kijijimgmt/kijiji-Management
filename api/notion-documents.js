@@ -32,6 +32,7 @@ const ALLOWED_TYPES = new Set([
 const json = (response, statusCode, body) => {
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json");
+  response.setHeader("Cache-Control", "private, no-store");
   response.end(JSON.stringify(body));
 };
 
@@ -44,6 +45,7 @@ const notionRequest = async (path, options = {}) => {
 
   const response = await fetch(`https://api.notion.com/v1${path}`, {
     ...options,
+    signal: AbortSignal.timeout(15000),
     headers: {
       Authorization: `Bearer ${NOTION_TOKEN}`,
       "Notion-Version": NOTION_VERSION,
@@ -96,15 +98,18 @@ const mapDocument = (page) => {
 };
 
 const listDocuments = async () => {
-  const result = await notionRequest(`/data_sources/${DOCUMENTS_DATA_SOURCE_ID}/query`, {
-    method: "POST",
-    body: JSON.stringify({
-      page_size: 100,
-      filter: { property: "Status", select: { does_not_equal: "Archived" } },
-      sorts: [{ property: "Last Updated", direction: "descending" }],
-    }),
-  });
-  return result.results.filter((item) => item.object === "page").map(mapDocument);
+  const documents = [];
+  let cursor;
+  do {
+    const result = await notionRequest(`/data_sources/${DOCUMENTS_DATA_SOURCE_ID}/query`, {
+      method: "POST",
+      body: JSON.stringify({page_size:100, ...(cursor ? {start_cursor:cursor} : {}), filter:{property:"Status",select:{does_not_equal:"Archived"}},sorts:[{property:"Last Updated",direction:"descending"}]}),
+    });
+    documents.push(...(result.results || []).filter(item=>item.object === "page").map(mapDocument));
+    cursor = result.has_more ? result.next_cursor : null;
+    if (result.has_more && !cursor) throw Object.assign(new Error("The file list could not be completed. Please retry."), {statusCode:502});
+  } while(cursor);
+  return documents;
 };
 
 const answerText = (value) => {

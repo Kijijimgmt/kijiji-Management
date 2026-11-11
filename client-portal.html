@@ -34,7 +34,7 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261110-task-form" />
+    <link rel="stylesheet" href="portal.css?v=20261111-cleanup" />
   </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -46,15 +46,17 @@
         <nav class="portal-nav">
           <a class="is-active" href="#my-work" aria-current="page">Home</a>
           <a href="#clients">Clients</a>
-          <a href="#projects">Projects</a>
-          <a href="#work">Tasks &amp; opportunities</a>
+          <a href="#opportunities">Opportunities</a>
           <a href="#calendar">Calendar</a>
 
-          <a href="#files">Files</a>
+
 
           <details class="nav-more">
             <summary role="button" aria-haspopup="true" aria-expanded="false">More</summary>
             <div>
+              <a href="#work">Tasks</a>
+              <a href="#projects">Projects</a>
+              <a href="#files">Files</a>
               <a href="#decisions">Decisions</a>
               <a href="#talent-bookings">Talent Bookings</a>
               <a href="#reports">Reports &amp; Jotform</a>
@@ -133,20 +135,21 @@
 
         <div class="dashboard-content" data-dashboard-content hidden>
 <section class="my-work-section compact-home" id="my-work" aria-labelledby="my-work-title" data-portal-view="my-work">
-  <div class="home-heading"><div><p class="eyebrow" data-my-work-eyebrow>The team, in sync</p><h2 id="my-work-title" data-my-work-title>A clearer view of the work.</h2><p data-my-work-subtitle>Know what matters. See who’s moving it forward.</p></div><button class="button button-primary" type="button" data-open-action-form data-requires-access>+ Add task</button></div>
+  <div class="home-heading"><div><p class="eyebrow" data-my-work-eyebrow>Daily workspace</p><h2 id="my-work-title" data-my-work-title>Your next move.</h2><p data-my-work-subtitle>Tasks, commitments, and decisions.</p></div><button class="button button-primary" type="button" data-open-action-form data-requires-access>Add task</button></div>
   <div class="home-stats">
-    <a href="#work"><span>Open actions</span><strong data-home-open>—</strong><small>Across the team</small></a>
-    <a href="#work"><span>Need an owner or date</span><strong data-home-setup>—</strong><small>Ready to clarify</small></a>
-    <a href="#decisions"><span>Decisions waiting</span><strong data-my-work-deals>—</strong><small>Ready for review</small></a>
+    <a href="#work" data-home-work-filter="open"><span>Open tasks</span><strong data-home-open>—</strong></a>
+    <a href="#work" data-home-work-filter="setup"><span>Need owner or date</span><strong data-home-setup>—</strong></a>
+    <a href="#decisions"><span>Pending decisions</span><strong data-my-work-deals>—</strong></a>
   </div>
   <div class="home-columns"><div class="home-primary">
-    <section class="home-card" id="attention" aria-labelledby="attention-title"><header><div><h3 id="attention-title">Focus &amp; next actions</h3><p>Three items at a time. Open a task to update it.</p></div><label class="home-owner-label"><span class="sr-only">Filter focus by owner</span><select data-home-owner aria-label="Filter focus by owner"><option value="">Everyone</option><option>Maxwell</option><option>Joe</option><option>Erik</option><option>Emad</option><option value="unassigned">Unassigned</option></select></label></header><div data-my-work-action-list></div><footer><a href="#work" class="text-action">View all team work →</a></footer></section>
-    <section class="home-card home-industry" aria-labelledby="home-industry-title"><header><div><h3 id="home-industry-title">Industry news &amp; updates</h3><p>The latest brief for the Kijiji team.</p></div><a href="#reports" class="text-action">All reports →</a></header><div data-home-industry aria-live="polite"><p class="home-news-state">Loading the latest industry brief…</p></div></section>
-    <section class="home-card" aria-labelledby="home-clients-title"><header><div><h3 id="home-clients-title">Client workspaces</h3><p>Open an artist’s current goal, roadmap, and tasks.</p></div><a href="#clients" class="text-action">All clients →</a></header><div class="home-client-shortcuts" data-home-clients></div></section>
+    <section class="home-card" id="attention" aria-labelledby="attention-title"><header><div><h3 id="attention-title">Needs attention</h3><p>Tasks and opportunities requiring a next move.</p></div><label class="home-owner-label"><span class="sr-only">Filter focus by owner</span><select data-home-owner aria-label="Filter focus by owner"><option value="">Team work</option><option value="me">My work</option><option>Maxwell</option><option>Joe</option><option>Erik</option><option>Emad</option><option value="unassigned">Unassigned</option></select></label></header><div data-my-work-action-list></div><footer><a href="#work" class="text-action">All tasks →</a><a href="#opportunities" class="text-action">Opportunities →</a></footer></section>
+    <section class="home-card" aria-labelledby="today-schedule-title"><header><h3 id="today-schedule-title">Upcoming commitments</h3><a href="#calendar" class="text-action">Calendar →</a></header><div data-home-schedule></div><p data-home-calendar-status class="home-service-status" role="status"></p></section>
+    <details class="home-card home-industry"><summary id="home-industry-title">Industry brief</summary><div data-home-industry aria-live="polite"></div><a href="#reports" class="text-action">All reports →</a></details>
   </div><div class="home-secondary">
+    <section class="home-card home-decisions" aria-labelledby="today-decisions-title"><header><h3 id="today-decisions-title">Pending decisions</h3><a href="#decisions" class="text-action">Review →</a></header><div data-my-work-deal-list></div></section>
     <section class="home-next" aria-labelledby="home-milestone-title"><p class="eyebrow">Next milestone</p><div data-home-milestone><h3 id="home-milestone-title">Loading the shared plan…</h3></div></section>
-    <section class="home-card" aria-labelledby="checkins-title"><header><div><h3 id="checkins-title">Team check-ins</h3><p>Meeting links, agendas, and shared recaps.</p></div></header><div class="team-checkins" data-team-checkins></div></section>
-    <section class="home-card home-decisions" aria-labelledby="today-decisions-title"><header><h3 id="today-decisions-title">Needs a decision</h3><a href="#decisions" class="text-action">Review →</a></header><div data-my-work-deal-list></div></section>
+    <section class="home-card"><header><h3>Client workspaces</h3><a href="#clients" class="text-action">All clients →</a></header><div data-home-clients></div></section>
+    <div data-team-checkins hidden></div>
   </div></div>
   <div hidden aria-hidden="true"><span data-user-badge></span><div data-daily-priority></div><span data-my-work-tasks></span><span data-my-work-events></span><span data-my-work-blockers></span><div data-client-health-strip></div><div data-booking-snapshot></div><div data-my-work-watch-list></div><div data-recent-files></div></div>
 </section>
@@ -224,8 +227,8 @@
             <div class="section-header">
               <div>
                 <p class="eyebrow">Clients</p>
-                <h2 id="clients-title">Your artists & clients</h2>
-                <p class="section-support"><span data-client-count>0 clients</span> · Open a profile for tasks, events, marketing, and files.</p>
+                <h2 id="clients-title">Your clients</h2>
+                <p class="section-support"><span data-client-count>0 clients</span> · Open a profile for its plan, tasks, schedule, and files.</p>
               </div>
               <div class="section-actions">
                 <button class="button button-secondary" type="button" data-open-client-form data-requires-access data-admin-only>Add Client</button>
@@ -264,7 +267,7 @@
             <div>
               <p class="eyebrow">Work Center</p>
               <h2 id="work-title">Tasks &amp; opportunities.</h2>
-              <p class="work-intro-copy">Choose a view, then open an item to update it.</p>
+              <p class="work-intro-copy">One shared record for each next move.</p>
             </div>
             <div class="work-summary" aria-label="Work summary">
               <div><strong data-work-open-count>0</strong><span>Open tasks</span></div>
@@ -295,7 +298,7 @@
                 </div>
                 <button class="button button-secondary" type="button" data-open-action-form data-requires-access>Add Task</button>
               </div>
-              <div class="action-list" data-action-list></div>
+              <div class="task-queue-filters"><label>Show<select data-task-queue-filter><option value="open">Open tasks</option><option value="setup">Need owner or date</option><option value="overdue">Overdue</option><option value="mine">My tasks</option></select></label><label>Owner<select data-task-queue-owner><option value="">Team work</option><option value="me">My work</option><option>Maxwell</option><option>Joe</option><option>Erik</option><option>Emad</option><option value="unassigned">Unassigned</option></select></label></div><div class="action-list" data-action-list></div>
           </section>
 
           <section class="portal-section" id="opportunities" hidden aria-labelledby="opportunities-title">
@@ -804,9 +807,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="google-calendar.js?v=20261110-task-form"></script>
-    <script src="artist-workspace.js?v=20261110-task-form"></script>
-    <script src="portal.js?v=20261110-task-form"></script>
+    <script src="google-calendar.js?v=20261111-cleanup"></script>
+    <script src="artist-workspace.js?v=20261111-cleanup"></script>
+    <script src="portal.js?v=20261111-cleanup"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>
