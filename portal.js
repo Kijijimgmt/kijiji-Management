@@ -550,7 +550,21 @@ const getPersonalEvents = () => {
 const retiredClientNames = new Set(["broshigeez", "chef andra"]);
 const normalizedClientName = (value) => String(value || "").trim().toLowerCase();
 const isRetiredClient = (client) => retiredClientNames.has(normalizedClientName(client?.name));
-const isProjectClient = (client) => /luchador/i.test(client?.name || "");
+const isProjectClient = (client) => /luchador/i.test(client?.name || "") || /^Record type: Scripted project$/im.test(client?.notes || "");
+const getProjectMetadata = client => {
+  const field = name => String(client?.notes || "").split("\n").find(line=>line.toLowerCase().startsWith(name.toLowerCase()+":"))?.split(":").slice(1).join(":").trim() || "";
+  return { writer:field("Writer"),format:field("Format") || "Film project",scope:field("Scope"),writingStatus:field("Writing status"),access:field("Access") };
+};
+const renderProjectSummary = project => {
+ if(!isProjectClient(project)) return "";
+ const meta=getProjectMetadata(project);
+ return `<section class="artist-section"><h3>Project overview</h3>${meta.writer?`<p>Written by ${escapeHtml(meta.writer)}</p>`:""}${meta.scope?`<p>${escapeHtml(meta.scope)}</p>`:""}${meta.writingStatus?`<p><strong>${escapeHtml(meta.writingStatus)}</strong></p>`:""}<p>${escapeHtml(project.stage || project.nextAction || "Project scope to confirm.")}</p></section>`;
+};
+const renderWriterProjects = writer => {
+ const projects = state.clients.filter(isActiveRecord).filter(isProjectClient).filter(project=>getProjectMetadata(project).writer.toLowerCase()===writer.name.toLowerCase());
+ if(!projects.length) return "";
+ return `<section class="artist-section writer-projects"><div class="artist-section-head"><h3>Projects written by ${escapeHtml(writer.name)}</h3><a href="#projects" class="text-action">View development slate ↗</a></div>${projects.map(project=>{const meta=getProjectMetadata(project);return `<button class="writer-project-link" type="button" data-open-project="${escapeHtml(project.id)}"><span><strong>${escapeHtml(project.name)}</strong><small>${escapeHtml([meta.format,meta.scope,meta.writingStatus].filter(Boolean).join(" · "))}</small></span><span aria-hidden="true">↗</span></button>`}).join("")}</section>`;
+};
 const isActiveRecord = (client) => !isRetiredClient(client) && !["archived", "inactive"].includes(String(client.status || "").toLowerCase());
 const isActiveClient = (client) => !isProjectClient(client) && isActiveRecord(client);
 const isCurrentRecord = (item) => {
@@ -1534,6 +1548,7 @@ const tourSteps = [
   },
   { eyebrow: "Roadmap", title: "Connect outcomes to existing tasks", description: "Roadmap holds goals and milestones. The actions underneath are the same shared tasks shown in Tasks and Home. Link a task to a milestone in the task editor.", selector: "[data-client-detail]", hash: "clients", artistTab: 5 },
   { eyebrow: "Meetings", title: "Keep the client conversation together", description: "Find meeting links and shared recaps in the client's Meetings tab. Keep follow-up work in Tasks, with an owner and date.", selector: "[data-client-detail]", hash: "clients", artistTab: 6 },
+  { eyebrow: "Kijiji projects", title: "Find the development slate", description: "From Clients, open Company & production projects. The slate includes Jason Mendoza’s scripted series and feature screenplays. Each record shows the writer, format, scope and writing status. Open a project for its tasks, roadmap and files, or use Writer profile. Jason’s Overview also lists his projects. Genre and logline for The Ballad of River Kendricks are available under NDA.", selector: "#projects", hash: "projects" },
   {
     "eyebrow": "Talent Bookings",
     "title": "Track Bobby Outside Show guests",
@@ -2842,8 +2857,13 @@ bootstrapAuth();
 function renderProjects() {
   const target = document.querySelector('[data-project-list]');
   if (!target) return;
-  const projects = state.clients.filter(isProjectClient);
-  target.innerHTML = projects.length ? projects.map((client) => `<button class="client-card" type="button" data-open-project="${escapeHtml(client.id)}"><div class="client-card-head"><div class="client-name"><strong>${escapeHtml(client.name)}</strong><span>Film project</span></div></div><p>${escapeHtml(client.nextAction || "Review project scope, milestones, and next actions.")}</p><span class="client-card-open">Open project workspace →</span></button>`).join('') : '<p class="artist-empty">No film projects in the shared records.</p>';
+  const projects = state.clients.filter(isActiveRecord).filter(isProjectClient);
+  target.innerHTML = projects.length ? projects.map(project => {
+   const meta=getProjectMetadata(project);
+   const writer=state.clients.find(client=>client.name.toLowerCase()===meta.writer.toLowerCase());
+   return `<article class="slate-card"><div class="eyebrow">${escapeHtml(meta.format)}</div><h3>${escapeHtml(project.name)}</h3>${meta.scope?`<p class="slate-scope">${escapeHtml(meta.scope)}</p>`:""}${meta.writer?`<p class="slate-writer">Written by ${escapeHtml(meta.writer)}</p>`:""}${meta.writingStatus?`<span class="status-pill">${escapeHtml(meta.writingStatus)}</span>`:""}<p class="slate-description">${escapeHtml(project.stage || project.nextAction || "Review project scope, milestones, and next actions.")}</p><div class="slate-actions"><button class="text-action" type="button" data-open-project="${escapeHtml(project.id)}">Open project workspace ↗</button>${writer?`<button type="button" class="text-action" data-open-project="${escapeHtml(writer.id)}">Writer profile ↗</button>`:""}</div></article>`;
+  }).join('') : '<p class="artist-empty">No active projects in the shared records.</p>';
+
 }
 function renderTeamCheckins() {
   const target = document.querySelector('[data-team-checkins]');
