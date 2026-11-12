@@ -161,7 +161,10 @@ const notifyPartners = async ({ resource, operation, input, saved, identity }) =
     };
     await Promise.all([
       insertNotifications(recipients.map((member) => ({ ...notification, recipient_email: member.email }))),
-      sendEmails(recipients.map((member) => member.email), notification),
+      // New tasks belong in the dashboard bell without sending a partner email.
+      resource === "action" && operation === "created"
+        ? Promise.resolve(false)
+        : sendEmails(recipients.map((member) => member.email), notification),
     ]);
   } catch (error) {
     console.warn(`Partner notification skipped: ${error.message}`);
