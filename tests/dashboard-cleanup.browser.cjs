@@ -81,8 +81,10 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   await page.screenshot({path:'/tmp/kijiji-reports-'+theme+'.png',fullPage:true});
  }
  for(const theme of ['light','dark']){
-  await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
+  await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);await page.waitForTimeout(300);
   for(const width of [320,390,768]){
+   const sidebarColors=await page.locator('.portal-sidebar .portal-nav>a, .portal-sidebar .nav-more>summary, .portal-sidebar .nav-more>div a').evaluateAll(els=>els.map(el=>getComputedStyle(el).color));
+   assert(sidebarColors.every(color=>theme==='light'?color==='rgb(0, 0, 0)':color!=='rgb(0, 0, 0)'),`${theme} sidebar label contrast: ${JSON.stringify(sidebarColors)}`);
    await page.setViewportSize({width,height:844});
    for(const hash of ['my-work','work','opportunities','clients','projects','calendar','files','reports','guidance','decisions','talent-bookings']){
     await page.evaluate(hash=>{location.hash=hash;document.body.classList.remove('client-workspace-open')},hash);
