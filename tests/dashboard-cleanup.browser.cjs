@@ -27,6 +27,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  });
  await page.goto('https://cleanup.test/#my-work');await page.locator('[data-home-open]').getByText('2',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-home-setup]').textContent(),'1');
+ assert.equal(await page.locator('[data-my-work-title]').textContent(),'Hey Max, welcome back.');
  assert(await page.locator('.home-industry').getByText('Sample industry brief',{exact:true}).isVisible());
  assert.equal(await page.getByRole('link',{name:'Join team meeting ↗',exact:true}).getAttribute('href'),'https://us02web.zoom.us/j/123456789?pwd=sample');
  assert.equal(await page.locator('details.home-industry').count(),0);

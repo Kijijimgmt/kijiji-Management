@@ -606,9 +606,11 @@ const renderMyWork = () => {
 
   ].filter(({item}) => item.blocker || isUrgent(item) || getDaysUntil(item.dueDate) <= 0 || needsSetup(item))
     .sort((a,b) => Number(Boolean(b.item.blocker))-Number(Boolean(a.item.blocker)) || getDaysUntil(a.item.dueDate)-getDaysUntil(b.item.dueDate));
-  els.myWorkEyebrow.textContent = "Daily workspace";
-  els.myWorkTitle.textContent = "Your day, in focus.";
-  els.myWorkSubtitle.textContent = "A clear next move for you and your talent.";
+  const firstName = String(state.teamUser?.fullName || state.teamUser?.owner || "").trim().split(/\s+/)[0];
+  const greetingName = /^maxwell$/i.test(firstName) ? "Max" : firstName;
+  els.myWorkEyebrow.textContent = "Your daily rundown";
+  els.myWorkTitle.textContent = greetingName ? `Hey ${greetingName}, welcome back.` : "Welcome back.";
+  els.myWorkSubtitle.textContent = "Here’s what needs your attention, what’s coming up, and what’s happening in the industry.";
   document.querySelector('[data-home-open]').textContent = open.length;
   document.querySelector('[data-home-setup]').textContent = open.filter(needsSetup).length;
   els.myWorkDealsMetric.textContent = decisions.length;
