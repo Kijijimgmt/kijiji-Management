@@ -365,20 +365,22 @@ const viewTitles = {
   overview: "Team pulse",
   clients: "Clients",
   projects: "Projects",
-  work: "Tasks & opportunities",
+  work: "Tasks",
+  opportunities: "Opportunities",
   calendar: "Calendar",
   files: "Files",
-  reports: "Reports",
+  reports: "Intake & reports",
   decisions: "Decisions",
   "talent-bookings": "Talent Bookings",
-  guidance: "Playbook",
+  guidance: "Help & onboarding",
 };
 
 const viewAliases = {
   documents: "files",
   attention: "my-work",
   actions: "work",
-  opportunities: "work",
+  tasks: "work",
+  decisions: "work",
 };
 
 const setActiveView = ({ focusTitle = false } = {}) => {
@@ -386,21 +388,17 @@ const setActiveView = ({ focusTitle = false } = {}) => {
   const requestedView = viewAliases[requestedHash] || requestedHash;
   const isAdminView = requestedView === "overview";
   const activeView = viewTitles[requestedView] && (!isAdminView || isAdminUser()) ? requestedView : "my-work";
-  if (activeView === "work") {
-    const tab = requestedHash === "opportunities" ? "opportunities" : "tasks";
-    const buttons = [...document.querySelectorAll('[data-work-tab]')];
-    const target = buttons.find(button => button.dataset.workTab === tab);
-    target?.click();
-  }
+  if (requestedHash === "decisions") { document.querySelector('[data-task-queue-filter]').value = "approval"; renderActions(); }
 
   els.portalViews.forEach((view) => {
     const adminOnly = view.hasAttribute("data-admin-only");
     view.hidden = view.dataset.portalView !== activeView || (adminOnly && !isAdminUser());
+    if (view.id === "decisions") view.hidden = true;
   });
 
   els.navLinks.forEach((link) => {
     const linkView = link.getAttribute("href");
-    const isActive = linkView === `#${activeView}` && requestedHash !== "opportunities" || linkView === "#opportunities" && requestedHash === "opportunities";
+    const isActive = linkView === `#${activeView}`;
     link.classList.toggle("is-active", isActive);
     if (isActive) {
       link.setAttribute("aria-current", "page");
@@ -416,7 +414,7 @@ const setActiveView = ({ focusTitle = false } = {}) => {
   });
 
   if (els.workspaceTitle) {
-    els.workspaceTitle.textContent = activeView === "work" ? (requestedHash === "opportunities" ? "Opportunities" : "Tasks") : viewTitles[activeView];
+    els.workspaceTitle.textContent = viewTitles[activeView];
     if (focusTitle) els.workspaceTitle.focus({ preventScroll: true });
   }
 
@@ -586,20 +584,22 @@ const renderMyWork = () => {
   const needsSetup = item => !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate;
   const attention = [
     ...open.filter(item => String(item.status).toLowerCase() !== "needs approval").map(item => ({kind:"action",item})),
-    ...getOpenOpportunities().filter(isCurrentRecord).filter(owns).map(item => ({kind:"opportunity",item}))
+
   ].filter(({item}) => item.blocker || isUrgent(item) || getDaysUntil(item.dueDate) <= 0 || needsSetup(item))
     .sort((a,b) => Number(Boolean(b.item.blocker))-Number(Boolean(a.item.blocker)) || getDaysUntil(a.item.dueDate)-getDaysUntil(b.item.dueDate));
   els.myWorkEyebrow.textContent = "Daily workspace";
-  els.myWorkTitle.textContent = "Your next move.";
-  els.myWorkSubtitle.textContent = "Tasks, commitments, and decisions.";
+  els.myWorkTitle.textContent = "Your day, in focus.";
+  els.myWorkSubtitle.textContent = "A clear next move for you and your talent.";
   document.querySelector('[data-home-open]').textContent = open.length;
   document.querySelector('[data-home-setup]').textContent = open.filter(needsSetup).length;
   els.myWorkDealsMetric.textContent = decisions.length;
   els.myWorkTasksMetric.textContent = attention.length;
   const reason = item => item.blocker ? "Blocked" : getDaysUntil(item.dueDate)<0 ? "Overdue" : !item.owner || /^unassigned$/i.test(item.owner) ? "Owner needed" : !item.dueDate ? "Date needed" : getDaysUntil(item.dueDate) === 0 ? "Due today" : "Priority";
   fillExecutiveList(els.myWorkActionList, attention.slice(0,6).map(({kind,item}) => executiveRow(kind,item, `${kind === "opportunity" ? "Opportunity" : "Task"} · ${reason(item)} · ${getClientName(item)}`)), "Nothing needs attention", "Open all tasks to review planned work.");
-  if (attention.length > 6) els.myWorkActionList.innerHTML += `<a class="text-action executive-more" href="#work">Review all tasks and opportunities →</a>`;
+  if (attention.length > 6) els.myWorkActionList.innerHTML += `<a class="text-action executive-more" href="#work">Review all tasks →</a>`;
   fillExecutiveList(els.myWorkDealList, decisions.slice(0,4).map(item=>executiveRow("action",item)), "No decisions waiting", "");
+  const homeOpportunities = document.querySelector('[data-home-opportunities]');
+  if(homeOpportunities) fillExecutiveList(homeOpportunities,getOpenOpportunities().filter(isCurrentRecord).filter(owns).slice(0,3).map(item=>executiveRow("opportunity",item,getClientName(item))),"No active opportunities","Open Opportunities to add what Kijiji is pursuing.");
   const events = [...state.events.filter(isCurrentRecord).filter(isLiveEvent).filter(item=>!/^milestone$/i.test(item.type||"")), ...(window.googleCalendar?.events() || [])]
     .filter(item => (!owner || item.source === "google" && (owner !== "unassigned") && item.clientIds?.some(id=>ownerMatches(getClient(id)?.owner, owner === "me" ? state.teamUser?.owner : owner)) || item.source !== "google" && owns(item)) && (window.googleCalendar ? window.googleCalendar.upcoming(item) : getDaysUntil(item.date)>=0))
     .sort((a,b)=>String(a.start || a.date).localeCompare(String(b.start || b.date)));
@@ -610,7 +610,7 @@ const renderMyWork = () => {
   els.myWorkEventsMetric.textContent = events.length;
   els.myWorkBlockersMetric.textContent = open.filter(item=>item.blocker).length;
   const clients = state.clients.filter(isActiveClient);
-  document.querySelector('[data-home-clients]').innerHTML = clients.map(client=>`<button type="button" class="home-client-link" data-health-client-id="${escapeHtml(client.id)}"><span class="home-avatar">${escapeHtml(client.name.split(" ").map(word=>word[0]).slice(0,2).join(""))}</span><span><strong>${escapeHtml(client.name)}</strong><small>${escapeHtml(getClientHealth(client).label)}</small></span><span aria-hidden="true">→</span></button>`).join("");
+  document.querySelector('[data-home-clients]').innerHTML = clients.map(client=>`<button type="button" class="home-client-link" data-health-client-id="${escapeHtml(client.id)}">${window.artistRosterPortrait?.(client) || `<span class="home-avatar">${escapeHtml(client.name.split(" ").map(word=>word[0]).slice(0,2).join(""))}</span>`}<span><strong>${escapeHtml(client.name)}</strong><small>${escapeHtml(getClientHealth(client).label)}</small></span><span aria-hidden="true">→</span></button>`).join("");
   const milestone = state.events.filter(item=>isCurrentRecord(item) && isLiveEvent(item) && /^milestone$/i.test(item.type||"")).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"))[0];
   document.querySelector('[data-home-milestone]').innerHTML = milestone ? `<h3 id="home-milestone-title">${escapeHtml(String(milestone.name).replace(/^\d+[.\s]+/,""))}</h3><p>${escapeHtml(getClientName(milestone))}</p><small>${milestone.date ? formatDate(milestone.date) : "Date needed"}</small><button type="button" class="text-action" data-home-milestone-client="${escapeHtml(milestone.clientIds?.[0] || "")}">Open roadmap →</button>` : '<h3 id="home-milestone-title">No milestone set</h3><a href="#clients" class="text-action">Open a client roadmap →</a>';
   fillExecutiveList(document.querySelector('[data-booking-list]'),getBookings().map(item=>executiveRow("event",item)),"No guest bookings yet", "Bobby Outside Show guests appear here.");
@@ -1055,7 +1055,7 @@ const renderDetail = () => {
 const renderActions = () => {
   const queueFilter = document.querySelector('[data-task-queue-filter]')?.value || "open";
   const queueOwner = document.querySelector('[data-task-queue-owner]')?.value || "";
-  const sorted = [...getOpenActions()].filter(item => !queueOwner || (queueOwner === "me" ? ownerMatches(item.owner,state.teamUser?.owner) : queueOwner === "unassigned" ? !item.owner || /^unassigned$/i.test(item.owner) : ownerMatches(item.owner,queueOwner))).filter(item => queueFilter === "setup" ? !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate : queueFilter === "overdue" ? getDaysUntil(item.dueDate) < 0 : queueFilter === "mine" ? ownerMatches(item.owner, state.teamUser?.owner) : true).sort((a, b) => {
+  const sorted = [...(queueFilter === "done" ? state.actions.filter(isCurrentRecord).filter(isComplete) : getOpenActions())].filter(item => !queueOwner || (queueOwner === "me" ? ownerMatches(item.owner,state.teamUser?.owner) : queueOwner === "unassigned" ? !item.owner || /^unassigned$/i.test(item.owner) : ownerMatches(item.owner,queueOwner))).filter(item => queueFilter === "approval" ? /needs approval/i.test(item.status) : queueFilter === "setup" ? !item.owner || /^unassigned$/i.test(item.owner) || !item.dueDate : queueFilter === "overdue" ? getDaysUntil(item.dueDate) < 0 : queueFilter === "mine" ? ownerMatches(item.owner, state.teamUser?.owner) : true).sort((a, b) => {
     const priorityWeight = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
     const priorityDelta = (priorityWeight[a.priority] ?? 2) - (priorityWeight[b.priority] ?? 2);
     if (priorityDelta !== 0) {
@@ -1066,7 +1066,7 @@ const renderActions = () => {
   });
 
   if (!sorted.length) {
-    renderEmptyList(els.actionList, "No open actions", "Add an action when a next move needs a clear owner and due date.");
+    renderEmptyList(els.actionList, queueFilter === "done" ? "No completed tasks" : "No matching tasks", "Change the filters or add a task with a clear owner and due date.");
     return;
   }
 
@@ -1074,38 +1074,19 @@ const renderActions = () => {
 };
 
 const renderPipeline = () => {
-  const stages = [...new Set(state.opportunities.map((opportunity) => opportunity.stage || "New"))];
-
-  if (!stages.length) {
-    renderEmptyList(els.pipelineGrid, "No opportunities yet", "Deals and partnership opportunities will appear by stage once the Notion database is shared.");
-    return;
-  }
-
-  els.pipelineGrid.innerHTML = stages
-    .map((stage) => {
-      const items = state.opportunities.filter((opportunity) => (opportunity.stage || "New") === stage);
-
-      return `
-        <article class="pipeline-column">
-          <h3>${escapeHtml(stage)}</h3>
-          <strong>${items.length}</strong>
-          <div class="stack-list">
-            ${items
-              .map(
-                (item) => `
-                  <button class="compact-card editable-card" type="button" data-opportunity-id="${escapeHtml(item.id)}">
-                    <span>${escapeHtml(item.name)}</span>
-                    <em>${escapeHtml(getClientName(item))} / ${escapeHtml(item.owner || "Unassigned")}</em>
-                    <small title="${escapeHtml(item.nextStep || "Add next step")}">${escapeHtml(item.nextStep || "Add next step")}</small>
-                  </button>
-                `
-              )
-              .join("")}
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+  const query = (document.querySelector('[data-pipeline-search]')?.value || '').toLowerCase();
+  const owner = document.querySelector('[data-pipeline-owner]')?.value || '';
+  const picker = document.querySelector('[data-pipeline-client]');
+  const clientId = picker?.value || '';
+  if(picker) { picker.innerHTML = '<option value="">All clients</option>'+state.clients.map(client=>`<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`).join(''); picker.value=clientId; }
+  const list = document.querySelector('[data-pipeline-view="list"]')?.getAttribute('aria-pressed') === 'true';
+  const items = state.opportunities.filter(item => (!clientId || item.clientIds?.includes(clientId)) && (!owner || ownerMatches(item.owner, owner)) && (!query || [item.name,getClientName(item),item.nextStep,item.owner].join(' ').toLowerCase().includes(query)));
+  els.pipelineGrid.classList.toggle('pipeline-list-view',list);
+  if (!items.length) { renderEmptyList(els.pipelineGrid,"No matching opportunities","Change the filters, or add the next opportunity Kijiji is pursuing."); return; }
+  const card = item => `<button class="compact-card editable-card" type="button" data-opportunity-id="${escapeHtml(item.id)}"><em>${escapeHtml(getClientName(item))}</em><span>${escapeHtml(item.name)}</span><small>${escapeHtml(item.nextStep || "Next action needed")}</small><div class="deal-meta"><b>${escapeHtml(item.owner || "Owner needed")}</b><span>${escapeHtml(item.stage || "New")} ↗</span></div></button>`;
+  if(list) { els.pipelineGrid.innerHTML = items.map(card).join(''); return; }
+  const stages = [...new Set(state.opportunities.map(item=>item.stage || "New"))];
+  els.pipelineGrid.innerHTML = stages.map(stage => `<article class="pipeline-column"><header><h3>${escapeHtml(stage)}</h3><strong>${items.filter(item=>(item.stage || "New")===stage).length}</strong></header><div class="stack-list">${items.filter(item=>(item.stage || "New")===stage).map(card).join('') || '<p class="pipeline-empty">No matching records</p>'}</div></article>`).join('');
 };
 
 const renderCalendar = () => {
@@ -1516,7 +1497,7 @@ const tourSteps = [
     "eyebrow": "Decisions",
     "title": "Make the call and record it",
     "description": "Tasks marked Needs Approval appear here. Open a task, read the context, and update its status and notes after the decision. Choose an approver when a task needs a specific person’s review.",
-    "selector": "#decisions",
+    "selector": "#actions",
     "hash": "decisions"
   },
   {
@@ -1584,7 +1565,7 @@ const tourSteps = [
   {
     "eyebrow": "Team Work",
     "title": "Update or remove a task",
-    "description": "Open More → Tasks to see tasks and deals. Select a task to edit it, mark it Done when finished, or choose Delete Task if it is no longer needed. Deletion asks for confirmation and moves the task to Notion trash; normal ownership permissions still apply.",
+    "description": "Open Tasks for accountable actions. Opportunities has its own pipeline and list view for deals Kijiji is pursuing. Select a task to edit it, mark it Done when finished, or choose Delete Task if it is no longer needed. Deletion asks for confirmation and moves the task to Notion trash; normal ownership permissions still apply.",
     "selector": "#work-title",
     "hash": "work"
   },
@@ -1603,8 +1584,8 @@ const tourSteps = [
   {
     "eyebrow": "Appearance",
     "title": "Choose the view that works for you",
-    "description": "Open More and choose Light, Dark, or Auto. This preference only changes your own dashboard appearance and does not affect another partner’s layout.",
-    "selector": ".nav-more",
+    "description": "Open Account and choose Light, Dark, or Auto. This preference only changes your own dashboard appearance and does not affect another partner’s layout.",
+    "selector": ".account-menu",
     "hash": "my-work"
   },
   {
@@ -1617,7 +1598,7 @@ const tourSteps = [
   {
     "eyebrow": "You’re Ready",
     "title": "Use the dashboard as the team’s operating truth",
-    "description": "Start with Today, keep every next move assigned, attach the source documents, and update records when the work changes. You can replay this guide anytime from More → Take Dashboard Tour.",
+    "description": "Start with Today, keep every next move assigned, attach the source documents, and update records when the work changes. You can replay this guide anytime from More → Help & onboarding → Take dashboard tour.",
     "selector": ".portal-nav",
     "hash": "my-work"
   }
@@ -1673,6 +1654,7 @@ const renderTourStep = () => {
   }
   const more = document.querySelector(".nav-more");
   if (more) more.open = step.selector === ".nav-more";
+  const account = document.querySelector(".account-menu"); if (account) account.open = step.selector === ".account-menu";
   els.tourProgress.textContent = `${tourIndex + 1} of ${activeTourSteps.length}`;
   els.tourEyebrow.textContent = step.eyebrow;
   els.tourTitle.textContent = step.title;
@@ -2471,7 +2453,7 @@ els.actionList.addEventListener("click", (event) => {
   }
 });
 
-[els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, els.myWorkDealList, els.myWorkWatchList, els.dailyPriority, els.approvalList, $("[data-booking-snapshot]"), $("[data-booking-list]")].forEach((target) => {
+[els.todayList, els.priorityList, els.blockerList, els.myWorkActionList, document.querySelector("[data-home-opportunities]"), els.myWorkDealList, els.myWorkWatchList, els.dailyPriority, els.approvalList, $("[data-booking-snapshot]"), $("[data-booking-list]")].forEach((target) => {
   target.addEventListener("click", (event) => {
     if (event.target.closest("[data-task-file-link], [data-delete-lead]")) return;
     const createActionButton = event.target.closest("[data-open-action-form]");
@@ -2900,12 +2882,11 @@ document.querySelector('[data-home-milestone]')?.addEventListener('click', event
   location.hash = 'clients'; renderDetail(); window.showArtistTourTab?.(5);
 });
 
-// Keep task execution and opportunity review as distinct, full-width views.
-document.querySelectorAll('[data-work-tab]').forEach(button => button.addEventListener('click', () => {
-  const opportunities = button.dataset.workTab === 'opportunities';
-  document.querySelector('#actions').hidden = opportunities;
-  document.querySelector('#opportunities').hidden = !opportunities;
-  document.querySelectorAll('[data-work-tab]').forEach(tab => tab.setAttribute('aria-pressed', String(tab === button)));
+document.querySelector('[data-pipeline-search]')?.addEventListener('input', renderPipeline);
+document.querySelector('[data-pipeline-owner]')?.addEventListener('change', renderPipeline);
+document.querySelector('[data-pipeline-client]')?.addEventListener('change', renderPipeline);
+document.querySelectorAll('[data-pipeline-view]').forEach(button=>button.addEventListener('click',()=>{
+ document.querySelectorAll('[data-pipeline-view]').forEach(tab=>tab.setAttribute('aria-pressed',String(tab===button))); renderPipeline();
 }));
 
 // The same guarded, reversible delete flow is available from the task list.

@@ -36,6 +36,17 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  await page.screenshot({path:'/tmp/kijiji-cleanup-home-desktop.png',fullPage:true});
  await page.locator('[data-home-work-filter="setup"]').click();await page.locator('.compact-task-row').waitFor();assert.equal(await page.locator('.compact-task-row').count(),1);assert.match(await page.locator('.compact-task-row').textContent(),/Clarify campaign scope/);
  await page.locator('.portal-nav a[href="#opportunities"]').click();await page.locator('#opportunities').waitFor({state:'visible',timeout:5000});assert(await page.locator('#actions').isHidden());
+ assert.equal(new URL(page.url()).hash,'#opportunities');
+ await page.locator('[data-pipeline-client]').selectOption('writer');await page.getByText('No matching opportunities',{exact:true}).waitFor();await page.locator('[data-pipeline-client]').selectOption('');
+ await page.locator('[data-pipeline-view="list"]').click();assert(await page.locator('.pipeline-list-view').isVisible());
+ await page.locator('[data-pipeline-search]').fill('does not exist');await page.getByText('No matching opportunities',{exact:true}).waitFor();
+ await page.locator('[data-pipeline-search]').fill('Brand');await page.locator('[data-pipeline-grid] [data-opportunity-id]').click();await page.locator('[data-opportunity-dialog]').waitFor({state:'visible'});
+ await page.locator('[data-close-opportunity-form]').first().click();await page.locator('[data-pipeline-view="board"]').click();
+ await page.screenshot({path:'/tmp/kijiji-workspace-opportunities.png',fullPage:true});
+ await page.locator('.portal-nav a[href="#work"]').click();await page.locator('#opportunities').waitFor({state:'hidden'});
+ await page.locator('[data-task-queue-filter]').selectOption('done');await page.getByText('No completed tasks',{exact:true}).waitFor();await page.locator('[data-task-queue-filter]').selectOption('open');
+ await page.locator('.compact-task-row .task-title-button').first().click();await page.locator('[data-action-dialog]').waitFor({state:'visible'});await page.locator('[data-close-action-form]').first().click();
+ await page.screenshot({path:'/tmp/kijiji-workspace-tasks.png',fullPage:true});
  await page.locator('.portal-nav a[href="#clients"]').click();await page.getByRole('button',{name:'Open Writer client roadmap',exact:true}).waitFor();assert.match(await page.getByRole('button',{name:'Open Writer client roadmap',exact:true}).textContent(),/Needs next action/);
  await page.locator('.nav-more > summary').click();await page.locator('.portal-nav a[href="#files"]').click();
  assert.equal(await page.locator('[data-document-count]').textContent(),'File count unavailable');assert.match(await page.locator('[data-document-folders]').textContent(),/Not loaded/);
@@ -46,11 +57,17 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  assert.match(await page.locator('[data-document-count]').textContent(),/saved view/);
  await page.waitForTimeout(250);
  await page.screenshot({path:'/tmp/kijiji-cleanup-files-desktop.png',fullPage:true});
+ await page.locator('.nav-more > summary').click();assert.equal(await page.locator('.nav-more a').count(),3);
+ await page.locator('.nav-more > summary').click();
+ for(const hash of ['clients','calendar','reports','guidance','projects']) {
+  await page.evaluate(hash=>{location.hash=hash;document.body.classList.remove('client-workspace-open')},hash);
+  await page.waitForTimeout(150);await page.screenshot({path:'/tmp/kijiji-workspace-'+hash+'.png',fullPage:true});
+ }
  for(const theme of ['light','dark']){
   await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
   for(const width of [320,390,768]){
    await page.setViewportSize({width,height:844});
-   for(const hash of ['my-work','work','clients','calendar','files']){
+   for(const hash of ['my-work','work','opportunities','clients','projects','calendar','files','reports','guidance','decisions','talent-bookings']){
     await page.evaluate(hash=>{location.hash=hash;document.body.classList.remove('client-workspace-open')},hash);
     await page.waitForTimeout(30);
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${theme} ${width} ${hash} page overflow`);
