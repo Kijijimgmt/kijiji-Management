@@ -167,7 +167,8 @@ const filterDashboardForIdentity = (dashboard, identity) => {
 
   const ownedClients = (dashboard.clients || []).filter((client) => {
     const clientName = String(client.name || "").trim().toLowerCase();
-    return ownerMatches(client.owner, identity.owner) || relatedIds.has(client.id) || relatedNames.has(clientName);
+    const clientOwners = String(client.owner || "").split(/[,;\n]+/).map((owner) => owner.trim()).filter(Boolean);
+    return clientOwners.some((owner) => ownerMatches(owner, identity.owner)) || relatedIds.has(client.id) || relatedNames.has(clientName);
   });
 
   return {
