@@ -109,7 +109,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
       startTour();
     }, member);
     const total = await integrated.evaluate(() => activeTourSteps.length);
-    assert(total >= 20);
+    assert.equal(total, 8);
     for (let step = 0; step < total; step++) {
       await integrated.waitForFunction(() => Boolean(document.querySelector('.tour-highlight')), null, { timeout: 5000 }).catch(e => { throw new Error(`${member} tour step ${step + 1}: ${e.message}`); });
       assert(await integrated.locator('.tour-highlight').isVisible(), `${member} tour step ${step + 1} target hidden`);

@@ -1493,139 +1493,14 @@ const renderNotifications = () => {
 };
 
 const tourSteps = [
-  {
-    "eyebrow": "Welcome",
-    "title": "Welcome to your Kijiji workspace",
-    "description": "This dashboard keeps clients, assignments, decisions, dates, documents, and team updates together. Your sign-in controls what you can edit. The top badge confirms Notion access; Files and Calendar show their own loading and sync status.",
-    "selector": ".portal-topbar",
-    "hash": "my-work"
-  },
-  {
-    "eyebrow": "Today",
-    "title": "Start with your daily priorities",
-    "description": "Open task, missing-owner/date, and decision counts link to the matching records. My work filters your daily focus.",
-    "selector": ".home-stats",
-    "hash": "my-work"
-  },
-  {
-    "eyebrow": "Needs Attention",
-    "title": "Unblock the next move",
-    "description": "Start here for blocked, overdue, due-today, or high-priority work. Each row names an owner. Open an item, update its next step or status, and keep the context clear enough for another partner to understand.",
-    "selector": "#attention",
-    "hash": "my-work"
-  },
-  {
-    "eyebrow": "Decisions",
-    "title": "Make the call and record it",
-    "description": "Tasks marked Needs Approval appear here. Open a task, read the context, and update its status and notes after the decision. Choose an approver when a task needs a specific person’s review.",
-    "selector": "#actions",
-    "hash": "decisions"
-  },
-  {
-    "eyebrow": "Clients",
-    "title": "Open the full client picture",
-    "description": "Select an artist to open their profile. Use the tabs for tasks, events and ticket sales, social snapshots, and files. Ticket and social numbers are manual entries until accounts are connected. Use Roadmap for goals and milestones; Overview shows existing next actions.",
-    "selector": "#clients",
-    "hash": "clients"
-  },
-  {
-    eyebrow: "Artist overview", title: "Start with the artist's actual position",
-    description: "Overview holds the bio, official links, current priority, and work totals. Expand Edit bio, photo & official links to update the profile. Open Roadmap for milestones. More client details holds administrative fields.",
-    selector: "[data-client-detail]", hash: "clients", artistTab: 0
-  },
-  {
-    eyebrow: "Artist tasks", title: "Turn the next move into an assignment",
-    description: "Tasks shows work linked to this artist. Add task sets the client for you. Open an existing task to update its owner, due date, status, notes, or attached contract, within your access permissions.",
-    selector: "[data-client-detail]", hash: "clients", artistTab: 1
-  },
-  {
-    eyebrow: "Events & tickets", title: "Track events and dated sales updates",
-    description: "Add an event first, then Record a sales update for that event. Enter cumulative tickets sold, optional capacity and revenue, currency, and the as-of date. These are manual snapshots, not automatic ticket-provider data. Sales history keeps earlier entries.",
-    selector: "[data-client-detail]", hash: "clients", artistTab: 2
-  },
-  {
-    eyebrow: "Socials", title: "Record what the platforms actually show",
-    description: "Add social metrics with the platform, date, source and measurement period. Enter only numbers you know; blank means not entered, not zero. These snapshots do not connect or publish to social accounts.",
-    selector: "[data-client-detail]", hash: "clients", artistTab: 3
-  },
-  {
-    eyebrow: "Artist files", title: "Find the artist's source materials",
-    description: "Files lists this artist's linked assets. Open client folder takes you to their folder in the shared library for logos, brand guides, contracts and campaign files.",
-    selector: "[data-client-detail]", hash: "clients", artistTab: 4
-  },
-  { eyebrow: "Roadmap", title: "Connect outcomes to existing tasks", description: "Roadmap holds goals and milestones. The actions underneath are the same shared tasks shown in Tasks and Home. Link a task to a milestone in the task editor.", selector: "[data-client-detail]", hash: "clients", artistTab: 5 },
-  { eyebrow: "Meetings", title: "Keep the client conversation together", description: "Find meeting links and shared recaps in the client's Meetings tab. Keep follow-up work in Tasks, with an owner and date.", selector: "[data-client-detail]", hash: "clients", artistTab: 6 },
-  { eyebrow: "Kijiji projects", title: "Find the development slate", description: "From Clients, open Company & production projects. The slate includes Jason Mendoza’s scripted series and feature screenplays. Each record shows the writer, format, scope and writing status. Open a project for its tasks, roadmap and files, or use Writer profile. Jason’s Overview also lists his projects. Genre and logline for The Ballad of River Kendricks are available under NDA.", selector: "#projects", hash: "projects" },
-  { eyebrow: "Industry intelligence", title: "See the work and the wider industry", description: "Weekly intelligence on Home shows the latest saved Kijiji Music Industry Brief, its date, summary and key moves. Open the full report for detail, or Archive for earlier issues. If the feed needs attention, the card says so.", selector: ".home-industry", hash: "my-work" },
-  { eyebrow: "Team meeting", title: "Join the Kijiji team room", description: "Use Join team meeting on Home to open the shared partner Zoom room. This is the team’s room; it does not create a calendar event or meeting time.", selector: "#home-team-meeting", hash: "my-work" },
-  {
-    "eyebrow": "Talent Bookings",
-    "title": "Track Bobby Outside Show guests",
-    "description": "This section is currently for Bobby Outside Show guests, not bookings for every client. Choose Add booking, enter the guest, assign an owner, and set a date. Use Confirmed only once the guest has agreed; link the booking to Bobby Outside.",
-    "selector": "#talent-bookings",
-    "hash": "talent-bookings"
-  },
-  {
-    "eyebrow": "Calendar",
-    "title": "Protect the important dates",
-    "description": "Keep internal Kijiji dates and connected client Google schedules together. Filter by client or event source and choose a display time zone. Existing Google events open for viewing. Use Add to client Google Calendar to create an event when Max has enabled that calendar and the client has granted editing access. Check the visible last-sync status, use Sync Google now, or open Calendar settings to reconnect. Max connects and maps calendars; authorized partners can view and sync them.",
-    "selector": "#calendar",
-    "hash": "calendar"
-  },
-  {
-    "eyebrow": "Files",
-    "title": "Keep every client file organized",
-    "description": "Select a client folder to manage its approved logo, current brand guide, contracts, briefs, and other assets. Reusable resources stay shared across the team.",
-    "selector": "#files",
-    "hash": "files"
-  },
-  {
-    "eyebrow": "Add a Task",
-    "title": "Connect the work to the contract",
-    "description": "Use + New → Task, then add a clear next step, owner, due date, and client. In the same form you can choose an existing file or upload a new contract so the document stays attached to the assignment.",
-    "selector": ".create-menu",
-    "hash": "my-work"
-  },
-  {
-    "eyebrow": "Team Work",
-    "title": "Update or remove a task",
-    "description": "Open Tasks for accountable actions. Opportunities has its own pipeline and list view for deals Kijiji is pursuing. Select a task to edit it, mark it Done when finished, or choose Delete Task if it is no longer needed. Deletion asks for confirmation and moves the task to Notion trash; normal ownership permissions still apply.",
-    "selector": "#work-title",
-    "hash": "work"
-  },
-  {
-    "eyebrow": "Reports",
-    "title": "Review intake and industry intelligence",
-    "description": "Jotform assessment responses and the Kijiji Music Industry Brief appear here. Use Refresh Reports after a new submission or brief is added to pull in the latest information.",
-    "selector": "#reports",
-    "hash": "reports"
-  },
-  {
-    eyebrow: "Client strategy", title: "Build one shared strategy from the assessment",
-    description: "In Reports, choose Build / open client strategy beneath a Jotform response and select the correct client. The first generation saves one internal draft for the team. Max approves the Current Plan. Alternatives and proposed updates stay separate; a client-facing draft comes from the approved plan and is never sent automatically. AI and shared storage must be connected first.",
-    selector: "[data-assessment-list]", hash: "reports"
-  },
-  {
-    "eyebrow": "Appearance",
-    "title": "Choose the view that works for you",
-    "description": "Open Account and choose Light, Dark, or Auto. This preference only changes your own dashboard appearance and does not affect another partner’s layout.",
-    "selector": ".account-menu",
-    "hash": "my-work"
-  },
-  {
-    "eyebrow": "Team Updates",
-    "title": "Know when a partner changes something",
-    "description": "The bell shows client, task, deal, event, and reminder activity from the team. Open an alert to go to the relevant area, then mark it read once you have handled it.",
-    "selector": ".notification-trigger",
-    "hash": "my-work"
-  },
-  {
-    "eyebrow": "You’re Ready",
-    "title": "Use the dashboard as the team’s operating truth",
-    "description": "Start with Today, keep every next move assigned, attach the source documents, and update records when the work changes. You can replay this guide anytime from More → Help & onboarding → Take dashboard tour.",
-    "selector": ".portal-nav",
-    "hash": "my-work"
-  }
+  { eyebrow: "Your day", title: "Start on Home", description: "See tasks needing attention and upcoming commitments. Choose My work to focus on your assignments. The industry brief and team Zoom link are here too.", selector: ".home-heading", hash: "my-work" },
+  { eyebrow: "Clients", title: "One place for each client", description: "Open a profile for their overview, roadmap, tasks, events, socials, files and meetings. Company & production projects is linked below the roster.", selector: "#clients", hash: "clients" },
+  { eyebrow: "Tasks", title: "Make the next action clear", description: "Open or add a task with a client, owner and due date. Attach the relevant contract or file. Use Needs Approval for a decision and Done when finished.", selector: "#actions", hash: "work" },
+  { eyebrow: "Opportunities", title: "Track what Kijiji is pursuing", description: "Keep pitches, inquiries and deals here, separate from tasks. Open an opportunity to update its owner, stage and next action. Switch between pipeline and list views.", selector: "#opportunities", hash: "opportunities" },
+  { eyebrow: "Calendar", title: "Check commitments and sync status", description: "Filter by client and check the last successful Google sync. Google events open for viewing; adding to a client’s calendar requires editing permission and setup. Internal Kijiji dates stay separate.", selector: "#calendar", hash: "calendar" },
+  { eyebrow: "Files", title: "Find the right document", description: "Under More → Files, choose a client folder for logos, brand guides and contracts. Keep reusable templates in Shared Resources. Tasks can link to these files.", selector: "#files", hash: "files" },
+  { eyebrow: "Intake & reports", title: "Review what clients tell us", description: "Under More → Intake & reports, review Jotform answers and open the client’s shared strategy. The latest industry brief is on Home; earlier issues stay here.", selector: "#reports", hash: "reports" },
+  { eyebrow: "You’re ready", title: "Help is always nearby", description: "Replay this tour from More → Help & onboarding. Check the bell for team updates and use Account to choose your appearance. Start each day on Home.", selector: ".nav-more", hash: "my-work" }
 ];
 
 const getTourStorageKey = () => `kijiji-dashboard-tour-v4:${state.teamUser?.email || "team"}`;
@@ -1684,7 +1559,7 @@ const renderTourStep = () => {
   els.tourTitle.textContent = step.title;
   els.tourDescription.textContent = step.description;
   els.tourBack.hidden = tourIndex === 0;
-  els.tourNext.textContent = tourIndex === activeTourSteps.length - 1 ? "Finish" : tourIndex === 0 ? "Start tour" : "Next";
+  els.tourNext.textContent = tourIndex === activeTourSteps.length - 1 ? "Finish" : "Next";
 
   window.requestAnimationFrame(() => {
     if (els.tourOverlay.hidden || activeTourSteps[tourIndex] !== step) return;
