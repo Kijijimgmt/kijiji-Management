@@ -156,6 +156,7 @@ let state = {
   documents: [],
   submissions: [],
   industryBriefs: [],
+  teamMeeting: null,
   insightsIntegrations: {},
   notifications: [],
   retiredClientIds: [],
@@ -591,6 +592,10 @@ const fillExecutiveList = (target, items, emptyTitle, emptyText) => {
   else renderEmptyList(target, emptyTitle, emptyText);
 };
 const renderMyWork = () => {
+  const meeting = document.querySelector('[data-home-team-meeting]');
+  let meetingUrl = "";
+  try { const url=new URL(state.teamMeeting?.url || ""); if(url.protocol === "https:" && (url.hostname === "zoom.us" || url.hostname.endsWith(".zoom.us"))) meetingUrl=url.href; } catch {}
+  if(meeting) meeting.innerHTML = meetingUrl ? `<p>One shared room for Kijiji partner check-ins.</p><a class="button button-primary" href="${escapeHtml(meetingUrl)}" target="_blank" rel="noopener noreferrer">Join team meeting ↗</a>` : '<p class="home-news-state">The team meeting link is not available. Refresh to try again.</p>';
   const owner = document.querySelector('[data-home-owner]')?.value || "";
   const owns = item => !owner || (owner === "me" ? ownerMatches(item.owner, state.teamUser?.owner) : owner === "unassigned" ? !item.owner || /^unassigned$/i.test(item.owner) : ownerMatches(item.owner, owner));
   const open = getOpenActions().filter(isCurrentRecord).filter(owns);
@@ -1261,12 +1266,12 @@ const renderHomeIndustry = () => {
   const brief = [...state.industryBriefs].sort((a,b) => String(b.issueDate || '').localeCompare(String(a.issueDate || '')))[0];
   if (!brief) {
     const integration = state.insightsIntegrations?.industryBriefs || {};
-    target.innerHTML = `<p class="home-news-state">${integration.error ? 'Industry updates are unavailable. Open Reports to check the feed.' : 'No industry brief has been saved yet. The latest update will appear here when available.'}</p>`;
+    target.innerHTML = `<p class="home-news-state">${integration.error ? 'The weekly brief is temporarily unavailable. The team needs to reconnect the feed.' : 'Your latest saved industry brief will appear here when it is available.'}</p>`;
     return;
   }
   let reportUrl = '';
   try { const url = new URL(brief.reportUrl || brief.notionUrl); if (url.protocol === 'https:') reportUrl = url.href; } catch {}
-  target.innerHTML = `<article class="home-news-brief"><p class="eyebrow">Latest saved brief · ${escapeHtml(formatDate(String(brief.issueDate || '').slice(0,10)))}</p><h4>${escapeHtml(brief.title || 'Kijiji Music Industry Brief')}</h4><p>${escapeHtml(brief.summary || 'Open the full report for the latest industry updates.')}</p>${brief.keyMoves ? `<details><summary>Key moves</summary><p>${escapeHtml(brief.keyMoves)}</p></details>` : ''}<a class="text-action" href="${escapeHtml(reportUrl || '#reports')}" ${reportUrl ? 'target="_blank" rel="noopener noreferrer"' : ''}>Open full report →</a></article>`;
+  target.innerHTML = `<article class="home-news-brief"><p class="eyebrow">Latest saved brief · ${escapeHtml(formatDate(String(brief.issueDate || '').slice(0,10)))}</p><h4>${escapeHtml(brief.title || 'Kijiji Music Industry Brief')}</h4><p>${escapeHtml(brief.summary || 'Open the full report for the latest industry updates.')}</p>${brief.keyMoves ? `<div class="home-news-takeaway"><strong>What to watch</strong><p>${escapeHtml(brief.keyMoves)}</p></div>` : ''}<a class="text-action" href="${escapeHtml(reportUrl || '#reports')}" ${reportUrl ? 'target="_blank" rel="noopener noreferrer"' : ''}>Open full report →</a></article>`;
 };
 
 const renderReports = () => {
@@ -1549,6 +1554,8 @@ const tourSteps = [
   { eyebrow: "Roadmap", title: "Connect outcomes to existing tasks", description: "Roadmap holds goals and milestones. The actions underneath are the same shared tasks shown in Tasks and Home. Link a task to a milestone in the task editor.", selector: "[data-client-detail]", hash: "clients", artistTab: 5 },
   { eyebrow: "Meetings", title: "Keep the client conversation together", description: "Find meeting links and shared recaps in the client's Meetings tab. Keep follow-up work in Tasks, with an owner and date.", selector: "[data-client-detail]", hash: "clients", artistTab: 6 },
   { eyebrow: "Kijiji projects", title: "Find the development slate", description: "From Clients, open Company & production projects. The slate includes Jason Mendoza’s scripted series and feature screenplays. Each record shows the writer, format, scope and writing status. Open a project for its tasks, roadmap and files, or use Writer profile. Jason’s Overview also lists his projects. Genre and logline for The Ballad of River Kendricks are available under NDA.", selector: "#projects", hash: "projects" },
+  { eyebrow: "Industry intelligence", title: "See the work and the wider industry", description: "Weekly intelligence on Home shows the latest saved Kijiji Music Industry Brief, its date, summary and key moves. Open the full report for detail, or Archive for earlier issues. If the feed needs attention, the card says so.", selector: ".home-industry", hash: "my-work" },
+  { eyebrow: "Team meeting", title: "Join the Kijiji team room", description: "Use Join team meeting on Home to open the shared partner Zoom room. This is the team’s room; it does not create a calendar event or meeting time.", selector: "#home-team-meeting", hash: "my-work" },
   {
     "eyebrow": "Talent Bookings",
     "title": "Track Bobby Outside Show guests",
@@ -1778,6 +1785,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     }
 
     state.teamUser = data.source?.user || state.teamUser;
+    state.teamMeeting = data.teamMeeting || null;
     const incomingClients = Array.isArray(data.clients) ? data.clients : [];
     state.retiredClientIds = incomingClients.filter(isRetiredClient).map((client) => client.id);
     state.clients = incomingClients.filter((client) => !isRetiredClient(client));
@@ -1828,6 +1836,8 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
     state.documents = [];
     state.submissions = [];
     state.industryBriefs = [];
+    state.teamMeeting = null;
+    document.querySelector('[data-home-team-meeting]')?.replaceChildren();
     state.insightsIntegrations = {};
     state.retiredClientIds = [];
     state.selectedClientId = "";
@@ -2374,6 +2384,7 @@ async function logoutPortal() {
     documents: [], documentsLoaded: false, documentsMessage: "", documentsUpdatedAt: "",
     submissions: [],
     industryBriefs: [],
+    teamMeeting: null,
     insightsIntegrations: {},
     notifications: [],
     selectedClientId: "",
@@ -2383,6 +2394,7 @@ async function logoutPortal() {
     teamUser: null,
     documentFolder: "all",
   };
+  document.querySelector('[data-home-team-meeting]')?.replaceChildren();
   setSourceBadge("signed-out", "Signed out");
   applyRoleUi();
   showAccessPanel("You have been signed out. Use your approved Kijiji email to sign back in.", "info");

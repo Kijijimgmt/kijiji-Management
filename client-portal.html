@@ -34,8 +34,8 @@
         document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "light" ? "#f6f2eb" : "#060504");
       })();
     </script>
-    <link rel="stylesheet" href="portal.css?v=20261111-projects" />
-  <link rel="stylesheet" href="workspace-design.css?v=20261111-projects">
+    <link rel="stylesheet" href="portal.css?v=20261111-home-brief" />
+  <link rel="stylesheet" href="workspace-design.css?v=20261111-home-brief">
 </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -142,8 +142,10 @@
     <section class="home-card" id="attention" aria-labelledby="attention-title"><header><div><h3 id="attention-title">Next actions</h3><p>The next actions that need your attention.</p></div><label class="home-owner-label"><span class="sr-only">Filter focus by owner</span><select data-home-owner aria-label="Filter focus by owner"><option value="">Team work</option><option value="me">My work</option><option>Maxwell</option><option>Joe</option><option>Erik</option><option>Emad</option><option value="unassigned">Unassigned</option></select></label></header><div data-my-work-action-list></div><footer><a href="#work" class="text-action">All tasks →</a><a href="#opportunities" class="text-action">Opportunities →</a></footer></section>
 
     <section class="home-card"><header><h3>Opportunities in motion</h3><a href="#opportunities" class="text-action">Open pipeline ↗</a></header><div data-home-opportunities></div></section>
-    <details class="home-card home-industry"><summary id="home-industry-title">Industry brief</summary><div data-home-industry aria-live="polite"></div><a href="#reports" class="text-action">All reports →</a></details>
+
   </div><div class="home-secondary">
+    <section class="home-card home-industry" aria-labelledby="home-industry-title"><header><div><p class="eyebrow">Kijiji Music Industry Brief</p><h3 id="home-industry-title">Weekly intelligence</h3></div><a href="#reports" class="text-action">Archive ↗</a></header><div data-home-industry aria-live="polite"></div></section>
+    <section class="home-card home-team-meeting" id="home-team-meeting" aria-labelledby="team-meeting-title"><header><div><p class="eyebrow">Connect with the team</p><h3 id="team-meeting-title">Team meeting</h3></div></header><div data-home-team-meeting></div></section>
     <section class="home-card home-decisions" aria-labelledby="today-decisions-title"><header><h3 id="today-decisions-title">Needs a decision</h3><a href="#decisions" class="text-action">Review →</a></header><div data-my-work-deal-list></div></section>
     <section class="home-next" aria-labelledby="home-milestone-title"><p class="eyebrow">Next milestone</p><div data-home-milestone><h3 id="home-milestone-title">Loading the shared plan…</h3></div></section>
     <section class="home-card"><header><h3>Client workspaces</h3><a href="#clients" class="text-action">All clients →</a></header><div data-home-clients></div></section>
@@ -388,7 +390,7 @@
                 <div data-assessment-list></div>
               </section>
               <section class="report-feed" aria-labelledby="brief-feed-title">
-                <div class="report-feed-head"><div><p class="eyebrow">Weekly intelligence</p><h3 id="brief-feed-title">Kijiji Music Industry Brief</h3></div></div>
+                <div class="report-feed-head"><div><p class="eyebrow">Brief archive</p><h3 id="brief-feed-title">Kijiji Music Industry Brief</h3></div></div>
                 <div data-industry-brief-list></div>
               </section>
             </div>
@@ -805,9 +807,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="google-calendar.js?v=20261111-projects"></script>
-    <script src="artist-workspace.js?v=20261111-projects"></script>
-    <script src="portal.js?v=20261111-projects"></script>
+    <script src="google-calendar.js?v=20261111-home-brief"></script>
+    <script src="artist-workspace.js?v=20261111-home-brief"></script>
+    <script src="portal.js?v=20261111-home-brief"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>

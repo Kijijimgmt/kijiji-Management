@@ -1057,6 +1057,7 @@ module.exports = async (request, response) => {
     if (request.method === "GET") {
       const dashboard = await listDashboard();
       const scoped = filterDashboardForIdentity(dashboard, identity);
+      scoped.teamMeeting = require("./lib/_team-meeting");
       try {
         scoped.googleCalendar = await require("./lib/_google-calendar").readCalendar(scoped, identity);
       } catch {

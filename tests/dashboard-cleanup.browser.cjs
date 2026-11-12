@@ -19,7 +19,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     else {status=failFiles?503:200;data=failFiles?{message:'Share the Kijiji Document Library with the portal integration.'}:{documents:files};}
    }else if(url.searchParams.get('view')==='google-calendar')data=google;
    else if(url.searchParams.get('view')==='artist-workspace')data={entries:[],aiReady:false};
-   else if(url.pathname.endsWith('notion-clients'))data={clients:[client,emptyClient,{id:'jason',name:'Jason Mendoza',status:'Active',owner:'Joe'},{id:'river',name:'The Ballad of River Kendricks',status:'Active',owner:'Joe, Erik, Maxwell',stage:'Fully written mini-series. Genre and logline available under NDA.',notes:'Record type: Scripted project\nWriter: Jason Mendoza\nFormat: Scripted series\nScope: 5 seasons × 8 episodes\nWriting status: Fully written'},{id:'whitman',name:'Whitman',status:'Active',notes:'Record type: Scripted project\nWriter: Jason Mendoza\nFormat: Feature film\nWriting status: Completed screenplay'},{id:'jazz',name:'Jazz on a Summer Night',status:'Active',notes:'Record type: Scripted project\nWriter: Jason Mendoza\nFormat: Feature film\nWriting status: Completed screenplay'}],actions:[{id:'t1',title:'Review appearance contract',clientIds:['medusa'],owner:'Maxwell',status:'Open',dueDate:date},{id:'t2',title:'Clarify campaign scope',clientIds:['medusa'],owner:'Unassigned',status:'Open'}],events:[],opportunities:[{id:'o1',name:'Brand pitch',owner:'Erik',stage:'New',clientIds:['medusa']}],googleCalendar:google,source:{user:{email:'max@kijijimgmt.com',owner:'Maxwell',fullName:'Maxwell',isAdmin:true}}};
+   else if(url.pathname.endsWith('notion-clients'))data={clients:[client,emptyClient,{id:'jason',name:'Jason Mendoza',status:'Active',owner:'Joe'},{id:'river',name:'The Ballad of River Kendricks',status:'Active',owner:'Joe, Erik, Maxwell',stage:'Fully written mini-series. Genre and logline available under NDA.',notes:'Record type: Scripted project\nWriter: Jason Mendoza\nFormat: Scripted series\nScope: 5 seasons × 8 episodes\nWriting status: Fully written'},{id:'whitman',name:'Whitman',status:'Active',notes:'Record type: Scripted project\nWriter: Jason Mendoza\nFormat: Feature film\nWriting status: Completed screenplay'},{id:'jazz',name:'Jazz on a Summer Night',status:'Active',notes:'Record type: Scripted project\nWriter: Jason Mendoza\nFormat: Feature film\nWriting status: Completed screenplay'}],actions:[{id:'t1',title:'Review appearance contract',clientIds:['medusa'],owner:'Maxwell',status:'Open',dueDate:date},{id:'t2',title:'Clarify campaign scope',clientIds:['medusa'],owner:'Unassigned',status:'Open'}],events:[],opportunities:[{id:'o1',name:'Brand pitch',owner:'Erik',stage:'New',clientIds:['medusa']}],googleCalendar:google,teamMeeting:{label:'Kijiji team meeting',url:'https://us02web.zoom.us/j/123456789?pwd=sample'},source:{user:{email:'max@kijijimgmt.com',owner:'Maxwell',fullName:'Maxwell',isAdmin:true}}};
    return route.fulfill({status,json:data});
   }
   const name=url.pathname==='/'?'client-portal.html':url.pathname.slice(1),file=path.join(__dirname,'..',name);
@@ -27,6 +27,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  });
  await page.goto('https://cleanup.test/#my-work');await page.locator('[data-home-open]').getByText('2',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-home-setup]').textContent(),'1');
+ assert(await page.locator('.home-industry').getByText('Sample industry brief',{exact:true}).isVisible());
+ assert.equal(await page.getByRole('link',{name:'Join team meeting ↗',exact:true}).getAttribute('href'),'https://us02web.zoom.us/j/123456789?pwd=sample');
+ assert.equal(await page.locator('details.home-industry').count(),0);
  await page.locator('.skip-link').focus();assert.equal(await page.locator('.skip-link').evaluate(el=>getComputedStyle(el).clipPath),'none');await page.locator('.skip-link').evaluate(el=>el.blur());
  await page.locator('[data-home-owner]').selectOption('me');assert.equal(await page.locator('[data-home-open]').textContent(),'1');assert.equal(await page.locator('[data-home-setup]').textContent(),'0');
  await page.locator('[data-home-owner]').selectOption('');
@@ -89,5 +92,6 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   }
  }
  await page.evaluate(()=>{document.documentElement.dataset.theme='light';location.hash='my-work';window.scrollTo(0,0)});await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await page.screenshot({path:'/tmp/kijiji-cleanup-home-mobile.png',fullPage:true});
+ await page.locator('.account-trigger').click();await page.locator('[data-logout-portal]').click();assert.equal(await page.locator('[data-home-team-meeting] a').count(),0);
  assert.deepEqual(errors,[]);await browser.close();console.log('PASS: Home owner/count filters, Google commitments/status, setup queue, opportunity route, empty-client health, file retry and snapshot retention, light/dark responsive routes.');
 })().catch(e=>{console.error(e);process.exit(1)});
