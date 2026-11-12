@@ -15,7 +15,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    let data={};let status=200;
    if(url.pathname.endsWith('auth-config'))data={supabaseUrl:'https://auth.test',supabasePublishableKey:'test'};
    else if(url.pathname.endsWith('notion-documents')){
-    if(url.searchParams.get('view')==='insights')data={submissions:[],briefs:[],integrations:{}};
+    if(url.searchParams.get('view')==='insights')data={submissions:[{id:'assessment',artistName:'Sample artist',submittedAt:'2026-11-11',priority:'Brand partnerships',obstacle:'Build a sustainable release plan with realistic resources.',helpAreas:'Website and booking materials',answers:[{question:'What would success look like?',answer:'Consistent releases and repeat opportunities.'}]}],briefs:[{id:'brief',title:'Sample industry brief',issueDate:'2026-11-11',status:'Published',summary:'A short weekly update.',keyMoves:'Review relevant opportunities.',watchlist:'Upcoming release windows'}],integrations:{jotform:{configured:true},industryBriefs:{configured:true}}};
     else {status=failFiles?503:200;data=failFiles?{message:'Share the Kijiji Document Library with the portal integration.'}:{documents:files};}
    }else if(url.searchParams.get('view')==='google-calendar')data=google;
    else if(url.searchParams.get('view')==='artist-workspace')data={entries:[],aiReady:false};
@@ -62,6 +62,16 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  for(const hash of ['clients','calendar','reports','guidance','projects']) {
   await page.evaluate(hash=>{location.hash=hash;document.body.classList.remove('client-workspace-open')},hash);
   await page.waitForTimeout(150);await page.screenshot({path:'/tmp/kijiji-workspace-'+hash+'.png',fullPage:true});
+ }
+ for(const theme of ['light','dark']) {
+  await page.evaluate(theme=>{document.documentElement.dataset.theme=theme;location.hash='reports'},theme);
+  await page.locator('#reports').waitFor({state:'visible'});
+  await page.getByText('Sample artist',{exact:true}).waitFor();
+  const surface=await page.locator('.assessment-card').evaluate(el=>({background:getComputedStyle(el).backgroundColor,surface:getComputedStyle(document.querySelector('.report-feed')).backgroundColor,color:getComputedStyle(el.querySelector('h4')).color}));
+  assert.equal(surface.background,surface.surface,`${theme} assessment must use the themed report surface`);assert.notEqual(surface.background,surface.color);
+  await page.locator('.assessment-card summary').click();assert(await page.getByText('Consistent releases and repeat opportunities.',{exact:true}).isVisible());await page.locator('.assessment-card summary').click();
+  assert(await page.locator('[data-build-strategy]').isVisible());
+  await page.screenshot({path:'/tmp/kijiji-reports-'+theme+'.png',fullPage:true});
  }
  for(const theme of ['light','dark']){
   await page.evaluate(theme=>document.documentElement.dataset.theme=theme,theme);
