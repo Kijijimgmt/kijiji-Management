@@ -272,6 +272,7 @@ const getProgressEstimate = (client) => {
 const getClient = (clientId) => state.clients.find((client) => client.id === clientId);
 
 const getClientName = (item) => {
+  if (!item.clientIds?.length && /^Industry: /.test(item.name || "") && /^Kijiji shared industry date\r?\n/.test(item.notes || "")) return "Kijiji industry dates";
   const related = item.clientIds?.map(getClient).find(Boolean);
   return related?.name || item.clientName || "No client linked";
 };

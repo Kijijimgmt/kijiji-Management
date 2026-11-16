@@ -2,6 +2,22 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { filterDashboardForIdentity, assertCanManageOwnedRecord, assertCanManageClient } = require('../api/lib/kijiji-auth');
 
+test('curated industry dates are visible to all partners without exposing client events or granting edit access', () => {
+  const industry = { id: 'awards', name: 'Industry: Grammy Awards 2027', type: 'Event', owner: 'Maxwell', notes: 'Kijiji shared industry date\nOfficial source: https://www.grammy.com/', clientIds: [] };
+  const privateEvent = { ...industry, id: 'client-event', clientIds: ['private-client'] };
+  const ordinary = { id: 'internal', name: 'Internal call', owner: 'Maxwell', type: 'Meeting' };
+  const forged = { ...industry, id: 'member-tag', owner: 'Joe' };
+  for (const owner of ['Joe', 'Erik', 'Emad']) {
+    const identity = { owner, fullName: owner, isAdmin: false };
+    const result = filterDashboardForIdentity({ clients: [{ id: 'private-client', owner: 'Maxwell' }], events: [industry, privateEvent, ordinary, forged] }, identity);
+    assert(result.events.some(event => event.id === 'awards'));
+    assert(!result.events.some(event => ['client-event', 'internal'].includes(event.id)));
+    assert.equal(result.clients.length, 0);
+    assert.equal(result.events.some(event => event.id === 'member-tag'), owner === 'Joe');
+    assert.throws(() => assertCanManageOwnedRecord(industry, identity, 'Event'), { code: 'team_scope_forbidden' });
+  }
+});
+
 test('partners can see clients assigned to a shared owner list without broadening edit permissions', () => {
   const dashboard = {
     clients: [

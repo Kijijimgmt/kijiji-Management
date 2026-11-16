@@ -140,6 +140,15 @@ const getClientRelations = (item) => ({
   name: String(item?.clientName || "").trim().toLowerCase(),
 });
 
+// Admin-curated public industry dates are visible to the signed-in team only.
+// They never grant access to a client or change ownership-based edit permissions.
+const isSharedIndustryEvent = (item) =>
+  ownerMatches(item?.owner, "Maxwell") &&
+  !item?.clientIds?.length && !String(item?.clientName || "").trim() &&
+  ["Event", "Deadline"].includes(item?.type) &&
+  /^Industry: /.test(item?.name || "") &&
+  /^Kijiji shared industry date\r?\n/.test(item?.notes || "");
+
 const filterDashboardForIdentity = (dashboard, identity) => {
   const withUser = {
     ...dashboard,
@@ -155,7 +164,7 @@ const filterDashboardForIdentity = (dashboard, identity) => {
 
   const ownedActions = (dashboard.actions || []).filter((item) => ownerMatches(item.owner, identity.owner));
   const ownedOpportunities = (dashboard.opportunities || []).filter((item) => ownerMatches(item.owner, identity.owner));
-  const ownedEvents = (dashboard.events || []).filter((item) => ownerMatches(item.owner, identity.owner));
+  const ownedEvents = (dashboard.events || []).filter((item) => ownerMatches(item.owner, identity.owner) || isSharedIndustryEvent(item));
   const relatedIds = new Set();
   const relatedNames = new Set();
 
