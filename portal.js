@@ -2654,7 +2654,10 @@ els.markNotificationsRead?.addEventListener("click", (event) => {
 });
 els.notificationList?.addEventListener("click", (event) => {
   const item = event.target.closest("[data-notification-id]");
-  if (item) markNotificationsRead(item.dataset.notificationId);
+  if (item) {
+    markNotificationsRead(item.dataset.notificationId);
+    if (els.notificationCenter) els.notificationCenter.open = false;
+  }
 });
 window.addEventListener("hashchange", () => setActiveView({ focusTitle: !document.body.classList.contains("tour-open") }));
 

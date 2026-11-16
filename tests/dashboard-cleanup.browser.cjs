@@ -33,6 +33,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  assert.equal(await page.locator('[data-notification-id="legacy-alert"]').getAttribute('href'),'#opportunities');
  await page.locator('.notification-trigger').click();await page.locator('[data-notification-id="legacy-alert"]').click();
  await page.locator('#opportunities').waitFor({state:'visible'});assert.equal(new URL(page.url()).hash,'#opportunities');
+ assert.equal(await page.locator('[data-notification-center]').getAttribute('open'),null);
  await page.locator('.portal-nav a[href="#my-work"]').click();await page.locator('#my-work').waitFor({state:'visible'});
  assert(await page.locator('.home-industry').getByText('Sample industry brief',{exact:true}).isVisible());
  assert.equal(await page.getByRole('link',{name:'Join team meeting ↗',exact:true}).getAttribute('href'),'https://us02web.zoom.us/j/123456789?pwd=sample');
