@@ -86,3 +86,11 @@ html[data-theme="dark"] .button-primary{color:#20241f}
  .home-schedule-strip .executive-row{grid-template-columns:minmax(0,1fr)}
  .home-schedule-strip .executive-copy,.home-schedule-strip .executive-meta{grid-column:1;max-width:none;text-align:left;justify-items:start}
 }
+
+@media(min-width:761px) and (max-width:1150px){
+ .compact-task-row{grid-template-columns:minmax(0,1fr) 120px!important;gap:8px 16px!important}
+ .compact-task-row .task-title-button{grid-column:1;grid-row:1/4;align-self:center}
+ .compact-task-row .task-owner{grid-column:2;grid-row:1}
+ .compact-task-row .status-pill{grid-column:2;grid-row:2;justify-self:start}
+ .compact-task-row .date-chip{grid-column:2;grid-row:3;white-space:normal}
+}

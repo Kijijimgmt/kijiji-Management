@@ -102,6 +102,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
      await page.locator('[data-task-queue-filter]').selectOption('open');
      assert(await page.locator('.compact-task-row .task-owner').first().isVisible(),`${theme} ${width} task owner must remain visible`);
      assert(await page.locator('.compact-task-row .task-title-button strong').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=14));
+     if(width===768) assert(await page.locator('.compact-task-row').first().evaluate(el=>el.querySelector('.task-title-button').getBoundingClientRect().width>el.getBoundingClientRect().width*.5),'Tablet title should use most of the row');
     }
     if(hash==='my-work') {
      assert(await page.locator('.portal-nav>a').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=12));
