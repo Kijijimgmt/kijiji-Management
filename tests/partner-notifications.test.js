@@ -33,6 +33,7 @@ test('operational updates and event reminders notify the dashboard without partn
         await notifyPartners({ ...args, resource, operation });
         assert.equal(calls.length, 1);
         assert.match(calls[0].url, /portal_notifications$/);
+        if (resource === 'opportunity') assert(calls[0].body.every(row => row.portal_url.endsWith('#opportunities')));
       }
     }
     calls.length = 0;

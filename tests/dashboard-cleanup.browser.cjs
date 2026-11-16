@@ -14,6 +14,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   if(url.pathname.startsWith('/api/')){
    let data={};let status=200;
    if(url.pathname.endsWith('auth-config'))data={supabaseUrl:'https://auth.test',supabasePublishableKey:'test'};
+   else if(url.pathname.endsWith('notifications')) data={notifications:[{id:'legacy-alert',resource_type:'Opportunity',actor_name:'Erik',operation:'updated',resource_title:'Brand pitch',created_at:new Date().toISOString(),portal_url:'https://www.kijijimgmt.com/client-portal#work'}]};
    else if(url.pathname.endsWith('notion-documents')){
     if(url.searchParams.get('view')==='insights')data={submissions:[{id:'assessment',artistName:'Sample artist',submittedAt:'2026-11-11',priority:'Brand partnerships',obstacle:'Build a sustainable release plan with realistic resources.',helpAreas:'Website and booking materials',answers:[{question:'What would success look like?',answer:'Consistent releases and repeat opportunities.'}]}],briefs:[{id:'brief',title:'Sample industry brief',issueDate:'2026-11-11',status:'Published',summary:'A short weekly update.',keyMoves:'Review relevant opportunities.',watchlist:'Upcoming release windows'}],integrations:{jotform:{configured:true},industryBriefs:{configured:true}}};
     else {status=failFiles?503:200;data=failFiles?{message:'Share the Kijiji Document Library with the portal integration.'}:{documents:files};}
@@ -28,6 +29,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  await page.goto('https://cleanup.test/#my-work');await page.locator('[data-home-open]').getByText('2',{exact:true}).waitFor();
  assert.equal(await page.locator('[data-home-setup]').textContent(),'1');
  assert.equal(await page.locator('[data-my-work-title]').textContent(),'Hey Max, welcome back.');
+ await page.locator('[data-notification-id="legacy-alert"]').waitFor({state:'attached'});
+ assert.equal(await page.locator('[data-notification-id="legacy-alert"]').getAttribute('href'),'#opportunities');
+ await page.locator('.notification-trigger').click();await page.locator('[data-notification-id="legacy-alert"]').click();
+ await page.locator('#opportunities').waitFor({state:'visible'});assert.equal(new URL(page.url()).hash,'#opportunities');
+ await page.locator('.portal-nav a[href="#my-work"]').click();await page.locator('#my-work').waitFor({state:'visible'});
  assert(await page.locator('.home-industry').getByText('Sample industry brief',{exact:true}).isVisible());
  assert.equal(await page.getByRole('link',{name:'Join team meeting ↗',exact:true}).getAttribute('href'),'https://us02web.zoom.us/j/123456789?pwd=sample');
  assert.equal(await page.locator('details.home-industry').count(),0);
@@ -91,6 +97,15 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     await page.evaluate(hash=>{location.hash=hash;document.body.classList.remove('client-workspace-open')},hash);
     await page.waitForTimeout(30);
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${theme} ${width} ${hash} page overflow`);
+    if(hash==='work') {
+     await page.locator('[data-task-queue-filter]').selectOption('open');
+     assert(await page.locator('.compact-task-row .task-owner').first().isVisible(),`${theme} ${width} task owner must remain visible`);
+     assert(await page.locator('.compact-task-row .task-title-button strong').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=14));
+    }
+    if(hash==='my-work') {
+     assert(await page.locator('.portal-nav>a').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=12));
+     if(theme==='dark') assert.equal(await page.locator('.create-menu > summary').evaluate(el=>getComputedStyle(el).color),'rgb(32, 36, 31)');
+    }
    }
   }
  }

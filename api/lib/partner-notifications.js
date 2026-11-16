@@ -5,7 +5,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 const compact = (value, fallback = "Not set") => String(value || fallback).trim().slice(0, 500);
-const portalSection = { client: "clients", action: "work", opportunity: "work", event: "calendar" };
+const portalSection = { client: "clients", action: "work", opportunity: "opportunities", event: "calendar" };
 const resourceLabel = { client: "Client", action: "Task", opportunity: "Opportunity", event: "Event" };
 
 const notificationSummary = (resource, input) => {
