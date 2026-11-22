@@ -35,7 +35,7 @@
       })();
     </script>
     <link rel="stylesheet" href="portal.css?v=20261111-home-brief" />
-  <link rel="stylesheet" href="workspace-design.css?v=20261122-files">
+  <link rel="stylesheet" href="workspace-design.css?v=20261122-organized">
 </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -362,7 +362,7 @@
 
           <section class="portal-section document-library" id="files" aria-labelledby="documents-title" data-portal-view="files">
             <div class="section-header">
-              <div><p class="eyebrow">Team Resources</p><h2 id="documents-title">Files</h2><p class="section-note">Client logos, brand guides, contracts, templates, and briefs in one secure place.</p></div>
+              <div><h2 id="documents-title">Files</h2><p class="section-note">Find a team template or open files for a client or project.</p></div>
               <div class="section-actions document-actions">
                 <label><span>Search</span><input type="search" data-search-documents placeholder="Find a file" /></label>
                 <label><span>Category</span><select data-document-category><option value="all">All categories</option><option>Logo</option><option>Brand Guide</option><option>Brand Asset</option><option>Contract</option><option>Template</option><option>Brief</option><option>Finance</option><option>Operations</option><option>Other</option></select></label>
@@ -370,9 +370,10 @@
               </div>
             </div>
             <div class="document-summary"><strong data-document-count>0 files</strong><span>Available to signed-in Kijiji team members</span></div>
-            <div class="document-folders" data-document-folders aria-label="File folders"></div>
+            <div class="file-area-nav" data-files-areas role="group" aria-label="File library"><button type="button" data-files-area="templates" aria-pressed="true">Team Templates</button><button type="button" data-files-area="clients" aria-pressed="false">Client Files</button><button type="button" data-files-area="projects" aria-pressed="false">Project Files</button></div>
+            <div class="file-folder-filter" data-document-folders></div>
             <section class="client-brand-kit" data-client-brand-kit hidden aria-live="polite"></section>
-            <div class="document-grid" data-document-list></div>
+            <div class="file-library-list" data-document-list></div>
           </section>
 
           <section class="portal-section reports-section" id="reports" aria-labelledby="reports-title" data-portal-view="reports">
@@ -792,6 +793,20 @@
       </form>
     </dialog>
 
+    <dialog class="client-dialog template-copy-dialog" data-template-dialog aria-labelledby="template-copy-title">
+      <form class="client-form" data-template-form>
+        <div class="dialog-head"><h2 id="template-copy-title">Use template</h2><button type="button" class="icon-button" data-close-template aria-label="Close template form">×</button></div>
+        <p>Create a separate copy in the client's folder. The master stays unchanged. Download the copy to fill it in, then upload the completed version.</p>
+        <div class="form-grid">
+          <label><span>Client</span><select name="clientId" required></select></label>
+          <label><span>Format</span><select name="templateId" required></select></label>
+          <label class="wide"><span>Document name</span><input name="name" maxlength="200" required /></label>
+        </div>
+        <p role="status" aria-live="polite" data-template-message></p>
+        <div class="dialog-actions"><button type="button" class="button button-secondary" data-close-template>Cancel</button><button type="submit" class="button button-primary">Create client copy</button></div>
+      </form>
+    </dialog>
+
     <dialog class="document-preview-dialog" data-document-preview aria-labelledby="document-preview-title">
       <header class="document-preview-header">
         <div><p class="eyebrow">File preview</p><h2 id="document-preview-title" data-preview-title></h2></div>
@@ -823,8 +838,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="google-calendar.js?v=20261111-home-brief"></script>
     <script src="artist-workspace.js?v=20261111-home-brief"></script>
+    <script src="file-library.js?v=20261122-organized"></script>
     <script src="document-preview.js?v=20261122-pdf"></script>
-    <script src="portal.js?v=20261122-files"></script>
+    <script src="portal.js?v=20261122-organized"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>

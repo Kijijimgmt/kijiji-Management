@@ -268,6 +268,21 @@ const uploadDocument = async (input, identity) => {
   return mapDocument(page);
 };
 
+const copyTemplate = async (input, identity) => {
+  const validId = value => /^[a-f0-9-]{32,36}$/i.test(String(value || ''));
+  const sameSource = (page, source) => String(page.parent?.data_source_id || '').replaceAll('-','').toLowerCase() === source.replaceAll('-','').toLowerCase();
+  if (!validId(input.templateId) || !validId(input.clientId)) throw Object.assign(new Error('Choose a template and a client.'), {statusCode:400});
+  const template = await notionRequest(`/pages/${input.templateId}`);
+  if (!sameSource(template,DOCUMENTS_DATA_SOURCE_ID) || template.archived || template.in_trash || selectValue(template.properties?.Status)==='Archived' || selectValue(template.properties?.Category)!=='Template' || relationIds(template.properties?.Client).length) throw Object.assign(new Error('Choose an active master template from Team Templates.'),{statusCode:400});
+  const clientSource = String(process.env.NOTION_CLIENT_ROSTER_DATA_SOURCE_ID || '03c5f70c-fb49-4d09-9de8-7fb8a45a04c7');
+  const client = await notionRequest(`/pages/${input.clientId}`);
+  if (!sameSource(client,clientSource) || client.archived || client.in_trash || /^(archived|inactive)$/i.test(selectValue(client.properties?.Status))) throw Object.assign(new Error('Choose an active client.'),{statusCode:400});
+  const master = mapDocument(template);
+  const {trustedFileUrl,readFile} = require('./lib/_document-preview');
+  const bytes = await readFile(trustedFileUrl(master.fileUrl));
+  return uploadDocument({name:String(input.name || master.name).trim(),category:/invoice|royalt/i.test(master.name)?'Finance':'Operations',clientId:input.clientId,description:`Working copy of ${master.name}. Download to complete, then upload the completed version.`,filename:master.fileName,contentType:inferredType(master.fileName),base64:bytes.toString('base64')},identity);
+};
+
 module.exports = async (request, response) => {
   try {
     const identity = await verifyTeamAccess(request);
@@ -295,7 +310,7 @@ module.exports = async (request, response) => {
     }
     if (request.method === "POST") {
       const input = typeof request.body === "string" ? JSON.parse(request.body) : request.body || {};
-      json(response, 201, { document: await uploadDocument(input, identity) });
+      json(response, 201, { document: await (input.operation === "copy-template" ? copyTemplate(input, identity) : uploadDocument(input, identity)) });
       return;
     }
     response.setHeader("Allow", "GET, POST");

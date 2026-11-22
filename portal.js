@@ -166,6 +166,7 @@ let state = {
   authSession: null,
   teamUser: null,
   documentFolder: "all",
+  documentArea: "templates",
 };
 
 let calendarView = "month";
@@ -1186,49 +1187,46 @@ const renderCalendar = () => {
 
 const renderDocuments = () => {
   if (!els.documentList) return;
+  const library = window.KijijiFileLibrary;
   const query = String(els.documentSearch?.value || "").trim().toLowerCase();
   const category = els.documentCategory?.value || "all";
-  const folder = state.documentFolder || "all";
-  const activeClients = state.clients.filter(isActiveRecord);
-  const folderItems = [
-    { id: "all", name: "All Files", count: state.documents.length },
-    { id: "shared", name: "Shared Resources", count: state.documents.filter((item) => !item.clientIds?.length).length },
-    ...activeClients.map((client) => ({
-      id: client.id,
-      name: client.name,
-      count: state.documents.filter((item) => item.clientIds?.includes(client.id)).length,
-    })),
-  ];
-  if (els.documentFolders) {
-    els.documentFolders.innerHTML = folderItems.map((item) => `<button type="button" class="document-folder${folder === item.id ? " is-active" : ""}" data-document-folder="${escapeHtml(item.id)}" aria-pressed="${folder === item.id}">
-      <span><strong>${escapeHtml(item.name)}</strong><small>${state.documentsLoaded ? `${item.count} ${item.count === 1 ? "file" : "files"}` : "Not loaded"}</small></span>
-    </button>`).join("");
-  }
-  if (state.documentsError && !state.documentsLoaded) { els.documentBrandKit.hidden = true; } else renderClientBrandKit(folder);
-  const documents = state.documents.filter((document) => {
-    const matchesCategory = category === "all" || document.category === category;
-    const matchesFolder = folder === "all" || (folder === "shared" ? !document.clientIds?.length : document.clientIds?.includes(folder));
-    const clientName = document.clientIds?.length ? getClient(document.clientIds[0])?.name || "" : "Shared Resources";
-    const haystack = `${document.name} ${document.description} ${document.owner} ${document.category} ${clientName}`.toLowerCase();
-    return matchesCategory && matchesFolder && (!query || haystack.includes(query));
+  const area = state.documentArea || "templates";
+  const active = state.clients.filter(isActiveRecord);
+  const members = active.filter(client => area === "projects" ? isProjectClient(client) : !isProjectClient(client));
+  const folder = area === "templates" ? "all" : state.documentFolder || "all";
+  const areaFiles = state.documents.filter(file => area === "templates" ? !file.clientIds?.length : file.clientIds?.some(id => members.some(client => client.id === id)));
+  document.querySelectorAll('[data-files-area]').forEach(button => {
+    const selected = button.dataset.filesArea === area;
+    button.classList.toggle('is-active', selected); button.setAttribute('aria-pressed', String(selected));
   });
-  els.documentCount.textContent = state.documentsError && !state.documentsLoaded ? "File count unavailable" : `${documents.length} ${documents.length === 1 ? "file" : "files"}${state.documentsError ? " · saved view" : ""}`;
+  if (els.documentFolders) {
+    els.documentFolders.hidden = area === "templates";
+    els.documentFolders.innerHTML = area === "templates" ? "" : `<label class="file-folder-picker"><span>${area === "projects" ? "Project" : "Client"}</span><select data-files-folder><option value="all">${area === "projects" ? "All projects" : "All clients"}</option>${members.map(client => `<option value="${escapeHtml(client.id)}"${folder === client.id ? " selected" : ""}>${escapeHtml(client.name)}</option>`).join('')}</select></label>`;
+  }
+  if (state.documentsError && !state.documentsLoaded) els.documentBrandKit.hidden = true;
+  else renderClientBrandKit(area === "clients" && folder !== "all" ? folder : "");
+  const files = areaFiles.filter(file => {
+    const clientNames = (file.clientIds || []).map(id => getClient(id)?.name || "").join(' ');
+    return (category === "all" || file.category === category) && (folder === "all" || file.clientIds?.includes(folder)) && (!query || `${file.name} ${file.description} ${file.category} ${clientNames}`.toLowerCase().includes(query));
+  });
+  const groups = library.groups(files);
+  els.documentCount.textContent = state.documentsError && !state.documentsLoaded ? "File count unavailable" : `${groups.length} ${groups.length === 1 ? "document" : "documents"}${files.length !== groups.length ? ` · ${files.length} files` : ""}${state.documentsError ? " · saved view" : ""}`;
   let notice = document.querySelector('[data-files-status]');
   if (!notice) { notice = document.createElement('div'); notice.dataset.filesStatus = ''; notice.className = 'files-status'; notice.setAttribute('role','status'); els.documentList.before(notice); }
   notice.innerHTML = state.documentsError ? `<p><strong>${state.documentsLoaded ? "Showing the last loaded files." : "Files could not be loaded."}</strong> ${escapeHtml(state.documentsMessage || "Try loading again.")}</p><button type="button" class="button button-secondary" data-retry-files>Retry files</button>` : "";
-  if (!documents.length) {
+  if (!groups.length) {
     if (state.documentsError && !state.documentsLoaded) els.documentList.innerHTML = "";
-    else renderEmptyList(els.documentList, "No files found", state.documents.length ? "Try another search or category." : "Upload the first contract, template, or team resource.");
+    else renderEmptyList(els.documentList, "No documents found", query || category !== "all" ? "Try another search or category." : area === "templates" ? "Upload a blank template or team guide." : `Upload a file and choose its ${area === "projects" ? "project" : "client"}.`);
     return;
   }
-  els.documentList.innerHTML = documents.map((document) => {
-    const client = document.clientIds?.length ? getClient(document.clientIds[0]) : null;
-    return `<article class="document-card">
-      <div class="document-icon" aria-hidden="true">${escapeHtml((document.fileName || document.name).split(".").pop().slice(0, 4).toUpperCase())}</div>
-      <div class="document-copy"><span>${escapeHtml(document.category)}${client ? ` / ${escapeHtml(client.name)}` : ""}</span><h3 title="${escapeHtml(document.name)}">${escapeHtml(document.name)}</h3><small>Updated ${formatDate(String(document.updatedAt || "").slice(0, 10))}</small></div>
-      <div class="document-card-actions">${document.fileUrl ? `<button type="button" class="button button-secondary" data-preview-document="${escapeHtml(document.id)}" aria-label="Preview ${escapeHtml(document.name)}">Preview</button>` : ""}${document.fileUrl ? `<a class="text-action" href="${escapeHtml(document.fileUrl)}" target="_blank" rel="noreferrer">Download</a>` : ""}${document.notionUrl ? `<a class="text-action" href="${escapeHtml(document.notionUrl)}" target="_blank" rel="noreferrer">Open in Notion</a>` : ""}</div>
-    </article>`;
-  }).join("");
+  const row = group => {
+    const variants = [...group.variants].sort((a,b) => library.format(a).localeCompare(library.format(b)));
+    const primary = variants.find(file => library.format(file) === 'PDF') || variants[0];
+    const names = [...new Set(variants.flatMap(file => file.clientIds || []))].map(id => getClient(id)?.name).filter(Boolean).join(', ');
+    return `<article class="file-row"><div class="file-row-copy"><h3>${escapeHtml(group.name)}</h3>${names ? `<small>${escapeHtml(names)}</small>` : ''}</div><span class="file-row-formats">${escapeHtml(variants.map(library.format).join(' · '))}</span><div class="file-row-actions">${primary.fileUrl ? `<button type="button" class="text-action" data-preview-document="${escapeHtml(primary.id)}" aria-label="Preview ${escapeHtml(group.name)}">Preview</button>` : ''}<details class="file-download-menu"><summary>Download</summary><div>${variants.filter(file=>file.fileUrl).map(file=>`<a href="${escapeHtml(file.fileUrl)}" target="_blank" rel="noreferrer">${escapeHtml(library.format(file))}${library.format(file)==='Word'?' (editable)':''}</a>`).join('')}</div></details>${group.master && primary.fileUrl ? `<button type="button" class="text-action" data-use-template="${escapeHtml(group.id)}" aria-label="Use template ${escapeHtml(group.name)}">Use template</button>` : ''}</div></article>`;
+  };
+  const sections = [...library.sections,'Other Templates','Shared Resources','Files'].filter(section => groups.some(group=>group.section === section));
+  els.documentList.innerHTML = sections.map(section=>`<section class="file-workflow-group" aria-label="${escapeHtml(section)}">${area === "templates" ? `<h3 class="file-group-heading">${escapeHtml(section)}</h3>` : ''}${groups.filter(group=>group.section===section).map(row).join('')}</section>`).join('');
 };
 
 const getLatestClientDocument = (clientId, category) => [...state.documents]
@@ -1499,7 +1497,7 @@ const tourSteps = [
   { eyebrow: "Tasks", title: "Make the next action clear", description: "Open or add a task with a client, owner and due date. Attach the relevant contract or file. Use Needs Approval for a decision and Done when finished.", selector: "#actions", hash: "work" },
   { eyebrow: "Opportunities", title: "Track what Kijiji is pursuing", description: "Keep pitches, inquiries and deals here, separate from tasks. Open an opportunity to update its owner, stage and next action. Switch between pipeline and list views.", selector: "#opportunities", hash: "opportunities" },
   { eyebrow: "Calendar", title: "Check commitments and sync status", description: "Filter by client and check the last successful Google sync. Google events open for viewing; adding to a client’s calendar requires editing permission and setup. Internal Kijiji dates stay separate.", selector: "#calendar", hash: "calendar" },
-  { eyebrow: "Files", title: "Find the right document", description: "Under More → Files, choose a client folder for logos, brand guides and contracts. Keep reusable templates in Shared Resources. Tasks can link to these files.", selector: "#files", hash: "files" },
+  { eyebrow: "Files", title: "Find the right document", description: "Under More → Files, open Team Templates, Client Files or Project Files. Preview a document, choose a download format, or use a template to create a separate client copy. Tasks can link to these files.", selector: "#files", hash: "files" },
   { eyebrow: "Intake & reports", title: "Review what clients tell us", description: "Under More → Intake & reports, review Jotform answers and open the client’s shared strategy. The latest industry brief is on Home; earlier issues stay here.", selector: "#reports", hash: "reports" },
   { eyebrow: "You’re ready", title: "Help is always nearby", description: "Replay this tour from More → Help & onboarding. Check the bell for team updates and use Account to choose your appearance. Start each day on Home.", selector: ".nav-more", hash: "my-work" }
 ];
@@ -1919,6 +1917,8 @@ const openDocumentForm = ({ clientId = "", category = "", suggestedName = "" } =
   els.documentMessage.textContent = "";
   renderClientOptions(els.documentClientSelect);
   if (clientId) els.documentClientSelect.value = clientId;
+  else if (state.documentArea !== "templates" && getClient(state.documentFolder)) els.documentClientSelect.value = state.documentFolder;
+  if (!category && state.documentArea === "templates") category = "Template";
   if (category) setSelectValue(els.documentForm.elements.category, category);
   if (suggestedName) els.documentForm.elements.name.value = suggestedName;
   openDialog(els.documentDialog);
@@ -2169,7 +2169,7 @@ const handleDocumentSubmit = async (event) => {
   }
   submit.disabled = true;
   submit.textContent = "Uploading...";
-  els.documentMessage.textContent = "Securely uploading to the Kijiji Notion workspace...";
+  els.documentMessage.textContent = "Uploading your file securely...";
   try {
     const base64 = await fileToBase64(file);
     const response = await fetch(documentsEndpoint, { method: "POST", headers: getRequestHeaders(), body: JSON.stringify({ name: String(formData.get("name") || "").trim(), category: formData.get("category"), clientId: formData.get("clientId"), description: String(formData.get("description") || "").trim(), filename: file.name, contentType: file.type, base64 }) });
@@ -2252,6 +2252,7 @@ const handleAccessSubmit = async (event) => {
 
 async function logoutPortal() {
   filePreview?.clear();
+  if (templateDialog?.open) templateDialog.close();
   window.clearArtistWorkspace?.();
   window.clearGoogleCalendar?.();
   await supabaseClient?.auth?.signOut?.();
@@ -2272,6 +2273,7 @@ async function logoutPortal() {
     authSession: null,
     teamUser: null,
     documentFolder: "all",
+  documentArea: "templates",
   };
   document.querySelector('[data-home-team-meeting]')?.replaceChildren();
   setSourceBadge("signed-out", "Signed out");
@@ -2429,18 +2431,61 @@ els.actionList.addEventListener("click", (event) => {
 });
 
 const filePreview = window.KijijiDocumentPreview?.create({dialog: document.querySelector('[data-document-preview]'), getHeaders: getRequestHeaders});
+const templateDialog = document.querySelector('[data-template-dialog]');
+const templateForm = document.querySelector('[data-template-form]');
+const templateMessage = document.querySelector('[data-template-message]');
+let templateCopyBusy = false;
+const openTemplateCopy = groupId => {
+  const group = window.KijijiFileLibrary.groups(state.documents).find(item => item.id === groupId && item.master);
+  if (!group) return;
+  templateForm.reset(); templateMessage.textContent = '';
+  templateForm.elements.clientId.innerHTML = '<option value="">Choose a client</option>' + state.clients.filter(isActiveClient).map(client=>`<option value="${escapeHtml(client.id)}">${escapeHtml(client.name)}</option>`).join('');
+  templateForm.elements.templateId.innerHTML = [...group.variants].sort((a,b)=>(window.KijijiFileLibrary.format(a)==='Word'?-1:1)-(window.KijijiFileLibrary.format(b)==='Word'?-1:1)).map(file=>`<option value="${escapeHtml(file.id)}">${escapeHtml(window.KijijiFileLibrary.format(file))}</option>`).join('');
+  templateForm.dataset.baseName = group.name; templateForm.elements.name.value = group.name;
+  openDialog(templateDialog);
+};
+templateForm?.elements.clientId.addEventListener('change', () => {
+  const client = getClient(templateForm.elements.clientId.value);
+  templateForm.elements.name.value = client ? `${client.name} - ${templateForm.dataset.baseName}`.slice(0,200) : templateForm.dataset.baseName;
+});
+document.querySelectorAll('[data-close-template]').forEach(button=>button.addEventListener('click',()=>closeDialog(templateDialog)));
+templateDialog?.addEventListener('cancel', event => { if (templateCopyBusy) event.preventDefault(); });
+templateForm?.addEventListener('submit', async event => {
+  event.preventDefault(); if (templateCopyBusy) return;
+  const input = new FormData(templateForm), sessionEmail = state.teamUser?.email;
+  templateCopyBusy = true;
+  const submit = templateForm.querySelector('[type="submit"]');
+  templateForm.querySelectorAll('button,input,select').forEach(control=>control.disabled=true);
+  submit.textContent = 'Creating copy...'; templateMessage.textContent = '';
+  try {
+    const response = await fetch(documentsEndpoint,{method:'POST',headers:getRequestHeaders(),body:JSON.stringify({operation:'copy-template',templateId:input.get('templateId'),clientId:input.get('clientId'),name:input.get('name')})});
+    const data = await parseJsonResponse(response);
+    if (!response.ok) throw new Error(data.message || 'The template could not be copied.');
+    if (sessionEmail !== state.teamUser?.email) return;
+    if (!state.documents.some(file=>file.id===data.document.id)) state.documents.unshift(data.document);
+    state.documentArea='clients'; state.documentFolder=input.get('clientId'); els.documentCategory.value='all'; els.documentSearch.value='';
+    closeDialog(templateDialog); renderDocuments(); renderDetail();
+    const status = document.querySelector('[data-files-status]'); if(status) status.textContent='Client copy created. Download it to fill in, then upload the completed version.';
+  } catch(error) { if (sessionEmail === state.teamUser?.email) templateMessage.textContent=error.message; }
+  finally { templateCopyBusy=false; templateForm.querySelectorAll('button,input,select').forEach(control=>control.disabled=false); submit.textContent='Create client copy'; }
+});
 els.documentList?.addEventListener('click', event => {
+  const copy = event.target.closest('[data-use-template]');
+  if (copy) { openTemplateCopy(copy.dataset.useTemplate); return; }
   const trigger = event.target.closest('[data-preview-document]');
   if (!trigger) return;
   const file = state.documents.find(item => item.id === trigger.dataset.previewDocument);
   if (file) filePreview?.open(file, trigger);
 });
 
-els.documentFolders?.addEventListener("click", (event) => {
-  const folder = event.target.closest("[data-document-folder]");
-  if (!folder) return;
-  state.documentFolder = folder.dataset.documentFolder || "all";
-  renderDocuments();
+document.querySelector('[data-files-areas]')?.addEventListener('click', event => {
+  const button = event.target.closest('[data-files-area]'); if (!button) return;
+  state.documentArea = button.dataset.filesArea; state.documentFolder = 'all';
+  els.documentCategory.value = 'all'; renderDocuments();
+});
+els.documentFolders?.addEventListener('change', event => {
+  if (!event.target.matches('[data-files-folder]')) return;
+  state.documentFolder = event.target.value; renderDocuments();
 });
 
 els.documentBrandKit?.addEventListener("click", (event) => {
@@ -2706,6 +2751,7 @@ const initializeAuth = async () => {
     }
     if (event === "SIGNED_OUT") {
       filePreview?.clear();
+  if (templateDialog?.open) templateDialog.close();
       window.clearArtistWorkspace?.();
       window.clearGoogleCalendar?.();
       state.teamUser = null;
