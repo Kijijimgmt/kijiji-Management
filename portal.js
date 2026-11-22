@@ -1225,8 +1225,8 @@ const renderDocuments = () => {
     const client = document.clientIds?.length ? getClient(document.clientIds[0]) : null;
     return `<article class="document-card">
       <div class="document-icon" aria-hidden="true">${escapeHtml((document.fileName || document.name).split(".").pop().slice(0, 4).toUpperCase())}</div>
-      <div class="document-copy"><span>${escapeHtml(document.category)}${client ? ` / ${escapeHtml(client.name)}` : ""}</span><h3>${escapeHtml(document.name)}</h3><p>${escapeHtml(document.description || "Shared Kijiji resource")}</p><small>${escapeHtml(document.owner)} · Updated ${formatDate(String(document.updatedAt || "").slice(0, 10))}</small></div>
-      <div class="document-card-actions">${document.fileUrl ? `<a class="button button-primary" href="${escapeHtml(document.fileUrl)}" target="_blank" rel="noreferrer">Download</a>` : ""}${document.notionUrl ? `<a class="text-action" href="${escapeHtml(document.notionUrl)}" target="_blank" rel="noreferrer">Open in Notion</a>` : ""}</div>
+      <div class="document-copy"><span>${escapeHtml(document.category)}${client ? ` / ${escapeHtml(client.name)}` : ""}</span><h3 title="${escapeHtml(document.name)}">${escapeHtml(document.name)}</h3><small>Updated ${formatDate(String(document.updatedAt || "").slice(0, 10))}</small></div>
+      <div class="document-card-actions">${document.fileUrl ? `<button type="button" class="button button-secondary" data-preview-document="${escapeHtml(document.id)}" aria-label="Preview ${escapeHtml(document.name)}">Preview</button>` : ""}${document.fileUrl ? `<a class="text-action" href="${escapeHtml(document.fileUrl)}" target="_blank" rel="noreferrer">Download</a>` : ""}${document.notionUrl ? `<a class="text-action" href="${escapeHtml(document.notionUrl)}" target="_blank" rel="noreferrer">Open in Notion</a>` : ""}</div>
     </article>`;
   }).join("");
 };
@@ -1390,14 +1390,14 @@ const setErrorState = () => {
   ["[data-booking-snapshot]", "[data-booking-list]", "[data-recent-files]"].forEach((selector) => renderEmptyList($(selector), "Shared data unavailable", "Refresh to try again."));
 
   setSourceBadge("error", "Notion setup needed");
-  els.clientsMetric.textContent = "—";
-  els.todayMetric.textContent = "—";
-  els.overdueMetric.textContent = "—";
-  els.blockersMetric.textContent = "—";
-  els.myWorkTasksMetric.textContent = "—";
-  els.myWorkDealsMetric.textContent = "—";
-  els.myWorkEventsMetric.textContent = "—";
-  els.myWorkBlockersMetric.textContent = "—";
+  els.clientsMetric.textContent = "-";
+  els.todayMetric.textContent = "-";
+  els.overdueMetric.textContent = "-";
+  els.blockersMetric.textContent = "-";
+  els.myWorkTasksMetric.textContent = "-";
+  els.myWorkDealsMetric.textContent = "-";
+  els.myWorkEventsMetric.textContent = "-";
+  els.myWorkBlockersMetric.textContent = "-";
   if (els.approvalCount) els.approvalCount.textContent = "Unavailable";
   if (els.dailyPriority) {
     els.dailyPriority.innerHTML = `<div><p class="eyebrow">Your next move</p><strong>Shared data unavailable</strong><span>Reconnect Notion to restore your daily focus.</span></div>`;
@@ -2251,6 +2251,7 @@ const handleAccessSubmit = async (event) => {
 };
 
 async function logoutPortal() {
+  filePreview?.clear();
   window.clearArtistWorkspace?.();
   window.clearGoogleCalendar?.();
   await supabaseClient?.auth?.signOut?.();
@@ -2425,6 +2426,14 @@ els.actionList.addEventListener("click", (event) => {
       }
     }
   });
+});
+
+const filePreview = window.KijijiDocumentPreview?.create({dialog: document.querySelector('[data-document-preview]'), getHeaders: getRequestHeaders});
+els.documentList?.addEventListener('click', event => {
+  const trigger = event.target.closest('[data-preview-document]');
+  if (!trigger) return;
+  const file = state.documents.find(item => item.id === trigger.dataset.previewDocument);
+  if (file) filePreview?.open(file, trigger);
 });
 
 els.documentFolders?.addEventListener("click", (event) => {
@@ -2696,6 +2705,7 @@ const initializeAuth = async () => {
       await loadDashboard({ fromAuth: true });
     }
     if (event === "SIGNED_OUT") {
+      filePreview?.clear();
       window.clearArtistWorkspace?.();
       window.clearGoogleCalendar?.();
       state.teamUser = null;

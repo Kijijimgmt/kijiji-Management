@@ -1,7 +1,7 @@
 (() => {
   window.exportStrategy = (version, clientName, status, print = false) => {
     const escape = value => String(value || '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
-    const title = `${clientName} — Partner brief`;
+    const title = `${clientName} - Partner brief`;
     const date = new Date(version.created_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
     const sources = (version.citations || []).filter(item => /^https:\/\//.test(item.url));
     const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)}</title><style>

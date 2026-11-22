@@ -35,7 +35,7 @@
       })();
     </script>
     <link rel="stylesheet" href="portal.css?v=20261111-home-brief" />
-  <link rel="stylesheet" href="workspace-design.css?v=20261116-readability-2">
+  <link rel="stylesheet" href="workspace-design.css?v=20261122-files">
 </head>
   <body>
     <a class="skip-link" href="#portal-main">Skip to dashboard content</a>
@@ -134,9 +134,9 @@
   <div class="home-heading"><div><p class="eyebrow" data-my-work-eyebrow>Your daily rundown</p><h2 id="my-work-title" data-my-work-title>Welcome back.</h2><p data-my-work-subtitle>Here’s what needs your attention, what’s coming up, and what’s happening in the industry.</p></div><button class="button button-primary" type="button" data-open-action-form data-requires-access>Add task</button></div>
     <section class="home-card home-schedule-strip" aria-labelledby="today-schedule-title"><header><h3 id="today-schedule-title">Upcoming commitments</h3><a href="#calendar" class="text-action">Calendar →</a></header><div data-home-schedule></div><p data-home-calendar-status class="home-service-status" role="status"></p></section>
   <div class="home-stats">
-    <a href="#work" data-home-work-filter="open"><span>Open tasks</span><strong data-home-open>—</strong></a>
-    <a href="#work" data-home-work-filter="setup"><span>Need owner or date</span><strong data-home-setup>—</strong></a>
-    <a href="#decisions"><span>Needs approval</span><strong data-my-work-deals>—</strong></a>
+    <a href="#work" data-home-work-filter="open"><span>Open tasks</span><strong data-home-open>-</strong></a>
+    <a href="#work" data-home-work-filter="setup"><span>Need owner or date</span><strong data-home-setup>-</strong></a>
+    <a href="#decisions"><span>Needs approval</span><strong data-my-work-deals>-</strong></a>
   </div>
   <div class="home-columns"><div class="home-primary">
     <section class="home-card" id="attention" aria-labelledby="attention-title"><header><div><h3 id="attention-title">Next actions</h3><p>The next actions that need your attention.</p></div><label class="home-owner-label"><span class="sr-only">Filter focus by owner</span><select data-home-owner aria-label="Filter focus by owner"><option value="">Team work</option><option value="me">My work</option><option>Maxwell</option><option>Joe</option><option>Erik</option><option>Emad</option><option value="unassigned">Unassigned</option></select></label></header><div data-my-work-action-list></div><footer><a href="#work" class="text-action">All tasks →</a><a href="#opportunities" class="text-action">Opportunities →</a></footer></section>
@@ -792,6 +792,20 @@
       </form>
     </dialog>
 
+    <dialog class="document-preview-dialog" data-document-preview aria-labelledby="document-preview-title">
+      <header class="document-preview-header">
+        <div><p class="eyebrow">File preview</p><h2 id="document-preview-title" data-preview-title></h2></div>
+        <button type="button" class="icon-button" data-close-preview aria-label="Close preview">×</button>
+      </header>
+      <p class="document-preview-description" data-preview-description></p>
+      <div class="document-preview-content" data-preview-content aria-live="polite"></div>
+      <footer class="document-preview-footer">
+        <p data-preview-note></p>
+        <button type="button" class="button button-secondary" data-close-preview>Close</button>
+        <a class="button button-primary" data-preview-download target="_blank" rel="noreferrer" hidden>Download</a>
+      </footer>
+    </dialog>
+
     <div class="tour-overlay" data-tour-overlay hidden>
       <div class="tour-scrim" aria-hidden="true"></div>
       <section class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title" aria-describedby="tour-description">
@@ -809,7 +823,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="google-calendar.js?v=20261111-home-brief"></script>
     <script src="artist-workspace.js?v=20261111-home-brief"></script>
-    <script src="portal.js?v=20261116-industry-dates"></script>
+    <script src="document-preview.js?v=20261122-files"></script>
+    <script src="portal.js?v=20261122-files"></script>
     <script src="strategy-format.js?v=20261027-evidence"></script>
     <script src="strategy-export.js?v=20261027-download"></script>
   <script src="client-strategy.js?v=20261028-mobile-plan"></script>

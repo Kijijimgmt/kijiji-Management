@@ -272,6 +272,20 @@ module.exports = async (request, response) => {
   try {
     const identity = await verifyTeamAccess(request);
     if (request.method === "GET") {
+      if (request.query?.view === "preview") {
+        const id = String(request.query.id || "");
+        if (!/^[a-f0-9-]{32,36}$/i.test(id)) throw Object.assign(new Error("Choose a valid file."), { statusCode: 400 });
+        // Retrieve fresh signed links after authentication; never accept a file URL
+        // from the browser or let this endpoint read an unrelated client record.
+        const page = await notionRequest(`/pages/${id}`);
+        const parent = String(page.parent?.data_source_id || "").replaceAll("-", "").toLowerCase();
+        if (parent !== DOCUMENTS_DATA_SOURCE_ID.replaceAll("-", "").toLowerCase() || page.archived || page.in_trash || selectValue(page.properties?.Status) === "Archived") {
+          throw Object.assign(new Error("This file is not available in the shared library."), { statusCode: 404 });
+        }
+        const { previewFile } = require("./lib/_document-preview");
+        json(response, 200, await previewFile(mapDocument(page)));
+        return;
+      }
       if (request.query?.view === "insights") {
         json(response, 200, await listInsights());
         return;

@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
 function handler(fetch, verify=async()=>({email:'joe@kijijimgmt.com'})) {
- const context={module:{exports:{}},require:(name)=>name.includes("_portal-storage")?{enabled:()=>false}:{verifyTeamAccess:verify},process:{env:{NOTION_TOKEN:'test'}},fetch,Response,FormData,AbortSignal,URL,Buffer,Blob,console:{error(){}},Set};
+ const context={module:{exports:{}},require:(name)=>name.includes("_portal-storage")?{enabled:()=>false}:name.includes("_document-preview")?{previewFile:async doc=>({kind:"pdf",downloadUrl:doc.fileUrl})}:{verifyTeamAccess:verify},process:{env:{NOTION_TOKEN:'test'}},fetch,Response,FormData,AbortSignal,URL,Buffer,Blob,console:{error(){}},Set};
  vm.runInNewContext(fs.readFileSync(require.resolve('../api/notion-documents'),'utf8'),context);
  return context.module.exports;
 }
@@ -24,4 +24,16 @@ test('a failed file page returns an error rather than a partial or empty success
 test('unauthorized file requests never reach Notion',async()=>{
  let called=false;const run=handler(async()=>{called=true},async()=>{throw Object.assign(new Error('Sign in'),{statusCode:401})});
  const r=response();await run({method:'GET'},r);assert.equal(r.statusCode,401);assert.equal(called,false);
+});
+
+test('preview rejects pages outside the document library before exposing their contents',async()=>{
+ const run=handler(async()=>new Response(JSON.stringify({id:'11111111-1111-4111-8111-111111111111',parent:{data_source_id:'wrong-source'},properties:{}})));
+ const r=response();await run({method:'GET',query:{view:'preview',id:'11111111-1111-4111-8111-111111111111'}},r);assert.equal(r.statusCode,404);
+});
+test('preview rejects invalid identifiers before any storage request',async()=>{
+ let called=false;const run=handler(async()=>{called=true;});const r=response();await run({method:'GET',query:{view:'preview',id:'../secret'}},r);assert.equal(r.statusCode,400);assert.equal(called,false);
+});
+test('authorized preview retrieves a fresh document link and disables caching',async()=>{
+ const run=handler(async()=>new Response(JSON.stringify({id:'11111111-1111-4111-8111-111111111111',parent:{data_source_id:'8ba38a00-a408-44c9-befe-293359292f75'},properties:{File:{files:[{name:'contract.pdf',type:'file',file:{url:'https://example.test/fresh'}}]}}})));
+ const r=response();await run({method:'GET',query:{view:'preview',id:'11111111-1111-4111-8111-111111111111'}},r);assert.equal(r.statusCode,200);assert.equal(r.body.downloadUrl,'https://example.test/fresh');assert.equal(r.headers['Cache-Control'],'private, no-store');
 });
