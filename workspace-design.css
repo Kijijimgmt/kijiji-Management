@@ -178,3 +178,9 @@ html[data-theme="dark"] .button-primary{color:#20241f}
  .file-group-heading { margin-bottom:4px; }
  .file-download-menu[open]>div { right:auto; left:0; }
 }
+@media(max-width:600px) {
+ .document-library .section-header { align-items:stretch; }
+ .document-library .section-actions.document-actions { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); width:100%; align-items:end; }
+ .document-actions label,.document-actions input,.document-actions select { width:100%; min-width:0; box-sizing:border-box; }
+ .document-actions>button { grid-column:1/-1; width:100%; }
+}
