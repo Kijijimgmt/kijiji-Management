@@ -41,7 +41,7 @@
         const url=new URL(result.downloadUrl);if(url.protocol!=='https:')throw Error('This download link is unavailable.');
         download.href=url.href;download.hidden=false;content.replaceChildren();
         if(result.kind==='pdf'){
-          const frame=document.createElement('iframe');frame.title=`Preview of ${display(result.name)}`;frame.src=url.href+'#view=FitH';frame.referrerPolicy='no-referrer';frame.setAttribute('sandbox','allow-scripts allow-same-origin');content.append(frame);
+          const frame=document.createElement('iframe');frame.title=`Preview of ${display(result.name)}`;frame.src=url.href+'#view=FitH';frame.referrerPolicy='no-referrer';content.append(frame);
           note.textContent='PDF preview. If your browser cannot display it, use Download.';
         }else if(result.kind==='image'){
           const img=document.createElement('img');img.alt=display(result.name);img.src=url.href;img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{if(current===sequence)message('The image could not be displayed. Use Download to open the original.');});content.append(img);
