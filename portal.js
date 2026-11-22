@@ -477,7 +477,7 @@ const getPortalErrorMessage = (response, data) => {
   }
 
   if (response.status >= 500) {
-    return "Your sign-in worked, but the Notion operating system could not load. Check the Notion token and database sharing.";
+    return "Your sign-in worked, but dashboard data could not load. Try again or ask Max to check the dashboard connection.";
   }
 
   return data?.message || "The dashboard could not load. Try again or check the portal configuration.";
@@ -1642,7 +1642,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
   setSourceBadge("loading", fromAuth ? "Verifying" : "Syncing Notion");
 
   if (fromAuth) {
-    showAccessPanel("Verifying your Kijiji session and syncing Notion...", "info");
+    showAccessPanel("Verifying your Kijiji session and loading your workspace...", "info");
     setAccessBusy(true);
   } else {
     showDashboard();
