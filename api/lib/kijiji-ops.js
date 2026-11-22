@@ -1,3 +1,4 @@
+const portalStorage = require("./_portal-storage");
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
 const NOTION_VERSION = process.env.NOTION_VERSION || "2026-03-11";
 const DEFAULT_DATA_SOURCES = {
@@ -17,7 +18,9 @@ const dataSources = {
   actions: normalizeId(process.env.NOTION_ACTIONS_DATA_SOURCE_ID || DEFAULT_DATA_SOURCES.actions),
   opportunities: normalizeId(process.env.NOTION_OPPORTUNITIES_DATA_SOURCE_ID || DEFAULT_DATA_SOURCES.opportunities),
   events: normalizeId(process.env.NOTION_EVENTS_DATA_SOURCE_ID || DEFAULT_DATA_SOURCES.events),
-  activity: normalizeId(process.env.NOTION_ACTIVITY_LOG_DATA_SOURCE_ID),
+  activity: portalStorage.enabled()
+    ? normalizeId(process.env.PORTAL_ACTIVITY_SOURCE_ID || "bf8b5ba5-3f54-4759-b00d-ffca068f6ea3")
+    : normalizeId(process.env.NOTION_ACTIVITY_LOG_DATA_SOURCE_ID),
 };
 
 const optionalBooleans = {
@@ -33,6 +36,7 @@ const optionalBooleans = {
 };
 
 const notionRequest = async (path, options = {}, timeoutMs = 4000) => {
+  if (portalStorage.enabled()) return portalStorage.storageRequest(path, options);
   if (!NOTION_TOKEN) {
     const error = new Error("Notion integration token is not configured.");
     error.statusCode = 503;
@@ -88,6 +92,7 @@ const urlProperty = (value) => ({ url: value ? String(value).slice(0, 2000) : nu
 const chooseSchemaKey = (schema, aliases, expectedType) => {
   const exact = aliases.find((alias) => Object.prototype.hasOwnProperty.call(schema || {}, alias));
   if (exact) return exact;
+  if (portalStorage.enabled()) return "";
   return Object.entries(schema || {}).find(([, property]) => property?.type === expectedType)?.[0] || "";
 };
 
@@ -161,13 +166,13 @@ const writeGuardError = (message) => {
 };
 
 const assertWritesAllowed = () => {
-  if (process.env.DISABLE_NOTION_WRITES === "true") {
-    throw writeGuardError("Notion writes are disabled for this deployment.");
+  if (process.env.DISABLE_PORTAL_WRITES === "true" || process.env.DISABLE_NOTION_WRITES === "true") {
+    throw writeGuardError("Dashboard writes are disabled for this deployment.");
   }
 
-  if (process.env.VERCEL_ENV === "preview" && process.env.ALLOW_PREVIEW_NOTION_WRITES !== "true") {
+  if (process.env.VERCEL_ENV === "preview" && (portalStorage.enabled() ? process.env.ALLOW_PREVIEW_PORTAL_WRITES : process.env.ALLOW_PREVIEW_NOTION_WRITES) !== "true") {
     throw writeGuardError(
-      "Preview deployment writes are disabled. Point Preview environment variables at staging Notion data sources before enabling ALLOW_PREVIEW_NOTION_WRITES."
+      "Preview deployment writes are disabled. Use separate staging storage before enabling preview writes."
     );
   }
 };
@@ -230,6 +235,7 @@ const redactSourceStatus = (value) => (value ? "configured" : "missing");
 
 const getEnvironmentSummary = () => ({
   timestamp: new Date().toISOString(),
+  dataBackend: portalStorage.enabled() ? "supabase" : "notion",
   environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "local",
   checks: {
     ...optionalBooleans,
@@ -240,8 +246,8 @@ const getEnvironmentSummary = () => ({
       events: redactSourceStatus(dataSources.events),
       activity: redactSourceStatus(dataSources.activity),
     },
-    previewWritesAllowed: process.env.VERCEL_ENV === "preview" && process.env.ALLOW_PREVIEW_NOTION_WRITES === "true",
-    writesDisabled: process.env.DISABLE_NOTION_WRITES === "true",
+    previewWritesAllowed: process.env.VERCEL_ENV === "preview" && (portalStorage.enabled() ? process.env.ALLOW_PREVIEW_PORTAL_WRITES : process.env.ALLOW_PREVIEW_NOTION_WRITES) === "true",
+    writesDisabled: process.env.DISABLE_PORTAL_WRITES === "true" || process.env.DISABLE_NOTION_WRITES === "true",
   },
 });
 
@@ -297,7 +303,7 @@ const getDeepHealth = async () => {
   const requiredSourcesOk = sources.filter((source) => source.label !== "activity").every((source) => source.ok);
   const supabaseAuthReady = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY);
   const passcodeFallbackReady = Boolean(process.env.ALLOW_PORTAL_CODE_FALLBACK === "true" && process.env.PORTAL_ACCESS_CODE);
-  const requiredEnvOk = Boolean(NOTION_TOKEN && (supabaseAuthReady || passcodeFallbackReady));
+  const requiredEnvOk = Boolean((portalStorage.enabled() ? process.env.SUPABASE_SERVICE_ROLE_KEY : NOTION_TOKEN) && (supabaseAuthReady || passcodeFallbackReady));
 
   return {
     ...getEnvironmentSummary(),
@@ -305,6 +311,7 @@ const getDeepHealth = async () => {
     deep: true,
     notionSources: sources,
     required: {
+      storageConfigured: portalStorage.enabled() ? Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) : Boolean(NOTION_TOKEN),
       notionToken: Boolean(NOTION_TOKEN),
       supabaseAuth: supabaseAuthReady,
       portalAccessCodeFallback: passcodeFallbackReady,

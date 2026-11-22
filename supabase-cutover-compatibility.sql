@@ -1,0 +1,14 @@
+begin;
+-- Complete explicitly named writable fields; never route a missing field into
+-- an unrelated property merely because it has the same underlying type.
+update public.portal_sources set payload=jsonb_set(payload,'{properties}',(payload->'properties') || '{"Notes":{"name":"Notes","type":"rich_text"},"Client Name":{"name":"Client Name","type":"rich_text"}}'::jsonb) where kind='actions';
+update public.portal_sources set payload=jsonb_set(payload,'{properties}',(payload->'properties') || '{"Priority":{"name":"Priority","type":"select"},"Client Name":{"name":"Client Name","type":"rich_text"},"Lead Source":{"name":"Lead Source","type":"select"},"Contact Email":{"name":"Contact Email","type":"email"},"Contact Phone":{"name":"Contact Phone","type":"phone_number"},"Client Type":{"name":"Client Type","type":"multi_select"},"Services Needed":{"name":"Services Needed","type":"multi_select"},"Submitted At":{"name":"Submitted At","type":"date"}}'::jsonb) where kind='opportunities';
+update public.portal_sources set payload=jsonb_set(payload,'{properties}',(payload->'properties') || '{"Client Name":{"name":"Client Name","type":"rich_text"}}'::jsonb) where kind='events';
+do $guard$ begin
+ if exists(select 1 from public.portal_records where source_id='4bf7373c-c744-4fe3-854e-ff0470954497' and jsonb_array_length(coalesce(payload#>'{properties,Type,multi_select}','[]'))>1) then raise exception 'Review multi-valued event types';end if;
+end $guard$;
+update public.portal_records set payload=jsonb_set(payload,'{properties,Type}',jsonb_build_object('type','select','select',case when payload#>>'{properties,Type,multi_select,0,name}' is null then 'null'::jsonb else jsonb_build_object('name',payload#>>'{properties,Type,multi_select,0,name}') end)) where source_id='4bf7373c-c744-4fe3-854e-ff0470954497' and payload#>>'{properties,Type,type}'='multi_select';
+update public.portal_sources set payload=jsonb_set(payload,'{properties,Type}', '{"name":"Type","type":"select"}'::jsonb) where kind='events';
+insert into public.portal_sources(id,kind,payload) values('17891f32-2874-492d-a6f6-67bdcefd4333','briefs','{"object":"data_source","id":"17891f32-2874-492d-a6f6-67bdcefd4333","properties":{"Brief":{"type":"title"},"Issue Date":{"type":"date"},"Status":{"type":"select"},"Executive Summary":{"type":"rich_text"},"Key Moves":{"type":"rich_text"},"Watchlist":{"type":"rich_text"},"Report URL":{"type":"url"}},"_migration":{"initialized_empty":true,"reason":"Industry brief content was not included in supplied exports."}}') on conflict(id) do nothing;
+update public.portal_storage_state set verification=verification || jsonb_build_object('compatibility_adjustments',jsonb_build_object('event_types_normalized',true,'explicit_task_notes',true,'explicit_lead_fields',true,'brief_source_initialized_empty',true,'at',now())) where id=true;
+commit;

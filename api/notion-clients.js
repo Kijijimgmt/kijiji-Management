@@ -1,3 +1,4 @@
+const portalStorage = require("./lib/_portal-storage");
 const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
 const { notifyPartners } = require("./lib/partner-notifications");
 const {
@@ -62,6 +63,7 @@ const getNotionFailureMessage = (status, details) => {
 };
 
 const notionRequest = async (path, options = {}) => {
+  if (portalStorage.enabled()) return portalStorage.storageRequest(path, options);
   if (!NOTION_TOKEN) {
     const error = new Error("Notion integration token is not configured in Vercel.");
     error.statusCode = 503;
@@ -186,6 +188,8 @@ const chooseSchemaKey = (schema, aliases, expectedType) => {
   if (match) {
     return match;
   }
+
+  if (portalStorage.enabled()) return "";
 
   const typeMatch = expectedType ? entries.find(([, value]) => value?.type === expectedType)?.[0] : "";
   return typeMatch || match || "";
@@ -719,7 +723,7 @@ const clientProperties = (client, schema) => {
   assignProperty(properties, schema, ["Focus Level", "Focus", "Priority"], "select", select, client.focusLevel);
   assignProperty(properties, schema, ["Progress", "Project Progress"], "number", number, Math.max(0, Math.min(100, client.progress)));
   assignProperty(properties, schema, ["Last Touch", "Last Contact", "Updated"], "date", date, client.lastTouch);
-  assignProperty(properties, schema, ["Next Date", "Due Date"], "date", date, client.dueDate);
+  assignProperty(properties, schema, ["Next Action Date", "Next Date", "Due Date"], "date", date, client.dueDate);
   assignProperty(properties, schema, ["Contact Email", "Email"], "email", email, client.email);
   assignProperty(properties, schema, ["Contact Phone", "Phone"], "phone_number", phoneNumber, client.phone);
   assignProperty(properties, schema, ["Lead Source", "Source"], "select", select, client.leadSource);
@@ -757,7 +761,7 @@ const opportunityProperties = (opportunity, schema) => {
   assignProperty(properties, schema, ["Stage", "Status", "Pipeline Stage"], "select", select, opportunity.stage);
   assignProperty(properties, schema, ["Owner", "Assigned Owner"], "select", select, opportunity.owner || "Unassigned");
   assignProperty(properties, schema, ["Priority", "Urgency"], "select", select, opportunity.priority);
-  assignProperty(properties, schema, ["Next Action Date", "Next Date", "Close Date", "Due Date", "Target Date"], "date", date, opportunity.dueDate);
+  assignProperty(properties, schema, ["Next Follow-up", "Next Action Date", "Next Date", "Close Date", "Due Date", "Target Date"], "date", date, opportunity.dueDate);
   assignProperty(properties, schema, ["Blocker", "Blocked", "Is Blocker"], "checkbox", checkbox, opportunity.blocker);
   assignProperty(properties, schema, ["Next Step", "Next Move", "Next Action", "Notes"], "rich_text", richText, opportunity.nextStep);
 
@@ -771,12 +775,12 @@ const opportunityProperties = (opportunity, schema) => {
 const eventProperties = (event, schema) => {
   const properties = {};
 
-  assignProperty(properties, schema, ["Event", "Release", "Name", "Title"], "title", title, event.name);
+  assignProperty(properties, schema, ["Event / Release", "Event", "Release", "Name", "Title"], "title", title, event.name);
   assignProperty(properties, schema, ["Type", "Event Type", "Release Type"], "select", select, event.type);
   assignProperty(properties, schema, ["Status", "Event Status"], "select", select, event.status);
   assignProperty(properties, schema, ["Owner", "Lead"], "select", select, event.owner || "Unassigned");
   assignProperty(properties, schema, ["Date", "Release Date", "Event Date"], "date", date, event.date);
-  assignProperty(properties, schema, ["Notes", "Details"], "rich_text", richText, event.notes);
+  assignProperty(properties, schema, ["Next Step", "Notes", "Details"], "rich_text", richText, event.notes);
 
   assignClientRelation(properties, schema, event.clientId);
 
@@ -799,7 +803,7 @@ const listDashboard = async () => {
     opportunities: opportunityPages.map(mapPageToOpportunity),
     events: eventPages.map(mapPageToEvent),
     source: {
-      type: "notion",
+      type: portalStorage.enabled() ? "supabase" : "notion",
       notionVersion: NOTION_VERSION,
       dataSources,
     },

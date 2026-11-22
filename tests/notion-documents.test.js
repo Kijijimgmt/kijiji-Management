@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
 function handler(fetch, verify=async()=>({email:'joe@kijijimgmt.com'})) {
- const context={module:{exports:{}},require:()=>({verifyTeamAccess:verify}),process:{env:{NOTION_TOKEN:'test'}},fetch,Response,FormData,AbortSignal,URL,Buffer,Blob,console:{error(){}},Set};
+ const context={module:{exports:{}},require:(name)=>name.includes("_portal-storage")?{enabled:()=>false}:{verifyTeamAccess:verify},process:{env:{NOTION_TOKEN:'test'}},fetch,Response,FormData,AbortSignal,URL,Buffer,Blob,console:{error(){}},Set};
  vm.runInNewContext(fs.readFileSync(require.resolve('../api/notion-documents'),'utf8'),context);
  return context.module.exports;
 }

@@ -1,3 +1,4 @@
+const portalStorage = require("./lib/_portal-storage");
 const { notifyEventReminder } = require("./lib/partner-notifications");
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
@@ -25,6 +26,7 @@ const assertCronAccess = (request) => {
 };
 
 const notionRequest = async (path, options = {}) => {
+  if (portalStorage.enabled()) return portalStorage.storageRequest(path, options);
   if (!NOTION_TOKEN) throw Object.assign(new Error("Notion is not configured."), { statusCode: 503 });
   const response = await fetch(`https://api.notion.com/v1${path}`, {
     ...options,

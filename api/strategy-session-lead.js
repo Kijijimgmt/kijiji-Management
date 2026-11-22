@@ -1,3 +1,4 @@
+const portalStorage = require("./lib/_portal-storage");
 const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://vaqgriohhcccvvxgkhgh.supabase.co";
@@ -376,6 +377,7 @@ const getNotionFailureMessage = (status, details) => {
 };
 
 const notionRequest = async (path, options = {}) => {
+  if (portalStorage.enabled()) return portalStorage.storageRequest(path, options);
   if (!NOTION_TOKEN) {
     const error = new Error("Notion integration token is not configured in Vercel.");
     error.statusCode = 503;
@@ -412,7 +414,7 @@ const propertyByAliases = (schema, aliases) => aliases.find((alias) => Object.pr
 
 const firstSchemaType = (schema, type) => Object.entries(schema || {}).find(([, property]) => property?.type === type)?.[0] || "";
 
-const chooseSchemaKey = (schema, aliases, expectedType) => propertyByAliases(schema, aliases) || firstSchemaType(schema, expectedType);
+const chooseSchemaKey = (schema, aliases, expectedType) => propertyByAliases(schema, aliases) || (portalStorage.enabled() ? "" : firstSchemaType(schema, expectedType));
 
 const title = (value) => ({
   title: value ? [{ text: { content: String(value).slice(0, 2000) } }] : [],

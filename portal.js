@@ -1698,7 +1698,7 @@ const loadDashboard = async ({ fromAuth = false } = {}) => {
       ? state.selectedClientId
       : state.clients[0]?.id || "";
     state.isLoading = false;
-    setSourceBadge("ready", state.teamUser?.fullName ? `${state.teamUser.fullName} / Notion synced` : "Synced with Notion");
+    setSourceBadge("ready", state.teamUser?.fullName ? `${state.teamUser.fullName} / ${data.source?.type === "supabase" ? "Supabase" : "Notion"} synced` : "Dashboard synced");
     setAccessMessage("");
     showDashboard();
     renderPortal();

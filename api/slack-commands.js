@@ -1,3 +1,4 @@
+const portalStorage = require("./lib/_portal-storage");
 const crypto = require("crypto");
 const { assertWritesAllowed, logActivity } = require("./lib/kijiji-ops");
 
@@ -256,6 +257,7 @@ const propertyForType = (schemaType, fallbackFactory, value) => {
 const chooseSchemaKey = (schema, aliases, expectedType) => {
   const exact = aliases.find((alias) => Object.prototype.hasOwnProperty.call(schema || {}, alias));
   if (exact) return exact;
+  if (portalStorage.enabled()) return "";
   return Object.entries(schema || {}).find(([, value]) => value?.type === expectedType)?.[0] || "";
 };
 
@@ -274,6 +276,7 @@ const assignClientRelation = (properties, schema, client) => {
 };
 
 const notionRequest = async (path, options = {}) => {
+  if (portalStorage.enabled()) return portalStorage.storageRequest(path, options);
   if (!NOTION_TOKEN) {
     const error = new Error("NOTION_TOKEN is not configured in Vercel.");
     error.statusCode = 503;

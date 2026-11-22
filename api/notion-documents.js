@@ -1,3 +1,4 @@
+const portalStorage = require("./lib/_portal-storage");
 const { verifyTeamAccess } = require("./lib/kijiji-auth");
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN || process.env.NOTION_API_KEY;
@@ -37,6 +38,7 @@ const json = (response, statusCode, body) => {
 };
 
 const notionRequest = async (path, options = {}) => {
+  if (portalStorage.enabled()) return portalStorage.storageRequest(path, options);
   if (!NOTION_TOKEN) {
     const error = new Error("Document storage is not configured.");
     error.statusCode = 503;
@@ -185,7 +187,7 @@ const fetchIndustryBriefs = async () => {
 const listInsights = async () => {
   const [jotformResult, briefsResult] = await Promise.allSettled([fetchJotformSubmissions(), fetchIndustryBriefs()]);
   const jotform = jotformResult.status === "fulfilled" ? jotformResult.value : { submissions: [], configured: Boolean(JOTFORM_API_KEY), error: jotformResult.reason?.message };
-  const industry = briefsResult.status === "fulfilled" ? briefsResult.value : { briefs: [], configured: Boolean(NOTION_TOKEN), error: briefsResult.reason?.message };
+  const industry = briefsResult.status === "fulfilled" ? briefsResult.value : { briefs: [], configured: portalStorage.enabled() || Boolean(NOTION_TOKEN), error: briefsResult.reason?.message };
   return {
     submissions: jotform.submissions, briefs: industry.briefs,
     integrations: {
@@ -226,6 +228,12 @@ const uploadDocument = async (input, identity) => {
     throw error;
   }
 
+  let file;
+  if (portalStorage.enabled()) {
+    // Check migration readiness before uploading any bytes.
+    await notionRequest(`/data_sources/${DOCUMENTS_DATA_SOURCE_ID}`);
+    file = await portalStorage.uploadFile(bytes, filename, contentType);
+  } else {
   const upload = await notionRequest("/file_uploads", {
     method: "POST",
     body: JSON.stringify({ mode: "single_part", filename, content_type: contentType }),
@@ -234,14 +242,18 @@ const uploadDocument = async (input, identity) => {
   form.append("file", new Blob([bytes], { type: contentType }), filename);
   await notionRequest(`/file_uploads/${upload.id}/send`, { method: "POST", body: form });
 
-  const page = await notionRequest("/pages", {
+    file = { name: filename, type: "file_upload", file_upload: { id: upload.id } };
+  }
+
+  let page;
+  try { page = await notionRequest("/pages", {
     method: "POST",
     body: JSON.stringify({
       parent: { type: "data_source_id", data_source_id: DOCUMENTS_DATA_SOURCE_ID },
       properties: {
         Document: { title: [{ text: { content: String(input.name || filename).slice(0, 200) } }] },
         Category: { select: { name: String(input.category || "Other").slice(0, 100) } },
-        File: { files: [{ name: filename, type: "file_upload", file_upload: { id: upload.id } }] },
+        File: { files: [file] },
         Description: { rich_text: input.description ? [{ text: { content: String(input.description).slice(0, 1000) } }] : [] },
         Owner: { rich_text: [{ text: { content: String(identity.fullName || identity.email || "Kijiji team").slice(0, 200) } }] },
         Status: { select: { name: "Active" } },
@@ -249,6 +261,10 @@ const uploadDocument = async (input, identity) => {
       },
     }),
   });
+  } catch (error) {
+    if (file?.portal_file) await portalStorage.removeFile(file).catch(() => {});
+    throw error;
+  }
   return mapDocument(page);
 };
 
