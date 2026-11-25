@@ -167,18 +167,27 @@ const getStrategySubmission = async (id) => {
 const fetchIndustryBriefs = async () => {
   const data = await notionRequest(`/data_sources/${INDUSTRY_BRIEFS_DATA_SOURCE_ID}/query`, {
     method: "POST",
-    body: JSON.stringify({ page_size: 25, sorts: [{ property: "Issue Date", direction: "descending" }] }),
+    body: JSON.stringify({ page_size: 25, filter: { property: "Status", select: { equals: "Published" } }, sorts: [{ property: "Issue Date", direction: "descending" }] }),
   });
   return {
     configured: true,
-    briefs: data.results.filter((item) => item.object === "page").map((page) => {
+    briefs: data.results.filter((item) => item.object === "page" && selectValue(item.properties?.Status) === "Published").map((page) => {
       const properties = page.properties || {};
       return {
         id: page.id, title: textValue(properties.Brief) || "Kijiji Music Industry Brief",
         issueDate: properties["Issue Date"]?.date?.start || page.created_time,
         status: selectValue(properties.Status) || "Published",
         summary: textValue(properties["Executive Summary"]), keyMoves: textValue(properties["Key Moves"]),
-        watchlist: textValue(properties.Watchlist), reportUrl: properties["Report URL"]?.url || page.url, notionUrl: page.url,
+        watchlist: textValue({ rich_text: (properties.Watchlist?.rich_text || []).filter((entry) => !entry.href && !entry.text?.link?.url) }).trim(),
+        sources: (properties.Watchlist?.rich_text || []).flatMap((entry) => {
+          try {
+            const url = new URL(entry.href || entry.text?.link?.url);
+            return url.protocol === "https:" ? [{ label: entry.plain_text || entry.text?.content || url.hostname, url: url.href }] : [];
+          } catch {
+            return [];
+          }
+        }),
+        reportUrl: properties["Report URL"]?.url || page.url, notionUrl: page.url,
       };
     }),
   };

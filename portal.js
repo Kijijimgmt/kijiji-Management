@@ -1272,7 +1272,7 @@ const renderHomeIndustry = () => {
   }
   let reportUrl = '';
   try { const url = new URL(brief.reportUrl || brief.notionUrl); if (url.protocol === 'https:') reportUrl = url.href; } catch {}
-  target.innerHTML = `<article class="home-news-brief"><p class="eyebrow">Latest saved brief · ${escapeHtml(formatDate(String(brief.issueDate || '').slice(0,10)))}</p><h4>${escapeHtml(brief.title || 'Kijiji Music Industry Brief')}</h4><p>${escapeHtml(brief.summary || 'Open the full report for the latest industry updates.')}</p>${brief.keyMoves ? `<div class="home-news-takeaway"><strong>What to watch</strong><p>${escapeHtml(brief.keyMoves)}</p></div>` : ''}<a class="text-action" href="${escapeHtml(reportUrl || '#reports')}" ${reportUrl ? 'target="_blank" rel="noopener noreferrer"' : ''}>Open full report →</a></article>`;
+  target.innerHTML = `<article class="home-news-brief"><p class="eyebrow">Latest saved brief · ${escapeHtml(formatDate(String(brief.issueDate || '').slice(0,10)))}</p><h4>${escapeHtml(brief.title || 'Kijiji Music Industry Brief')}</h4><p>${escapeHtml(brief.summary || 'Open the full report for the latest industry updates.')}</p>${brief.keyMoves ? `<div class="home-news-takeaway"><strong>What to watch</strong><p>${escapeHtml(brief.keyMoves)}</p></div>` : ''}<a class="text-action" href="${escapeHtml(reportUrl || '#reports')}" ${reportUrl ? 'target="_blank" rel="noopener noreferrer"' : ''}>${reportUrl ? 'Open full report' : 'Read brief and sources'} →</a></article>`;
 };
 
 const renderReports = () => {
@@ -1314,7 +1314,8 @@ const renderReports = () => {
       <p>${escapeHtml(brief.summary || "Weekly music-industry intelligence for the Kijiji team.")}</p>
       ${brief.keyMoves ? `<div><strong>Key moves</strong><span>${escapeHtml(brief.keyMoves)}</span></div>` : ""}
       ${brief.watchlist ? `<div><strong>Watchlist</strong><span>${escapeHtml(brief.watchlist)}</span></div>` : ""}
-      <a class="text-action" href="${escapeHtml(brief.reportUrl || brief.notionUrl)}" target="_blank" rel="noreferrer">Open full brief →</a>
+      ${brief.sources?.length ? `<ul aria-label="Sources">${brief.sources.map(source => `<li><a class="text-action" href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.label)}</a></li>`).join('')}</ul>` : ""}
+      ${brief.reportUrl || brief.notionUrl ? `<a class="text-action" href="${escapeHtml(brief.reportUrl || brief.notionUrl)}" target="_blank" rel="noreferrer">Open full brief →</a>` : ""}
     </article>`).join("");
   }
 };
