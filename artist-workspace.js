@@ -5,7 +5,7 @@
   const profileLinks = { website: "Website", instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube", spotify: "Spotify", appleMusic: "Apple Music" };
   window.clearArtistWorkspace = () => cache.clear();
   window.refreshArtistWorkspace = () => cache.forEach((data) => { data.loadedAt = 1; });
-  const photos = { "jason mendoza": "assets/roster-jason-mendoza.jpg", "algee smith": "assets/roster-algee-smith.jpg", "bobby outside": "assets/roster-bobby-outside.jpg", medusa: "assets/roster-medusa.jpg" };
+  const photos = { "jason mendoza": "assets/roster-jason-mendoza.jpg", "algee smith": "assets/roster-algee-smith.jpg", "bobby outside": "assets/roster-bobby-outside.jpg", medusa: "assets/roster-medusa.jpg", schuster: "assets/roster-schuster.png" };
   window.artistRosterPortrait = (client) => photos[client.name.toLowerCase()] ? `<img class="artist-roster-portrait" src="${photos[client.name.toLowerCase()]}" alt="" loading="lazy">` : "";
   const safeUrl = (value) => { try { return new URL(value).protocol === "https:" ? value : ""; } catch { return ""; } };
   const e = (value) => escapeHtml(value == null ? "" : String(value));
